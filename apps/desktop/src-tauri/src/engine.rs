@@ -114,10 +114,17 @@ impl RelayEvent {
 #[derive(Default)]
 pub struct RunState {
     pub phase: String,
+    /// Source files the engine intends to stream (163 in a typical run).
     pub total_files: u64,
-    pub completed_files: u64,
+    /// Distinct media items after grouping (138 in a typical run). Live Photos
+    /// count once here but contribute two source files, so this — not
+    /// `total_files` — is the denominator for the push phase.
+    pub total_media: u64,
+    pub downloaded_files: u64,
+    pub downloaded_bytes: u64,
+    pub pushed_files: u64,
+    pub pushed_bytes: u64,
     pub total_bytes: u64,
-    pub transferred_bytes: u64,
     pub current_file: String,
     pub last_rate_mbps: f64,
     pub started_at: Option<std::time::SystemTime>,
@@ -132,6 +139,27 @@ impl RunState {
             started_at: Some(std::time::SystemTime::now()),
             ..RunState::default()
         };
+    }
+
+    /// Completed/total pair for the phase currently in flight.
+    ///
+    /// Downloads count source files, pushes count media items. Returning the
+    /// pair that matches the phase is what lets the bar actually reach 100%
+    /// instead of stalling at the file/media ratio.
+    pub fn progress(&self) -> (u64, u64) {
+        match self.phase.as_str() {
+            "downloading" => (self.downloaded_files, self.total_files),
+            "converting" | "pushing" | "indexing" | "done" => (self.pushed_files, self.total_media),
+            _ => (0, self.total_files),
+        }
+    }
+
+    /// Bytes accounted for the current phase, for throughput and ETA.
+    pub fn bytes_moved(&self) -> u64 {
+        match self.phase.as_str() {
+            "downloading" => self.downloaded_bytes,
+            _ => self.pushed_bytes,
+        }
     }
 }
 
@@ -174,12 +202,14 @@ pub fn parse_line(line: &str, state: &mut RunState) -> Option<RelayEvent> {
     }
 
     if let Some(pushed) = parse_summary_counts(body) {
-        state.completed_files = pushed;
+        state.pushed_files = pushed;
         state.phase = "done".into();
-        return Some(RelayEvent::new("success", body.trim().to_string())
-            .phase("done")
-            .completed_files(pushed)
-            .total_files(state.total_files));
+        let (done, total) = state.progress();
+        let mut event = RelayEvent::new("success", body.trim().to_string()).phase("done").completed_files(done);
+        if total > 0 {
+            event = event.total_files(total);
+        }
+        return Some(event);
     }
 
     // Pushed line: "✅ Pushed + timestamp set: FILE (SIZE MB @ RATE MB/s) → DATE"
@@ -226,6 +256,9 @@ pub fn parse_line(line: &str, state: &mut RunState) -> Option<RelayEvent> {
         return Some(RelayEvent::new("info", body.to_string()).phase("scanning"));
     }
     if body.contains("Grouping:") {
+        if let Some(media) = parse_grouping(body) {
+            state.total_media = media;
+        }
         return Some(RelayEvent::new("info", body.to_string()).phase("scanning"));
     }
     if body.contains("Pipelined Transfer: Streaming") {
@@ -255,15 +288,20 @@ pub fn parse_line(line: &str, state: &mut RunState) -> Option<RelayEvent> {
         let cleaned = body.trim_start_matches(['├', '└', '─', ' ']).trim();
         let mut event = RelayEvent::new("info", cleaned.to_string()).phase("done");
         if let Some(pushed) = parse_summary_counts(body) {
-            state.completed_files = pushed;
-            event = event.completed_files(pushed).total_files(state.total_files);
+            state.pushed_files = pushed;
+            let (done, total) = state.progress();
+            event = event.completed_files(done);
+            if total > 0 {
+                event = event.total_files(total);
+            }
         }
         return Some(event);
     }
 
     if body.starts_with("Completed!") {
         state.phase = "done".into();
-        return Some(RelayEvent::new("success", body.to_string()).phase("done").completed_files(state.completed_files));
+        let (done, _) = state.progress();
+        return Some(RelayEvent::new("success", body.to_string()).phase("done").completed_files(done));
     }
 
     Some(RelayEvent::new(kind, body.to_string()))
@@ -310,10 +348,10 @@ fn parse_pushed(body: &str, state: &mut RunState) -> Option<RelayEvent> {
     let (size_mb, rate) = parse_size_rate(name_part);
     let captured = body.split("→").nth(1).map(|s| s.trim().to_string());
 
-    state.completed_files += 1;
+    state.pushed_files += 1;
     state.phase = "pushing".into();
     if let Some(mb) = size_mb {
-        state.transferred_bytes += (mb * 1_000_000.0) as u64;
+        state.pushed_bytes += (mb * 1_000_000.0) as u64;
     }
     if let Some(rate) = rate {
         state.last_rate_mbps = rate;
@@ -322,14 +360,14 @@ fn parse_pushed(body: &str, state: &mut RunState) -> Option<RelayEvent> {
     let mut event = RelayEvent::new("success", format!("Pushed {}", file))
         .phase("pushing")
         .file(&file)
-        .completed_files(state.completed_files);
-    if state.total_files > 0 {
-        event = event.total_files(state.total_files);
+        .completed_files(state.pushed_files);
+    if state.total_media > 0 {
+        event = event.total_files(state.total_media);
     }
     if state.total_bytes > 0 {
         event = event.total_bytes(state.total_bytes);
     }
-    event = event.transferred_bytes(state.transferred_bytes);
+    event = event.transferred_bytes(state.pushed_bytes);
     if let Some(rate) = rate {
         event = event.rate_mbps(rate);
     }
@@ -356,11 +394,14 @@ fn parse_download(body: &str, state: &mut RunState) -> Option<RelayEvent> {
     if let Some(value) = total {
         state.total_files = value;
     }
+    if let Some(position) = index {
+        state.downloaded_files = position;
+    }
 
     let mut event = RelayEvent::new("info", format!("Pulling {}", file))
         .phase("downloading")
         .file(&file)
-        .completed_files(index.unwrap_or(0));
+        .completed_files(state.downloaded_files);
     if let Some(value) = total {
         event = event.total_files(value);
     }
@@ -369,27 +410,43 @@ fn parse_download(body: &str, state: &mut RunState) -> Option<RelayEvent> {
         event = event.rate_mbps(rate);
     }
     if let Some(size) = size_mb {
-        state.transferred_bytes = state.transferred_bytes.max((size * 1_000_000.0) as u64);
+        state.downloaded_bytes += (size * 1_000_000.0) as u64;
         event = event.size_mb(size).message(format!("Pulling {} · {:.1} MB", file, size));
     }
     if state.total_bytes > 0 {
-        event = event.total_bytes(state.total_bytes).transferred_bytes(state.transferred_bytes);
+        event = event.total_bytes(state.total_bytes).transferred_bytes(state.downloaded_bytes);
     }
     Some(event)
 }
 
 fn parse_device(body: &str, state: &mut RunState) -> Option<RelayEvent> {
-    if !(body.contains("iPhone Status") || body.contains("Samsung Status") || body.contains("Connected to iPhone")) {
+    let lower = body.to_lowercase();
+
+    // Only "<device> Status : ..." lines describe state. Other lines that
+    // merely mention a device (such as "Connected to iPhone: ...") would
+    // otherwise be stored under junk keys the UI never reads.
+    if !lower.contains("status") {
         return None;
     }
-    if let Some((key, value)) = body.split_once(':') {
-        let key = key.trim();
-        let value = value.trim();
-        if !key.is_empty() {
-            state.devices.insert(key.to_string(), value.to_string());
-        }
-    }
+
+    // Key on the same names the UI asks for, so devices stay connected during
+    // a run instead of reverting to "Not detected".
+    let key = if lower.contains("samsung") || lower.contains("android") {
+        "Samsung"
+    } else if lower.contains("iphone") {
+        "iPhone"
+    } else {
+        return None;
+    };
+
+    state.devices.insert(key.to_string(), body.to_string());
     Some(RelayEvent::new("info", body.to_string()).phase("preflight"))
+}
+
+/// "Grouping: 163 files mapped into 138 distinct media items."
+fn parse_grouping(body: &str) -> Option<u64> {
+    let after = body.split("mapped into").nth(1)?;
+    after.split_whitespace().next()?.parse().ok()
 }
 
 fn parse_index_total(body: &str) -> (Option<u64>, Option<u64>) {
@@ -453,6 +510,82 @@ pub struct TransferRecord {
     pub error: Option<String>,
 }
 
+/// Convert a Unix timestamp into an ISO-8601 UTC string.
+///
+/// Hand-rolled rather than pulling in a date library: the app only ever needs
+/// to stamp events, and `format!("{:?}", SystemTime)` would write Rust debug
+/// syntax into events.jsonl.
+pub fn iso8601(time: std::time::SystemTime) -> String {
+    let Ok(since_epoch) = time.duration_since(std::time::UNIX_EPOCH) else {
+        return String::new();
+    };
+    let seconds = since_epoch.as_secs() as i64;
+    let millis = since_epoch.subsec_millis();
+    let days = seconds.div_euclid(86_400);
+    let clock = seconds.rem_euclid(86_400);
+    let (year, month, day) = civil_from_days(days);
+    format!(
+        "{year:04}-{month:02}-{day:02}T{:02}:{:02}:{:02}.{millis:03}Z",
+        clock / 3600,
+        (clock % 3600) / 60,
+        clock % 60
+    )
+}
+
+/// Days since the Unix epoch to a civil (year, month, day) date.
+///
+/// Uses Howard Hinnant's `civil_from_days` algorithm, which is exact for the
+/// proleptic Gregorian calendar.
+fn civil_from_days(days: i64) -> (i64, u32, u32) {
+    let shifted = days + 719_468;
+    let era = if shifted >= 0 { shifted } else { shifted - 146_096 } / 146_097;
+    let day_of_era = shifted - era * 146_097;
+    let year_of_era = (day_of_era - day_of_era / 1460 + day_of_era / 36_524 - day_of_era / 146_096) / 365;
+    let year = year_of_era + era * 400;
+    let day_of_year = day_of_era - (365 * year_of_era + year_of_era / 4 - year_of_era / 100);
+    let month_prime = (5 * day_of_year + 2) / 153;
+    let day = (day_of_year - (153 * month_prime + 2) / 5 + 1) as u32;
+    let month = if month_prime < 10 { month_prime + 3 } else { month_prime - 9 } as u32;
+    (if month <= 2 { year + 1 } else { year }, month, day)
+}
+
+/// Read the tail of a file without loading the whole thing.
+///
+/// The event and transfer journals are append-only and grow forever, while the
+/// dashboard polls every 1.5s. Reading them in full would get slower for the
+/// lifetime of the project.
+pub fn tail_lines(path: &Path, limit: usize, max_bytes: u64) -> Vec<String> {
+    use std::io::{Read, Seek, SeekFrom};
+
+    let Ok(file) = fs::File::open(path) else {
+        return Vec::new();
+    };
+    let Ok(length) = file.metadata().map(|meta| meta.len()) else {
+        return Vec::new();
+    };
+    if length == 0 {
+        return Vec::new();
+    }
+
+    let start = length.saturating_sub(max_bytes);
+    let mut reader = std::io::BufReader::new(file);
+    if reader.seek(SeekFrom::Start(start)).is_err() {
+        return Vec::new();
+    }
+    let mut buffer = String::new();
+    if reader.read_to_string(&mut buffer).is_err() {
+        return Vec::new();
+    }
+
+    let mut lines: Vec<&str> = buffer.lines().collect();
+    // A partial first line (when we seeked into the middle) will fail to parse
+    // and is dropped by the caller, so alignment is not a concern.
+    if lines.len() > limit {
+        lines.drain(..lines.len() - limit);
+    }
+    lines.into_iter().map(str::to_string).collect()
+}
+
 pub fn append_transfer(runtime_root: &Path, record: &TransferRecord) {
     let path = runtime_root.join("transfers.jsonl");
     let _ = fs::create_dir_all(runtime_root);
@@ -465,18 +598,10 @@ pub fn append_transfer(runtime_root: &Path, record: &TransferRecord) {
 }
 
 pub fn read_transfers(runtime_root: &Path, limit: usize) -> Vec<Value> {
-    let path = runtime_root.join("transfers.jsonl");
-    let Ok(contents) = fs::read_to_string(path) else {
-        return Vec::new();
-    };
-    let mut records: Vec<Value> = contents
-        .lines()
+    tail_lines(&runtime_root.join("transfers.jsonl"), limit, 512 * 1024)
+        .iter()
         .filter_map(|line| serde_json::from_str::<Value>(line).ok())
-        .collect();
-    if records.len() > limit {
-        records.drain(..records.len() - limit);
-    }
-    records
+        .collect()
 }
 
 // ---------------------------------------------------------------------------
@@ -484,18 +609,10 @@ pub fn read_transfers(runtime_root: &Path, limit: usize) -> Vec<Value> {
 // ---------------------------------------------------------------------------
 
 pub fn read_events(runtime_root: &Path, limit: usize) -> Vec<Value> {
-    let path = runtime_root.join("events.jsonl");
-    let Ok(contents) = fs::read_to_string(path) else {
-        return Vec::new();
-    };
-    let mut events: Vec<Value> = contents
-        .lines()
+    tail_lines(&runtime_root.join("events.jsonl"), limit, 512 * 1024)
+        .iter()
         .filter_map(|line| serde_json::from_str::<Value>(line).ok())
-        .collect();
-    if events.len() > limit {
-        events.drain(..events.len() - limit);
-    }
-    events
+        .collect()
 }
 
 // ---------------------------------------------------------------------------

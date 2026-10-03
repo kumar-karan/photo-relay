@@ -10,6 +10,7 @@ export type RelayPhase =
   | "pushing"
   | "indexing"
   | "done"
+  | "stopping"
   | "failed";
 
 export type RelayEvent = {
@@ -61,7 +62,10 @@ export type Dashboard = {
   engineFound: boolean;
   phase: RelayPhase;
   totalFiles: number;
+  totalMedia: number;
   completedFiles: number;
+  /** Denominator matching the current phase, so the bar can reach 100%. */
+  progressTotal: number;
   totalBytes: number;
   transferredBytes: number;
   rateMbps: number;

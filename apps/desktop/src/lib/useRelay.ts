@@ -8,7 +8,9 @@ const EMPTY: Dashboard = {
   engineFound: false,
   phase: "idle",
   totalFiles: 0,
+  totalMedia: 0,
   completedFiles: 0,
+  progressTotal: 0,
   totalBytes: 0,
   transferredBytes: 0,
   rateMbps: 0,
@@ -100,6 +102,19 @@ export function useRelay() {
     }
   }, [refresh]);
 
+  const stopSync = useCallback(async () => {
+    setBusy(true);
+    try {
+      await invoke("stop_sync");
+      setError(null);
+    } catch (cause) {
+      setError(String(cause));
+    } finally {
+      setBusy(false);
+      void refresh();
+    }
+  }, [refresh]);
+
   const reveal = useCallback(async (target: string) => {
     try {
       await invoke("reveal", { path: target });
@@ -108,5 +123,5 @@ export function useRelay() {
     }
   }, []);
 
-  return { dashboard, events, live, busy, error, setError, refresh, preflight, startSync, reveal };
+  return { dashboard, events, live, busy, error, setError, refresh, preflight, startSync, stopSync, reveal };
 }

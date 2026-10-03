@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { CheckCircle2, FolderOpen, Radio, RefreshCw, ScrollText, ShieldCheck, Sparkles, Stethoscope, XCircle } from "lucide-react";
+import { CheckCircle2, FolderOpen, Radio, RefreshCw, ScrollText, ShieldCheck, Sparkles, Square, Stethoscope, XCircle } from "lucide-react";
 import { ActivityFeed } from "./components/ActivityFeed";
 import { HistoryPanel, VerifiedPanel } from "./components/HistoryPanel";
 import { RelayMap } from "./components/RelayMap";
@@ -12,7 +12,7 @@ import { titleCase } from "./lib/format";
 type Tab = "activity" | "log";
 
 export default function App() {
-  const { dashboard, events, busy, error, setError, refresh, preflight, startSync, reveal } = useRelay();
+  const { dashboard, events, busy, error, setError, refresh, preflight, startSync, stopSync, reveal } = useRelay();
   const [confirming, setConfirming] = useState(false);
   const [tab, setTab] = useState<Tab>("activity");
   const [deviceReport, setDeviceReport] = useState<string[] | null>(null);
@@ -102,14 +102,21 @@ export default function App() {
                   <Stethoscope size={14} className={checking ? "spin" : undefined} />
                   {checking ? "Checking…" : "Device check"}
                 </button>
-                <button
-                  className="button button-primary"
-                  onClick={() => setConfirming(true)}
-                  disabled={!dashboard.engineFound || dashboard.running}
-                >
-                  <Sparkles size={14} />
-                  {dashboard.running ? "Relay running" : "Start relay"}
-                </button>
+                {dashboard.running ? (
+                  <button className="button button-danger" onClick={() => void stopSync()} disabled={busy}>
+                    <Square size={13} fill="currentColor" />
+                    Stop relay
+                  </button>
+                ) : (
+                  <button
+                    className="button button-primary"
+                    onClick={() => setConfirming(true)}
+                    disabled={!dashboard.engineFound}
+                  >
+                    <Sparkles size={14} />
+                    Start relay
+                  </button>
+                )}
                 <button className="button button-ghost" onClick={() => void reveal("runtime")}>
                   <FolderOpen size={14} />
                   Data

@@ -3,6 +3,7 @@
 //! identifiers redacted.
 
 use super::*;
+use crate::engine::{iso8601, tail_lines};
 
 fn parse(line: &str) -> (RunState, Option<RelayEvent>) {
     let mut state = RunState::default();
@@ -15,7 +16,8 @@ fn parse(line: &str) -> (RunState, Option<RelayEvent>) {
 fn parses_device_status_lines() {
     let (state, event) = parse("[2026-10-03 11:27:03.929] [INFO   ] 📱 iPhone Status       : ✅ DETECTED (UDID-REDACTED (Connection: USB))");
     assert_eq!(event.expect("expected an event").kind, "info");
-    assert_eq!(state.devices.get("📱 iPhone Status").map(String::as_str), Some("✅ DETECTED (UDID-REDACTED (Connection: USB))"));
+    // Stored under the key the UI reads, holding the whole raw line.
+    assert_eq!(state.devices.get("iPhone").map(String::as_str), Some("📱 iPhone Status       : ✅ DETECTED (UDID-REDACTED (Connection: USB))"));
 }
 
 #[test]
@@ -51,7 +53,7 @@ fn parses_pushed_line_and_counts_progress() {
     assert_eq!(event.captured_at.as_deref(), Some("2026-09-27 17:16:41"));
     assert_eq!(event.phase.as_deref(), Some("pushing"));
     assert_eq!(event.size_bytes(), Some(2_200_000));
-    assert_eq!(state.transferred_bytes, 2_200_000);
+    assert_eq!(state.pushed_bytes, 2_200_000);
 }
 
 #[test]
@@ -74,7 +76,7 @@ fn parses_final_summary_counts() {
     let (state, event) = parse("[2026-10-03 11:28:31.429] [INFO   ]   ├── Files Pushed to Samsung: 138");
     let event = event.expect("expected an event");
     assert_eq!(event.completed_files, Some(138));
-    assert_eq!(state.completed_files, 138);
+    assert_eq!(state.pushed_files, 138);
 }
 
 #[test]
@@ -121,14 +123,15 @@ fn replays_a_real_run_into_ui_events() {
     // Totals come from the "Streaming 163 files (1984.1 MB)" line.
     assert_eq!(state.total_files, 163);
     assert_eq!(state.total_bytes, 1_984_100_000);
-    assert!(state.transferred_bytes > 0, "expected bytes to accumulate");
+    assert!(state.downloaded_bytes > 0, "expected download bytes to accumulate");
+    assert!(state.pushed_bytes > 0, "expected pushed bytes to accumulate");
     assert!(state.last_rate_mbps > 0.0, "expected a measured throughput");
     assert_eq!(state.errors, 0);
 
     // Both devices are reported, and the summary block sets the final count.
     assert!(state.devices.values().any(|value| value.contains("DETECTED")));
     assert!(state.devices.values().any(|value| value.contains("READY")));
-    assert_eq!(state.completed_files, 138, "summary block should report 138 pushed files");
+    assert_eq!(state.pushed_files, 138, "summary block should report 138 pushed files");
 
     // Live Photos are flagged so the UI can label them.
     assert!(events.iter().any(|event| event.live_photo == Some(true)));
@@ -152,6 +155,84 @@ fn replays_a_real_run_into_ui_events() {
 fn sample_fixture_has_no_device_identifiers() {
     assert!(!SAMPLE_RUN.contains("00008150"), "fixture must stay redacted");
     assert!(!SAMPLE_RUN.contains("/Users/"), "fixture must not contain personal paths");
+}
+
+#[test]
+fn device_status_keys_match_what_the_ui_asks_for() {
+    // Regression: device lines were stored under raw log keys such as
+    // "📱 iPhone Status", so the UI looked them up as "iPhone", found nothing,
+    // and reported both phones as not detected for the whole run.
+    let mut state = RunState::default();
+    parse_line("[2026-10-03 11:27:03.929] [INFO   ] 📱 iPhone Status       : ✅ DETECTED (UDID-REDACTED (Connection: USB))", &mut state);
+    parse_line("[2026-10-03 11:27:03.929] [INFO   ] 🤖 Samsung Status      : ✅ READY (SERIAL, 43.46GB free)", &mut state);
+
+    assert!(state.devices.contains_key("iPhone"), "expected an iPhone key, got {:?}", state.devices.keys().collect::<Vec<_>>());
+    assert!(state.devices.contains_key("Samsung"), "expected a Samsung key, got {:?}", state.devices.keys().collect::<Vec<_>>());
+    assert!(crate::status_from_line(&state.devices["iPhone"]).online);
+    assert_eq!(crate::status_from_line(&state.devices["Samsung"]).detail, "43.46 GB free");
+}
+
+#[test]
+fn lines_that_merely_mention_a_device_are_not_stored() {
+    let mut state = RunState::default();
+    parse_line("[2026-10-03 11:27:06.092] [SUCCESS] ✅ Connected to iPhone: iPhone (UDID: UDID-REDACTED)", &mut state);
+    assert!(state.devices.is_empty(), "connection chatter must not become a device key: {:?}", state.devices);
+}
+
+#[test]
+fn progress_reaches_a_hundred_percent_across_both_phases() {
+    // Regression: downloads count source files (163) while pushes count media
+    // items (138). Using one denominator for both left the bar stuck at ~85%.
+    let mut state = RunState::default();
+    state.begin();
+    for line in SAMPLE_RUN.lines() {
+        parse_line(line, &mut state);
+    }
+
+    assert_eq!(state.total_files, 163, "source files streamed");
+    assert_eq!(state.total_media, 138, "media items after grouping");
+
+    // Final state is the push phase, measured in media items.
+    assert_eq!(state.phase, "done");
+    assert_eq!(state.progress(), (138, 138), "push phase must complete exactly");
+    assert_eq!(state.progress().1, 138);
+
+    // And mid-download it was measured in source files.
+    let mut downloading = RunState::default();
+    downloading.total_files = 163;
+    downloading.downloaded_files = 12;
+    downloading.phase = "downloading".into();
+    assert_eq!(downloading.progress(), (12, 163));
+}
+
+#[test]
+fn iso8601_formats_known_instants() {
+    use std::time::{Duration, UNIX_EPOCH};
+    assert_eq!(iso8601(UNIX_EPOCH), "1970-01-01T00:00:00.000Z");
+    assert_eq!(iso8601(UNIX_EPOCH + Duration::from_secs(1_757_298_491)), "2025-09-08T02:28:11.000Z");
+    // Well past a leap-day boundary.
+    assert_eq!(iso8601(UNIX_EPOCH + Duration::from_secs(1_709_164_800)), "2024-02-29T00:00:00.000Z");
+}
+
+#[test]
+fn tail_lines_reads_only_the_end_of_a_large_file() {
+    let dir = std::env::temp_dir().join("photo-relay-tail-test");
+    std::fs::create_dir_all(&dir).expect("temp dir");
+    let path = dir.join("big.txt");
+    let body = (0..20_000).map(|index| format!("line {index}")).collect::<Vec<_>>().join("\n");
+    std::fs::write(&path, &body).expect("write fixture");
+
+    let tail = tail_lines(&path, 5, 4096);
+    assert_eq!(tail.len(), 5, "should return only the requested lines");
+    assert_eq!(tail.last().map(String::as_str), Some("line 19999"), "must end at the true tail");
+
+    // A short tail window still returns the last line, not nothing.
+    let narrow = tail_lines(&path, 3, 64);
+    assert_eq!(narrow.last().map(String::as_str), Some("line 19999"));
+
+    // Missing files are not an error.
+    assert!(tail_lines(&dir.join("nope.txt"), 5, 4096).is_empty());
+    let _ = std::fs::remove_file(&path);
 }
 
 // ---------------------------------------------------------------------------
@@ -191,8 +272,13 @@ fn engine_manifest_and_journal_paths_exist() {
 fn engine_version_reads_the_pipeline_banner() {
     // Regression: the banner is a logger.log(...) call, so splitting on a bare
     // "v" used to match the one in `level=""` and render `el=""`.
+    //
+    // Assert the shape, not a specific number, so bumping the engine's version
+    // does not break the suite.
     let version = crate::engine_version(&crate::engine_root());
-    assert_eq!(version, "v3", "expected the engine banner version");
+    let digits = version.strip_prefix('v').unwrap_or_else(|| panic!("version must start with 'v': {version}"));
+    assert!(!digits.is_empty(), "version must carry a number: {version}");
+    assert!(digits.chars().all(|char| char.is_ascii_alphanumeric() || char == '.'), "unexpected version: {version}");
     assert!(!version.contains('='), "version must not leak source code: {version}");
 }
 

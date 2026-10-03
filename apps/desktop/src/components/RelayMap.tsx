@@ -17,8 +17,10 @@ const FLOWING_PHASES = new Set(["downloading", "converting", "transferring", "pu
 export function RelayMap({ dashboard }: { dashboard: Dashboard }) {
   const { devices, phase, running } = dashboard;
   const flowing = running && FLOWING_PHASES.has(phase);
-  const showProgress = running && (dashboard.totalFiles > 0 || dashboard.transferredBytes > 0);
-  const percent = percentOf(dashboard.completedFiles, dashboard.totalFiles);
+  const showProgress = running && dashboard.progressTotal > 0;
+  // Rust supplies the denominator that matches the phase, because downloads
+  // count source files while pushes count media items.
+  const percent = percentOf(dashboard.completedFiles, dashboard.progressTotal);
   const eta = estimateEta(dashboard.transferredBytes, dashboard.totalBytes, dashboard.rateMbps);
 
   const iphone = devices.iPhone;
@@ -93,7 +95,7 @@ export function RelayMap({ dashboard }: { dashboard: Dashboard }) {
             {showProgress && (
               <>
                 <span className="mono">
-                  {formatCount(dashboard.completedFiles)}/{formatCount(dashboard.totalFiles)}
+                  {formatCount(dashboard.completedFiles)}/{formatCount(dashboard.progressTotal)}
                 </span>
                 <span className="mono">{formatRate(dashboard.rateMbps)}</span>
                 {eta !== null && <span className="mono">{formatDuration(eta)} left</span>}

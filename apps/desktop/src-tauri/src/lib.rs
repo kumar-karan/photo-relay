@@ -15,7 +15,7 @@ use std::{
         Arc, Mutex,
     },
     thread,
-    time::SystemTime,
+    time::{Duration, Instant, SystemTime},
 };
 use tauri::{AppHandle, Emitter, State};
 
@@ -23,13 +23,30 @@ use tauri::{AppHandle, Emitter, State};
 struct RelayRuntime {
     running: AtomicBool,
     run: Mutex<RunState>,
+    /// Device detection shells out to the engine's USB probe, which is far too
+    /// expensive to run on every dashboard poll. Cache it briefly instead.
+    devices: Mutex<DeviceCache>,
+    /// Pid of the running engine, so a long transfer can be stopped.
+    child: Mutex<Option<u32>>,
 }
+
+#[derive(Default)]
+struct DeviceCache {
+    checked_at: Option<Instant>,
+    map: BTreeMap<String, DeviceStatus>,
+}
+
+/// Device detection is cached for this long, and the explicit device check
+/// button bypasses the cache entirely.
+const DEVICE_TTL: Duration = Duration::from_secs(6);
 
 #[derive(Clone, Default)]
 struct RunSnapshot {
     phase: String,
     total_files: u64,
+    total_media: u64,
     completed_files: u64,
+    progress_total: u64,
     total_bytes: u64,
     transferred_bytes: u64,
     rate_mbps: f64,
@@ -41,22 +58,50 @@ struct RunSnapshot {
 
 impl RelayRuntime {
     fn snapshot(&self) -> RunSnapshot {
-        let build = |state: &RunState| RunSnapshot {
-            phase: state.phase.clone(),
-            total_files: state.total_files,
-            completed_files: state.completed_files,
-            total_bytes: state.total_bytes,
-            transferred_bytes: state.transferred_bytes,
-            rate_mbps: state.last_rate_mbps,
-            elapsed_seconds: engine::elapsed_seconds(state).unwrap_or_default(),
-            errors: state.errors,
-            current_file: state.current_file.clone(),
-            devices: state.devices.iter().map(|(key, line)| (key.clone(), status_from_line(line))).collect(),
+        let build = |state: &RunState| {
+            let (done, total) = state.progress();
+            RunSnapshot {
+                phase: state.phase.clone(),
+                total_files: state.total_files,
+                total_media: state.total_media,
+                completed_files: done,
+                progress_total: total,
+                total_bytes: state.total_bytes,
+                transferred_bytes: state.bytes_moved(),
+                rate_mbps: state.last_rate_mbps,
+                elapsed_seconds: engine::elapsed_seconds(state).unwrap_or_default(),
+                errors: state.errors,
+                current_file: state.current_file.clone(),
+                devices: state.devices.iter().map(|(key, line)| (key.clone(), status_from_line(line))).collect(),
+            }
         };
         match self.run.lock() {
             Ok(state) => build(&state),
             Err(poisoned) => build(&poisoned.into_inner()),
         }
+    }
+
+    /// Return cached devices, refreshing them when the cache has gone stale.
+    fn devices(&self, engine: &Path, force: bool) -> BTreeMap<String, DeviceStatus> {
+        let stale = match self.devices.lock() {
+            Ok(cache) => match cache.checked_at {
+                Some(at) if !force && at.elapsed() < DEVICE_TTL => return cache.map.clone(),
+                _ => true,
+            },
+            Err(_) => true,
+        };
+        if !stale {
+            return BTreeMap::new();
+        }
+        let map = discover_devices(engine);
+        match self.devices.lock() {
+            Ok(mut cache) => {
+                cache.checked_at = Some(Instant::now());
+                cache.map = map.clone();
+            }
+            Err(_) => {}
+        }
+        map
     }
 
     /// Feed one engine log line through the parser and keep the run state fresh.
@@ -75,12 +120,16 @@ struct Dashboard {
     engine_found: bool,
     phase: String,
     total_files: u64,
+    total_media: u64,
     completed_files: u64,
     total_bytes: u64,
     transferred_bytes: u64,
     rate_mbps: f64,
     elapsed_seconds: f64,
     errors: u64,
+    /// Denominator for the progress bar: source files while downloading,
+    /// media items while pushing.
+    progress_total: u64,
     current_file: String,
     devices: BTreeMap<String, DeviceStatus>,
     status: String,
@@ -95,7 +144,7 @@ struct Dashboard {
 }
 
 fn timestamp() -> String {
-    format!("{:?}", SystemTime::now())
+    engine::iso8601(SystemTime::now())
 }
 
 /// Where the app records its project folder between launches.
@@ -191,17 +240,7 @@ fn latest_log(logs: &Path) -> String {
                 .and_then(|meta| meta.modified())
                 .unwrap_or(SystemTime::UNIX_EPOCH)
         })
-        .and_then(|entry| fs::read_to_string(entry.path()).ok())
-        .map(|text| {
-            text.lines()
-                .rev()
-                .take(120)
-                .collect::<Vec<_>>()
-                .into_iter()
-                .rev()
-                .collect::<Vec<_>>()
-                .join("\n")
-        })
+        .map(|entry| engine::tail_lines(&entry.path(), 120, 128 * 1024).join("\n"))
         .unwrap_or_default()
 }
 
@@ -312,21 +351,24 @@ fn dashboard(runtime: State<'_, Arc<RelayRuntime>>) -> Dashboard {
     let run = runtime.snapshot();
 
     let state = read_json(engine.join("sync_state.json"), json!({}));
-    let devices = if run.devices.is_empty() { discover_devices(&engine) } else { run.devices };
 
     Dashboard {
         running: runtime.running.load(Ordering::SeqCst),
         engine_found: engine.join("run_sync.sh").exists(),
         phase: run.phase,
         total_files: run.total_files,
+        total_media: run.total_media,
         completed_files: run.completed_files,
+        progress_total: run.progress_total,
         total_bytes: run.total_bytes,
         transferred_bytes: run.transferred_bytes,
         rate_mbps: run.rate_mbps,
         elapsed_seconds: run.elapsed_seconds,
         errors: run.errors,
         current_file: run.current_file,
-        devices,
+        // While a relay is in flight the engine's own device lines are newer
+        // and more accurate than a fresh USB probe, so prefer them.
+        devices: if run.devices.is_empty() { runtime.devices(&engine, false) } else { run.devices },
         status: state.get("status").and_then(|v| v.as_str()).unwrap_or("idle").to_string(),
         total_synced_files: state.get("total_synced_files").and_then(|v| v.as_u64()).unwrap_or(0),
         last_synced_timestamp: state.get("last_synced_timestamp").and_then(|v| v.as_str()).unwrap_or("").to_string(),
@@ -339,9 +381,12 @@ fn dashboard(runtime: State<'_, Arc<RelayRuntime>>) -> Dashboard {
     }
 }
 
+/// Run the engine's USB probe on demand, bypassing the dashboard's cache so the
+/// relay diagram reflects reality immediately after the user clicks the button.
 #[tauri::command]
-fn preflight() -> Result<Vec<String>, String> {
+fn preflight(runtime: State<'_, Arc<RelayRuntime>>) -> Result<Vec<String>, String> {
     let engine = engine_root();
+    let _ = runtime.devices(&engine, true);
     if !engine.join("detect_devices.py").exists() {
         return Err("The sync engine was not found. Keep sync_engine/ inside this project folder.".into());
     }
@@ -388,6 +433,9 @@ fn start_sync(app: AppHandle, runtime: State<'_, Arc<RelayRuntime>>) -> Result<(
 
         match spawned {
             Ok(mut child) => {
+                if let Ok(mut slot) = worker.child.lock() {
+                    *slot = Some(child.id());
+                }
                 if let Some(stdout) = child.stdout.take() {
                     for line in BufReader::new(stdout).lines().map_while(Result::ok) {
                         if let Some(event) = worker.absorb(&line) {
@@ -421,12 +469,44 @@ fn start_sync(app: AppHandle, runtime: State<'_, Arc<RelayRuntime>>) -> Result<(
             Err(error) => emit(&app, RelayEvent::new("error", format!("Unable to start the relay: {error}")).phase("failed")),
         }
 
+        if let Ok(mut slot) = worker.child.lock() {
+            *slot = None;
+        }
         if let Ok(mut run) = worker.run.lock() {
             run.phase = "idle".into();
         }
         worker.running.store(false, Ordering::SeqCst);
     });
 
+    Ok(())
+}
+
+/// Ask the running engine to stop.
+///
+/// The engine removes a staged file only after confirming it on the Samsung,
+/// so interrupting mid-transfer leaves the remaining files staged and the
+/// watermark untouched — the next run picks up exactly where this one stopped.
+#[tauri::command]
+fn stop_sync(app: AppHandle, runtime: State<'_, Arc<RelayRuntime>>) -> Result<(), String> {
+    if !runtime.running.load(Ordering::SeqCst) {
+        return Err("No relay is running.".into());
+    }
+    let pid = runtime.child.lock().ok().and_then(|slot| *slot);
+    let Some(pid) = pid else {
+        return Err("The engine process is not available to stop.".into());
+    };
+    // SIGTERM first so the engine can unwind cleanly.
+    let signalled = Command::new("kill")
+        .args(["-TERM", &pid.to_string()])
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .map(|status| status.success())
+        .unwrap_or(false);
+    if !signalled {
+        return Err("Could not signal the running engine.".into());
+    }
+    emit(&app, RelayEvent::new("warning", "Stop requested — finishing the current file, then standing down.").phase("stopping"));
     Ok(())
 }
 
@@ -448,7 +528,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .manage(Arc::new(RelayRuntime::default()))
-        .invoke_handler(tauri::generate_handler![dashboard, preflight, start_sync, reveal])
+        .invoke_handler(tauri::generate_handler![dashboard, preflight, start_sync, stop_sync, reveal])
         .run(tauri::generate_context!())
         .expect("error while running Photo Relay");
 }
