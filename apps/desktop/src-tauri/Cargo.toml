@@ -1,0 +1,19 @@
+[package]
+name = "photo-relay"
+version = "0.1.0"
+description = "A local-first iPhone to Samsung photo relay"
+authors = ["Karan Kumar"]
+edition = "2021"
+
+[lib]
+name = "photo_relay_lib"
+crate-type = ["lib", "cdylib", "staticlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"

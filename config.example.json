@@ -1,0 +1,9 @@
+{
+  "engine_path": "sync_engine",
+  "input_dir": "/path/to/iphone_staging",
+  "converted_dir": "/path/to/iphone_converted",
+  "phone_target_dir": "/sdcard/DCIM/Camera",
+  "adb_bin": "/opt/homebrew/bin/adb",
+  "ffmpeg_bin": "/opt/homebrew/bin/ffmpeg",
+  "exiftool_bin": "/path/to/exiftool"
+}

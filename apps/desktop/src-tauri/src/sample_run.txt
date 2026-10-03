@@ -1,0 +1,75 @@
+[2026-10-03 11:27:03.663] [INFO   ] ===========================================================================
+ 🚀 MASTER AUTONOMOUS IPHONE -> SAMSUNG PHOTO SYNC PIPELINE (v3 — Optimized)
+[2026-10-03 11:27:03.663] [INFO   ] ===========================================================================
+[2026-10-03 11:27:03.666] [INFO   ] Run ID                 : 20261003_112703
+[2026-10-03 11:27:03.666] [INFO   ] Cutoff Watermark Date : 2026-09-13 18:31:59
+[2026-10-03 11:27:03.666] [INFO   ] Staging Directory     : ~/path
+[2026-10-03 11:27:03.666] [INFO   ] Run Log File          : ~/path
+[2026-10-03 11:27:03.667] [INFO   ] Master Log File       : ~/path
+[2026-10-03 11:27:03.667] [INFO   ] History JSON Path     : ~/path
+[2026-10-03 11:27:03.667] [INFO   ] ---------------------------------------------------------------------------
+[2026-10-03 11:27:03.929] [INFO   ] 📱 iPhone Status       : ✅ DETECTED (UDID-REDACTEDC01C (Connection: USB))
+[2026-10-03 11:27:03.929] [INFO   ] 🤖 Samsung Status      : ✅ READY (<serial-redacted>, 43.46GB free)
+[2026-10-03 11:27:03.929] [INFO   ] ---------------------------------------------------------------------------
+[2026-10-03 11:27:05.400] [INFO   ] Samsung target contains 4706 existing files.
+[2026-10-03 11:27:05.401] [INFO   ] Connecting to iPhone over USB...
+[2026-10-03 11:27:06.092] [SUCCESS] ✅ Connected to iPhone: iPhone (UDID: UDID-REDACTEDC01C)
+[2026-10-03 11:27:06.097] [INFO   ] Scanning 42 DCIM folders on iPhone (concurrency=8)...
+[2026-10-03 11:27:09.467] [INFO   ] Scan Complete in 3.37s: Examined 24000 files across 42 folders.
+[2026-10-03 11:27:09.467] [SUCCESS] New files found taken after 2026-09-13 18:31:59.915284: 163
+[2026-10-03 11:27:09.468] [INFO   ] Grouping: 163 files mapped into 138 distinct media items.
+[2026-10-03 11:27:09.469] [INFO   ] Pipelined Transfer: Streaming 163 files (1984.1 MB) from iPhone while pushing to Samsung...
+[2026-10-03 11:27:09.523] [INFO   ]   [  1/163] (  0.6%) Downloaded: IMG_0964.MOV (2.0 MB @ 37.5 MB/s)
+[2026-10-03 11:27:09.549] [INFO   ]   [  2/163] (  1.2%) Downloaded: IMG_0964.JPG (0.9 MB @ 35.5 MB/s)
+[2026-10-03 11:27:09.692] [INFO   ]   [  3/163] (  1.8%) Downloaded: IMG_0965.MOV (5.0 MB @ 35.2 MB/s)
+[2026-10-03 11:27:09.728] [INFO   ]   [  4/163] (  2.5%) Downloaded: IMG_0965.JPG (0.9 MB @ 26.7 MB/s)
+[2026-10-03 11:27:09.851] [INFO   ]   [  5/163] (  3.1%) Downloaded: IMG_0966.MOV (4.4 MB @ 35.7 MB/s)
+[2026-10-03 11:27:10.279] [INFO   ]        Conversion status: converted (0.73s) -> IMG_0964.JPG
+[2026-10-03 11:27:10.279] [INFO   ]        Conversion status: converted (0.55s) -> IMG_0965.JPG
+[2026-10-03 11:27:10.558] [SUCCESS]        ✅ Pushed + timestamp set: IMG_0964.JPG (2.9 MB @ 13.1 MB/s) → 2026-09-14 13:29:37
+[2026-10-03 11:27:10.911] [SUCCESS]        ✅ Pushed + timestamp set: IMG_0965.JPG (5.9 MB @ 21.3 MB/s) → 2026-09-14 18:08:00
+[2026-10-03 11:27:11.133] [INFO   ]   [  6/163] (  3.7%) Downloaded: IMG_0967.MOV (43.0 MB @ 33.6 MB/s)
+[2026-10-03 11:27:11.215] [INFO   ]   [  7/163] (  4.3%) Downloaded: IMG_0966.JPG (2.9 MB @ 34.8 MB/s)
+[2026-10-03 11:27:11.237] [INFO   ]   [  8/163] (  4.9%) Downloaded: IMG_0968.JPG (0.5 MB @ 21.8 MB/s)
+[2026-10-03 11:27:11.440] [INFO   ]        Conversion status: converted (0.22s) -> IMG_0966.JPG
+[2026-10-03 11:27:12.449] [SUCCESS]        ✅ Pushed + timestamp set: IMG_0967.MOV (43.0 MB @ 34.0 MB/s) → 2026-09-14 18:10:10
+[2026-10-03 11:27:12.592] [SUCCESS]        ✅ Pushed + timestamp set: IMG_0968.JPG (0.5 MB @ 4.8 MB/s) → 2026-09-15 17:57:53
+[2026-10-03 11:27:12.886] [SUCCESS]        ✅ Pushed + timestamp set: IMG_0969.PNG (1.2 MB @ 4.8 MB/s) → 2026-09-15 18:30:07
+[2026-10-03 11:27:13.000] [SUCCESS]        ✅ Pushed + timestamp set: IMG_0970.PNG (1.2 MB @ 16.6 MB/s) → 2026-09-15 18:30:11
+[2026-10-03 11:27:43.783] [INFO   ]        Conversion status: converted (0.35s) -> IMG_1005.JPG
+[2026-10-03 11:27:43.802] [INFO   ]        Conversion status: converted (0.22s) -> IMG_1008.JPG
+[2026-10-03 11:27:43.834] [INFO   ]        Conversion status: converted (0.32s) -> IMG_1006.JPG
+[2026-10-03 11:27:43.891] [INFO   ]        Conversion status: converted (0.22s) -> IMG_1007.JPG
+[2026-10-03 11:27:46.591] [INFO   ]        Conversion status: converted (0.19s) -> IMG_1019.JPG
+[2026-10-03 11:27:47.042] [INFO   ]        Conversion status: converted (0.19s) -> IMG_1026.JPG
+[2026-10-03 11:27:47.173] [INFO   ]        Conversion status: converted (0.19s) -> IMG_1025.JPG
+[2026-10-03 11:27:49.453] [INFO   ]        Conversion status: converted (0.24s) -> IMG_1034.JPG
+[2026-10-03 11:27:49.580] [INFO   ]        Conversion status: converted (0.27s) -> IMG_1035.JPG
+[2026-10-03 11:27:49.662] [INFO   ]        Conversion status: converted (0.29s) -> IMG_1036.JPG
+[2026-10-03 11:27:49.662] [INFO   ]        Conversion status: converted (0.25s) -> IMG_1037.JPG
+[2026-10-03 11:27:49.707] [INFO   ]        Conversion status: converted (0.24s) -> IMG_1038.JPG
+[2026-10-03 11:27:49.764] [INFO   ]        Conversion status: converted (0.26s) -> IMG_1032.JPG
+[2026-10-03 11:27:49.788] [INFO   ]        Conversion status: converted (0.30s) -> IMG_1033.JPG
+[2026-10-03 11:27:49.976] [INFO   ]        Conversion status: converted (0.20s) -> IMG_1040.JPG
+[2026-10-03 11:27:50.046] [INFO   ]        Conversion status: converted (0.19s) -> IMG_1039.JPG
+[2026-10-03 11:27:54.835] [INFO   ]        Conversion status: converted (0.21s) -> IMG_1049.JPG
+[2026-10-03 11:28:01.057] [INFO   ]        Conversion status: converted (0.19s) -> IMG_1088.JPG
+[2026-10-03 11:28:01.137] [INFO   ]        Conversion status: converted (0.19s) -> IMG_1087.JPG
+[2026-10-03 11:28:01.228] [INFO   ]        Conversion status: converted (0.19s) -> IMG_1086.JPG
+[2026-10-03 11:28:07.943] [INFO   ]        Conversion status: converted (0.19s) -> IMG_1095.JPG
+[2026-10-03 11:28:08.528] [SUCCESS] Downloads Complete: 163 files (1984.1 MB) in 59.06s (Avg: 33.6 MB/s).
+[2026-10-03 11:28:08.528] [INFO   ] Waiting for 24 background Live Photo conversions to complete...
+[2026-10-03 11:28:27.231] [INFO   ] 📡 Triggering MediaScanner for 138 files (batch)...
+[2026-10-03 11:28:31.420] [SUCCESS] 📡 MediaScanner broadcast completed for 138 files in 4.19s.
+[2026-10-03 11:28:31.423] [SUCCESS] Completed! Pushed: 138, Skipped: 0, Errors: 0. Watermark updated to 2026-10-02 13:28:46.148865.
+[2026-10-03 11:28:31.427] [INFO   ] ===========================================================================
+ 📊 FINAL EXECUTION SUMMARY
+[2026-10-03 11:28:31.428] [INFO   ] ===========================================================================
+[2026-10-03 11:28:31.428] [INFO   ]   ├── Total Elapsed Time     : 87.76 seconds
+[2026-10-03 11:28:31.429] [INFO   ]   ├── Files Pushed to Samsung: 138
+[2026-10-03 11:28:31.429] [INFO   ]   ├── Files Skipped          : 0
+[2026-10-03 11:28:31.429] [INFO   ]   ├── Errors Encountered     : 0
+[2026-10-03 11:28:31.430] [INFO   ]   ├── New Cutoff Watermark   : 2026-10-02T13:28:46.148865
+[2026-10-03 11:28:31.430] [INFO   ]   ├── Mac Laptop Storage     : 0 Bytes 🧹 (All temp buffers purged)
+[2026-10-03 11:28:31.430] [INFO   ]   └── Run Log Location       : ~/path
+[2026-10-03 11:28:31.430] [INFO   ] ===========================================================================

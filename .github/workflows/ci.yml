@@ -1,0 +1,95 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  engine:
+    name: Engine parser tests
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Verify sync-core sources parse
+        run: python3 -m compileall -q sync_engine
+      - name: Run Rust parser tests
+        working-directory: apps/desktop/src-tauri
+        run: cargo test --lib
+
+  frontend:
+    name: Frontend typecheck
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/desktop/package-lock.json
+      - run: npm ci
+        working-directory: apps/desktop
+      - run: npx tsc -b
+        working-directory: apps/desktop
+      - run: npm run build
+        working-directory: apps/desktop
+
+  build:
+    name: Build macOS app
+    runs-on: macos-14
+    needs: [engine, frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/desktop/package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin
+      - run: npm ci
+        working-directory: apps/desktop
+      - name: Build bundle
+        run: npm run tauri build -- --bundles app
+        working-directory: apps/desktop
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PhotoRelay-macOS
+          path: apps/desktop/src-tauri/target/release/bundle/macos/Photo Relay.app
+          if-no-files-found: error
+
+  hygiene:
+    name: Repository hygiene
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Personal data must never be committed
+        run: |
+          set -euo pipefail
+          fail=0
+          if git ls-files | grep -E '(^|/)(config\.json|sync_state\.json)$'; then
+            echo "::error::machine config or sync state is tracked"
+            fail=1
+          fi
+          if git ls-files | grep -E '\.(log|pyc)$'; then
+            echo "::error::log or compiled python files are tracked"
+            fail=1
+          fi
+          # Real identifiers: a 40-hex iPhone UDID, or a Samsung serial that
+          # contains at least one digit. Redacted placeholders do not match.
+          if git grep -nIE '[0-9A-F]{8}-[0-9A-F]{16}|RZCW[0-9A-Z]*[0-9][0-9A-Z]{6}' -- . ':!*.md'; then
+            echo "::error::a device identifier is tracked"
+            fail=1
+          fi
+          if git grep -nI '/Users/[a-z]' -- . ':!*.md'; then
+            echo "::error::a personal absolute path is tracked"
+            fail=1
+          fi
+          exit $fail

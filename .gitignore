@@ -1,0 +1,40 @@
+# ---------------------------------------------------------------------------
+# Photo Relay — repository hygiene
+#
+# The Python engine in sync_engine/ IS the project and is tracked. What stays
+# out of Git is personal data: run logs, watermarks, device identifiers, and
+# machine-specific configuration.
+# ---------------------------------------------------------------------------
+
+# Local runtime data written by the desktop app.
+runtime/*
+!runtime/.gitkeep
+
+# Machine-specific configuration. Copy config.example.json to config.json.
+config.local.json
+sync_engine/config.json
+
+# Run logs and transfer state — these contain device UDIDs and personal paths.
+sync_engine/logs/
+sync_engine/*.log
+sync_engine/sync_state.json
+sync_engine/**/sync_state.json
+sync_engine/termux_package/sync_state.json
+
+# Python caches and editor backups.
+__pycache__/
+*.pyc
+*.bak_*
+sync_engine/.DS_Store
+
+# Build artifacts and dependencies.
+node_modules/
+dist/
+target/
+apps/desktop/node_modules/
+apps/desktop/dist/
+apps/desktop/src-tauri/target/
+apps/desktop/src-tauri/gen/schemas/
+
+# macOS
+.DS_Store

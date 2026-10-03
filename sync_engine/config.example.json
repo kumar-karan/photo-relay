@@ -1,0 +1,9 @@
+{
+  "input_dir": "~/Pictures/iphone_staging",
+  "converted_dir": "~/Pictures/iphone_converted",
+  "phone_target_dir": "/sdcard/DCIM/Camera",
+  "adb_bin": "adb",
+  "ffmpeg_bin": "ffmpeg",
+  "exiftool_bin": "exiftool",
+  "state_file": "sync_state.json"
+}
