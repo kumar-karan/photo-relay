@@ -51,6 +51,11 @@ export type TransferRecord = {
   error?: string;
 };
 
+export type DeviceStatus = {
+  online: boolean;
+  detail: string;
+};
+
 export type Dashboard = {
   running: boolean;
   engineFound: boolean;
@@ -63,7 +68,7 @@ export type Dashboard = {
   elapsedSeconds: number;
   errors: number;
   currentFile: string;
-  devices: Record<string, string>;
+  devices: Record<string, DeviceStatus>;
   status: string;
   totalSyncedFiles: number;
   lastSyncedTimestamp: string;

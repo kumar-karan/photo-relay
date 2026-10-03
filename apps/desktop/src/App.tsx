@@ -51,6 +51,12 @@ export default function App() {
       ? "Ready"
       : "Engine missing";
 
+  // Show the project folder name, not a truncated tail of its path. The full
+  // path stays available as a tooltip.
+  const folderName = dashboard.projectRoot.split("/").filter(Boolean).at(-1) ?? "";
+  const engineLabel = dashboard.engineVersion === "unknown" ? "engine" : `engine ${dashboard.engineVersion}`;
+  const meta = folderName ? `${engineLabel} · ${folderName}` : engineLabel;
+
   return (
     <div className="app">
       <header className="titlebar">
@@ -60,8 +66,8 @@ export default function App() {
           </div>
           <div className="identity-text">
             <span className="identity-name">Photo Relay</span>
-            <span className="identity-meta">
-              engine {dashboard.engineVersion} · {dashboard.projectRoot.split("/").slice(-2).join("/")}
+            <span className="identity-meta" title={dashboard.projectRoot}>
+              {meta}
             </span>
           </div>
         </div>

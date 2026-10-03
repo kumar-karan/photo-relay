@@ -11,12 +11,6 @@ type NodeSpec = {
   online: boolean;
 };
 
-function deviceOnline(devices: Record<string, string>, name: string): boolean {
-  const value = devices[name];
-  if (!value) return false;
-  return value.toLowerCase().includes("connected") || value.toLowerCase().includes("detected") || value.toLowerCase().includes("ready");
-}
-
 /** Phases that mean "data is moving" drive the animated link sweep. */
 const FLOWING_PHASES = new Set(["downloading", "converting", "transferring", "pushing", "indexing"]);
 
@@ -27,10 +21,32 @@ export function RelayMap({ dashboard }: { dashboard: Dashboard }) {
   const percent = percentOf(dashboard.completedFiles, dashboard.totalFiles);
   const eta = estimateEta(dashboard.transferredBytes, dashboard.totalBytes, dashboard.rateMbps);
 
+  const iphone = devices.iPhone;
+  const samsung = devices.Samsung;
+
   const nodes: NodeSpec[] = [
-    { key: "iphone", label: "iPhone", detail: "Camera roll", icon: <Smartphone size={17} />, online: deviceOnline(devices, "iPhone") },
-    { key: "mac", label: "This Mac", detail: running ? "Staging" : "Standing by", icon: <Laptop size={17} />, online: true },
-    { key: "samsung", label: "Samsung", detail: "Backup target", icon: <HardDrive size={17} />, online: deviceOnline(devices, "Samsung") },
+    {
+      key: "iphone",
+      label: "iPhone",
+      detail: iphone?.online ? iphone.detail : "Not detected",
+      icon: <Smartphone size={17} />,
+      online: Boolean(iphone?.online),
+    },
+    {
+      key: "mac",
+      label: "This Mac",
+      // The Mac is always present; it stages and converts, so never call it offline.
+      detail: running ? "Staging" : "Standing by",
+      icon: <Laptop size={17} />,
+      online: true,
+    },
+    {
+      key: "samsung",
+      label: "Samsung",
+      detail: samsung?.online ? samsung.detail : "Not detected",
+      icon: <HardDrive size={17} />,
+      online: Boolean(samsung?.online),
+    },
   ];
 
   const links = [
@@ -61,7 +77,7 @@ export function RelayMap({ dashboard }: { dashboard: Dashboard }) {
               <div className="node-icon">{node.icon}</div>
               <div>
                 <div className="node-label">{node.label}</div>
-                <div className="node-state">{node.online ? (node.detail === "Backup target" ? node.detail : "Connected") : "Not detected"}</div>
+                <div className="node-state">{node.detail}</div>
               </div>
             </motion.div>
           </div>

@@ -185,5 +185,26 @@ fn engine_manifest_and_journal_paths_exist() {
     assert!(engine.join("sync.py").exists(), "sync.py must ship with the repo");
     assert!(engine.join("detect_devices.py").exists(), "detect_devices.py must ship with the repo");
     assert!(engine.join("config.example.json").exists(), "config.example.json must ship with the repo");
-    assert!(!engine.join("config.json").exists() || true, "local config is optional in CI");
+}
+
+#[test]
+fn engine_version_reads_the_pipeline_banner() {
+    // Regression: the banner is a logger.log(...) call, so splitting on a bare
+    // "v" used to match the one in `level=""` and render `el=""`.
+    let version = crate::engine_version(&crate::engine_root());
+    assert_eq!(version, "v3", "expected the engine banner version");
+    assert!(!version.contains('='), "version must not leak source code: {version}");
+}
+
+#[test]
+fn offline_devices_are_not_reported_as_connected() {
+    // Regression: the UI used to substring-match, and "Not detected" contains
+    // "detected", so unplugged phones appeared connected.
+    let offline = crate::status_from_line("📱 iPhone 17 Pro Connected : ❌ NO");
+    assert!(!offline.online);
+    assert_eq!(offline.detail, "Not detected");
+
+    let online = crate::status_from_line("🤖 Samsung Status      : ✅ READY (RZCWXXXXXXX, 43.46GB free)");
+    assert!(online.online);
+    assert_eq!(online.detail, "43.46 GB free");
 }

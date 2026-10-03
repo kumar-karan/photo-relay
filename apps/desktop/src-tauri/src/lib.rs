@@ -36,7 +36,7 @@ struct RunSnapshot {
     elapsed_seconds: f64,
     errors: u64,
     current_file: String,
-    devices: BTreeMap<String, String>,
+    devices: BTreeMap<String, DeviceStatus>,
 }
 
 impl RelayRuntime {
@@ -51,7 +51,7 @@ impl RelayRuntime {
             elapsed_seconds: engine::elapsed_seconds(state).unwrap_or_default(),
             errors: state.errors,
             current_file: state.current_file.clone(),
-            devices: state.devices.clone(),
+            devices: state.devices.iter().map(|(key, line)| (key.clone(), status_from_line(line))).collect(),
         };
         match self.run.lock() {
             Ok(state) => build(&state),
@@ -82,7 +82,7 @@ struct Dashboard {
     elapsed_seconds: f64,
     errors: u64,
     current_file: String,
-    devices: BTreeMap<String, String>,
+    devices: BTreeMap<String, DeviceStatus>,
     status: String,
     total_synced_files: u64,
     last_synced_timestamp: String,
@@ -98,25 +98,54 @@ fn timestamp() -> String {
     format!("{:?}", SystemTime::now())
 }
 
-/// Resolve the project root at runtime so a packaged `.app` still finds it.
-/// Order: explicit env override, walk up from the executable, then build path.
+/// Where the app records its project folder between launches.
+///
+/// A packaged `.app` in /Applications cannot walk up to the repository, and a
+/// path baked in at compile time breaks the moment the project moves. So the
+/// resolved folder is remembered here and re-read on every launch.
+fn home_pointer_path() -> Option<PathBuf> {
+    std::env::var("HOME").ok().map(|home| PathBuf::from(home).join("Library/Application Support/Photo Relay/project-home"))
+}
+
+/// Resolve the project root at runtime.
+///
+/// Priority: explicit override, remembered location, walk up from the
+/// executable (development and in-tree bundles), then the build-time path.
 fn project_root() -> PathBuf {
     if let Ok(configured) = std::env::var("PHOTO_RELAY_HOME") {
         return PathBuf::from(configured);
     }
+    if let Some(pointer) = home_pointer_path() {
+        if let Ok(remembered) = fs::read_to_string(&pointer) {
+            let candidate = PathBuf::from(remembered.trim());
+            if candidate.join("sync_engine").is_dir() {
+                return candidate;
+            }
+        }
+    }
     if let Ok(exe) = std::env::current_exe() {
-        if let Some(found) = exe
-            .ancestors()
-            .find(|dir| dir.join("runtime").is_dir() && dir.join("apps").is_dir())
-        {
+        if let Some(found) = exe.ancestors().find(|dir| dir.join("runtime").is_dir() && dir.join("sync_engine").is_dir()) {
             return found.to_path_buf();
         }
     }
-    Path::new(env!("CARGO_MANIFEST_DIR"))
+    let baked = Path::new(env!("CARGO_MANIFEST_DIR"))
         .ancestors()
         .nth(3)
-        .unwrap()
-        .to_path_buf()
+        .map(Path::to_path_buf)
+        .filter(|dir| dir.join("sync_engine").is_dir());
+    match baked {
+        Some(dir) => {
+            // Remember it so a future launch from /Applications still works.
+            if let Some(pointer) = home_pointer_path() {
+                if let Some(parent) = pointer.parent() {
+                    let _ = fs::create_dir_all(parent);
+                    let _ = fs::write(&pointer, dir.to_string_lossy().as_bytes());
+                }
+            }
+            dir
+        }
+        None => PathBuf::from("."),
+    }
 }
 
 fn engine_root() -> PathBuf {
@@ -176,27 +205,74 @@ fn latest_log(logs: &Path) -> String {
         .unwrap_or_default()
 }
 
+/// Read the engine's advertised version from its start-up banner.
+///
+/// The banner lives in a `logger.log(...)` call, so splitting on a bare "v"
+/// would match the `v` in `level=""`. Scope the search to the parenthesised
+/// part after "PIPELINE" and take the leading token only.
 fn engine_version(engine: &Path) -> String {
-    fs::read_to_string(engine.join("sync.py"))
-        .ok()
-        .and_then(|text| {
-            text.lines()
-                .find(|line| line.contains("MASTER AUTONOMOUS"))
-                .map(|line| {
-                    line.rsplit('v')
-                        .next()
-                        .unwrap_or("")
-                        .trim_matches(|c| c == ')' || c == ' ' || c == '—')
-                        .trim()
-                        .to_string()
-                })
-        })
-        .filter(|value| !value.is_empty())
-        .unwrap_or_else(|| "unknown".into())
+    let Ok(text) = fs::read_to_string(engine.join("sync.py")) else {
+        return "unknown".into();
+    };
+    for line in text.lines() {
+        let Some(rest) = line.split_once("PIPELINE").map(|(_, tail)| tail) else {
+            continue;
+        };
+        let Some(inner) = rest.split_once('(').and_then(|(_, tail)| tail.split_once(')')).map(|(head, _)| head) else {
+            continue;
+        };
+        let token: String = inner
+            .trim()
+            .chars()
+            .take_while(|char| char.is_ascii_alphanumeric() || matches!(char, '.' | '-'))
+            .collect();
+        if let Some(number) = token.strip_prefix('v') {
+            if !number.is_empty() {
+                return format!("v{number}");
+            }
+        }
+    }
+    "unknown".into()
+}
+
+/// A device's live state. Sent as structured data rather than a display string
+/// so the UI never has to substring-match words like "Not detected".
+#[derive(Serialize, Clone, Default)]
+#[serde(rename_all = "camelCase")]
+struct DeviceStatus {
+    online: bool,
+    detail: String,
+}
+
+/// Interpret a raw engine device line captured during a run.
+fn status_from_line(line: &str) -> DeviceStatus {
+    let online = line_is_online(line);
+    DeviceStatus {
+        online,
+        detail: if online { free_space(line).unwrap_or_else(|| "Connected".into()) } else { "Not detected".into() },
+    }
+}
+
+/// Pull "43.46GB free" out of an engine device-status line.
+///
+/// The amount sits immediately before the word "free", so read the preceding
+/// token and require it to parse as a number — otherwise a device serial would
+/// be picked up instead.
+fn free_space(line: &str) -> Option<String> {
+    let head = line.split("free").next()?;
+    let token = head.split_whitespace().next_back()?;
+    let value = token.trim_end_matches("GB").trim();
+    value.parse::<f64>().ok()?;
+    Some(format!("{value} GB free"))
+}
+
+/// Decide whether a raw engine device line reports a working connection.
+fn line_is_online(line: &str) -> bool {
+    !line.contains('❌') && (line.contains('✅') || line.to_lowercase().contains("detected") || line.to_lowercase().contains("ready"))
 }
 
 /// Ask the engine which devices it can see, without transferring anything.
-fn discover_devices(engine: &Path) -> BTreeMap<String, String> {
+fn discover_devices(engine: &Path) -> BTreeMap<String, DeviceStatus> {
     let mut devices = BTreeMap::new();
     if !engine.join("detect_devices.py").exists() {
         return devices;
@@ -211,13 +287,20 @@ fn discover_devices(engine: &Path) -> BTreeMap<String, String> {
     let text = format!("{}{}", String::from_utf8_lossy(&output.stdout), String::from_utf8_lossy(&output.stderr));
     for line in text.lines() {
         let lower = line.to_lowercase();
-        if lower.contains("samsung") || lower.contains("android") {
-            let online = lower.contains("yes") || (lower.contains('✅') && !lower.contains("no"));
-            devices.insert("Samsung".into(), if online { "Connected".into() } else { "Not detected".into() });
+        let key = if lower.contains("samsung") || lower.contains("android") {
+            "Samsung"
         } else if lower.contains("iphone") {
-            let online = lower.contains("yes") || (lower.contains('✅') && !lower.contains('❌'));
-            devices.insert("iPhone".into(), if online { "Connected".into() } else { "Not detected".into() });
-        }
+            "iPhone"
+        } else {
+            continue;
+        };
+        let online = line_is_online(line);
+        let detail = if online {
+            free_space(line).unwrap_or_else(|| "Connected".into())
+        } else {
+            "Not detected".into()
+        };
+        devices.insert(key.into(), DeviceStatus { online, detail });
     }
     devices
 }
