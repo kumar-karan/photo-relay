@@ -52,13 +52,19 @@ export default function App() {
   const finishBoot = useCallback(() => setBooted(true), []);
 
   const status = dashboard.running ? "running" : dashboard.phase === "done" ? "done" : dashboard.phase === "failed" ? "failed" : "idle";
-  const statusText = dashboard.running ? titleCase(dashboard.phase) : dashboard.engineFound ? "Ready" : "Engine missing";
+  const ready = Boolean(dashboard.devices.iPhone?.online && dashboard.devices.Samsung?.online);
+
+  const statusText = dashboard.running
+    ? titleCase(dashboard.phase)
+    : dashboard.engineFound && ready
+      ? "Ready"
+      : dashboard.engineFound
+        ? "Waiting"
+        : "Engine missing";
 
   const folderName = dashboard.projectRoot.split("/").filter(Boolean).at(-1) ?? "";
   const engineLabel = dashboard.engineVersion === "unknown" ? "engine" : `engine ${dashboard.engineVersion}`;
   const meta = folderName ? `${engineLabel} · ${folderName}` : engineLabel;
-
-  const ready = Boolean(dashboard.devices.iPhone?.online && dashboard.devices.Samsung?.online);
 
   const bootSteps = [
     { key: "engine", label: "Locating sync engine", ready: dashboard.engineFound || dashboard.projectRoot !== "" },
