@@ -107,14 +107,9 @@ export default function App() {
         >
           <section className="overview">
             <div className="headline">
-              <span className="headline-eyebrow">Local photo bridge</span>
               <h1 className="headline-title">
-                One path for <em>every</em> capture.
+                Photo Relay
               </h1>
-              <p className="headline-copy">
-                Original photos, videos and Live Photos move from your iPhone to the Samsung with capture times intact. Nothing leaves this
-                Mac.
-              </p>
               <div className="headline-actions">
                 <button className="button button-secondary" onClick={() => void runDeviceCheck()} disabled={checking || dashboard.running}>
                   <Stethoscope size={14} className={checking ? "spin" : undefined} />
@@ -138,7 +133,7 @@ export default function App() {
               </div>
               <p className="hint">
                 <ShieldCheck size={12} />
-                Staged files are removed only after the transfer is confirmed on the Samsung.
+                Staged files are removed after confirmation on Samsung
               </p>
             </div>
 
@@ -274,7 +269,7 @@ export default function App() {
                 <CheckCircle2 size={14} />
               </span>
               <div>
-                Relay running — {titleCase(dashboard.phase)}. Leave both phones connected.
+                Relay running — {titleCase(dashboard.phase)}
               </div>
             </motion.div>
           )}

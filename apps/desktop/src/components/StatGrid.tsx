@@ -6,7 +6,7 @@ import { CountUp } from "./CountUp";
 
 type Stat = {
   label: string;
-  note: string;
+  note?: string;
   icon: React.ReactNode;
   small?: boolean;
   /** When set, the value animates from its previous number. */
@@ -29,14 +29,12 @@ export function StatGrid({ dashboard }: { dashboard: Dashboard }) {
       label: "Photos secured",
       // Animated, because this is the number people watch grow.
       value: "",
-      note: "files transferred through this relay",
       icon: <Image size={12} />,
       count: dashboard.totalSyncedFiles,
     },
     {
       label: "Latest capture",
       value: formatStamp(dashboard.lastSyncedTimestamp),
-      note: "tracked in local state",
       icon: <Clock size={12} />,
       small: true,
     },
@@ -69,7 +67,7 @@ export function StatGrid({ dashboard }: { dashboard: Dashboard }) {
               stat.value
             )}
           </div>
-          <div className="stat-note">{stat.note}</div>
+          <div className="stat-note">{stat.note || ""}</div>
         </motion.article>
       ))}
       {dashboard.running && (
@@ -85,7 +83,7 @@ export function StatGrid({ dashboard }: { dashboard: Dashboard }) {
           </div>
           <div className="stat-value tnum">{formatBytes(dashboard.transferredBytes)}</div>
           <div className="stat-note">
-            {dashboard.errors > 0 ? `${dashboard.errors} error${dashboard.errors === 1 ? "" : "s"} so far` : "no errors so far"}
+            {dashboard.errors > 0 ? `${dashboard.errors} error${dashboard.errors === 1 ? "" : "s"}` : ""}
           </div>
         </motion.article>
       )}
