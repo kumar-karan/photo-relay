@@ -82,9 +82,7 @@ export default function App() {
           </div>
           <div className="identity-text">
             <span className="identity-name">Photo Relay</span>
-            <span className="identity-meta" title={dashboard.projectRoot}>
-              {meta}
-            </span>
+
           </div>
         </div>
         <div className="titlebar-actions">
