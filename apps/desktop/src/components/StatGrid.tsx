@@ -2,13 +2,17 @@ import { motion } from "motion/react";
 import { Activity, CheckCircle2, Clock, Image, Timer } from "lucide-react";
 import type { Dashboard } from "../types";
 import { formatBytes, formatCount, formatDuration, formatStamp, titleCase } from "../lib/format";
+import { CountUp } from "./CountUp";
 
 type Stat = {
   label: string;
-  value: string;
   note: string;
   icon: React.ReactNode;
   small?: boolean;
+  /** When set, the value animates from its previous number. */
+  count?: number;
+  /** Static text value, used when the number is not worth animating. */
+  value?: string;
 };
 
 export function StatGrid({ dashboard }: { dashboard: Dashboard }) {
@@ -23,9 +27,11 @@ export function StatGrid({ dashboard }: { dashboard: Dashboard }) {
     },
     {
       label: "Photos secured",
-      value: formatCount(dashboard.totalSyncedFiles),
+      // Animated, because this is the number people watch grow.
+      value: "",
       note: "files transferred through this relay",
       icon: <Image size={12} />,
+      count: dashboard.totalSyncedFiles,
     },
     {
       label: "Latest capture",
@@ -36,9 +42,9 @@ export function StatGrid({ dashboard }: { dashboard: Dashboard }) {
     },
     {
       label: "Last batch",
-      value: lastRun ? formatCount(lastRun.filesPushed) : "0",
       note: lastRun ? `files in ${formatDuration(lastRun.durationSeconds)}` : "no completed run yet",
       icon: <CheckCircle2 size={12} />,
+      count: lastRun ? lastRun.filesPushed : 0,
     },
   ];
 
@@ -57,7 +63,11 @@ export function StatGrid({ dashboard }: { dashboard: Dashboard }) {
             {stat.label}
           </div>
           <div className="stat-value tnum" data-size={stat.small ? "sm" : undefined}>
-            {stat.value}
+            {stat.count !== undefined ? (
+              <CountUp value={stat.count} format={(value) => formatCount(Math.round(value))} />
+            ) : (
+              stat.value
+            )}
           </div>
           <div className="stat-note">{stat.note}</div>
         </motion.article>

@@ -294,3 +294,27 @@ fn offline_devices_are_not_reported_as_connected() {
     assert!(online.online);
     assert_eq!(online.detail, "43.46 GB free");
 }
+
+#[test]
+fn emoji_are_stripped_from_engine_text() {
+    assert_eq!(crate::strip_emoji("📱 iPhone 17 Pro Connected : ✅ YES (Karan’s iPhone)"), "iPhone 17 Pro Connected : YES (Karan’s iPhone)");
+    assert_eq!(crate::strip_emoji("🤖 Samsung Phone Connected : ❌ NO"), "Samsung Phone Connected : NO");
+    assert_eq!(crate::strip_emoji("🎯 Detected Mode: SCENARIO A (Both Connected)"), "Detected Mode: SCENARIO A (Both Connected)");
+}
+
+#[test]
+fn stripping_emoji_never_fuses_adjacent_words() {
+    // A removed glyph has to act as a separator, otherwise words run together.
+    assert_eq!(crate::strip_emoji("Pushed ✅ 12 files"), "Pushed 12 files");
+    assert_eq!(crate::strip_emoji("✅ done"), "done");
+    assert_eq!(crate::strip_emoji("done ❌"), "done");
+}
+
+#[test]
+fn stripping_emoji_preserves_paths_sizes_and_timestamps() {
+    // The details that matter to a user must survive cleaning untouched.
+    let line = "Staged /DCIM/100APPLE/IMG_0042.HEIC 12.4 MB 2026-10-03T11:27:03";
+    assert_eq!(crate::strip_emoji(line), line);
+    assert_eq!(crate::strip_emoji("43.46GB free"), "43.46GB free");
+    assert_eq!(crate::strip_emoji(""), "");
+}

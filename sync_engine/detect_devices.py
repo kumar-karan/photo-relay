@@ -17,12 +17,48 @@ def load_config():
     with open(CONFIG_PATH, "r") as f:
         return json.load(f)
 
-def check_iphone_connected():
+def list_iphone_devices():
+    # usbmux is the authoritative source: it is the same channel the photo
+    # puller uses, so the UI can never disagree with what AFC can actually
+    # reach. `system_profiler SPUSBDataType` returns empty output on some
+    # macOS releases, which made a connected phone look absent.
     try:
-        res = subprocess.run(["system_profiler", "SPUSBDataType"], capture_output=True, text=True, timeout=5)
-        return "iPhone" in res.stdout
+        res = subprocess.run(
+            ["pymobiledevice3", "usbmux", "list"],
+            capture_output=True, text=True, timeout=15,
+        )
+        devices = json.loads(res.stdout)
     except Exception:
-        return False
+        return []
+
+    found = []
+    for dev in devices if isinstance(devices, list) else []:
+        if str(dev.get("DeviceClass", "")).lower() not in ("iphone", "ipad", "ipod"):
+            continue
+        found.append({
+            "name": dev.get("DeviceName", "iPhone"),
+            "identifier": dev.get("Identifier", ""),
+            "product_type": dev.get("ProductType", ""),
+            "connection": dev.get("ConnectionType", "Unknown"),
+        })
+    return found
+
+
+def check_iphone_connected():
+    return bool(list_iphone_devices())
+
+
+def iphone_connection_label():
+    devices = list_iphone_devices()
+    if not devices:
+        return ""
+    kinds = {d["connection"] for d in devices}
+    name = devices[0]["name"]
+    if kinds == {"USB"}:
+        return f"{name} (USB)"
+    if kinds == {"Network"}:
+        return f"{name} (Wi-Fi)"
+    return f"{name} ({'/'.join(sorted(kinds))})"
 
 def check_samsung_connected(adb_bin):
     try:
@@ -45,7 +81,8 @@ def detect_scenario():
     print("==========================================================================")
     print(" 🔍 USB Device Auto-Detector Results")
     print("==========================================================================")
-    print(f" 📱 iPhone 17 Pro Connected : {'✅ YES' if iphone_present else '❌ NO'}")
+    iphone_label = iphone_connection_label()
+    print(f" 📱 iPhone 17 Pro Connected : {'✅ YES (' + iphone_label + ')' if iphone_present else '❌ NO'}")
     print(f" 🤖 Samsung Phone Connected : {'✅ YES (' + samsung_id + ')' if samsung_id else '❌ NO'}")
     print("==========================================================================")
 

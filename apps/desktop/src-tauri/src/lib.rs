@@ -240,7 +240,14 @@ fn latest_log(logs: &Path) -> String {
                 .and_then(|meta| meta.modified())
                 .unwrap_or(SystemTime::UNIX_EPOCH)
         })
-        .map(|entry| engine::tail_lines(&entry.path(), 120, 128 * 1024).join("\n"))
+        .map(|entry| {
+            engine::tail_lines(&entry.path(), 120, 128 * 1024)
+                .iter()
+                .map(|line| strip_emoji(line))
+                .filter(|line| !line.is_empty())
+                .collect::<Vec<_>>()
+                .join("\n")
+        })
         .unwrap_or_default()
 }
 
@@ -308,6 +315,81 @@ fn free_space(line: &str) -> Option<String> {
 /// Decide whether a raw engine device line reports a working connection.
 fn line_is_online(line: &str) -> bool {
     !line.contains('❌') && (line.contains('✅') || line.to_lowercase().contains("detected") || line.to_lowercase().contains("ready"))
+}
+
+/// Strip emoji and other pictographs out of engine text.
+///
+/// The Python engine decorates its console output with emoji. Those glyphs are
+/// useful in a terminal but not in a desktop UI, where the frontend draws its
+/// own icons, so every engine-derived string is cleaned before it is shown.
+fn strip_emoji(text: &str) -> String {
+    // A removed glyph behaves like a word separator, so "Pushed ✅ 12 files"
+    // stays readable once the glyph is gone.
+    let mut out = String::with_capacity(text.len());
+    let mut pending_space = false;
+    for ch in text.chars() {
+        if is_emoji(ch) {
+            pending_space = !out.is_empty() && !out.ends_with(' ');
+            continue;
+        }
+        if pending_space {
+            out.push(' ');
+            pending_space = false;
+        }
+        out.push(ch);
+    }
+    if pending_space {
+        out.push(' ');
+    }
+
+    // Collapse whitespace runs introduced by the removals, then trim.
+    let mut collapsed = String::with_capacity(out.len());
+    let mut space = false;
+    for ch in out.chars() {
+        if ch.is_whitespace() {
+            space = true;
+            continue;
+        }
+        if space && !collapsed.is_empty() {
+            collapsed.push(' ');
+        }
+        space = false;
+        collapsed.push(ch);
+    }
+    collapsed.trim().to_string()
+}
+
+/// Whether a character is an emoji or pictograph the UI should not render.
+///
+/// Matched by Unicode block rather than by an allow-list of punctuation, so
+/// real text survives: a typographic apostrophe in "Karan’s iPhone" and the
+/// spaces the engine puts around a colon must both be left alone.
+fn is_emoji(ch: char) -> bool {
+    let code = ch as u32;
+    matches!(
+        code,
+        // Emoticons, pictographs, transport, symbols and supplemental symbols.
+        0x1F000..=0x1FAFF
+            | 0x2600..=0x27BF
+            | 0x2B00..=0x2BFF
+            | 0x25A0..=0x25FF
+            | 0x2190..=0x21FF
+            // Regional indicators, which form flag sequences.
+            | 0x1F1E6..=0x1F1FF
+            // Variation selectors, zero-width joiner and the keycap mark.
+            | 0xFE00..=0xFE0F
+            | 0x200D
+            | 0x20E3
+            // Standalone symbols the engine uses as status prefixes.
+            | 0x2139
+            | 0x203C
+            | 0x2049
+            | 0x2122
+            | 0x3030
+            | 0x303D
+            | 0x3297
+            | 0x3299
+    )
 }
 
 /// Ask the engine which devices it can see, without transferring anything.
@@ -399,8 +481,8 @@ fn preflight(runtime: State<'_, Arc<RelayRuntime>>) -> Result<Vec<String>, Strin
     let text = format!("{}{}", String::from_utf8_lossy(&output.stdout), String::from_utf8_lossy(&output.stderr));
     Ok(text
         .lines()
-        .map(|line| line.trim_end().to_string())
-        .filter(|line| !line.trim().is_empty() && !line.trim_start().starts_with('='))
+        .map(strip_emoji)
+        .filter(|line| !line.is_empty() && !line.starts_with('='))
         .collect())
 }
 

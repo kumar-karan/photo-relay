@@ -1,22 +1,27 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { CheckCircle2, FolderOpen, Radio, RefreshCw, ScrollText, ShieldCheck, Sparkles, Square, Stethoscope, XCircle } from "lucide-react";
-import { ActivityFeed } from "./components/ActivityFeed";
-import { HistoryPanel, VerifiedPanel } from "./components/HistoryPanel";
-import { RelayMap } from "./components/RelayMap";
+import { CheckCircle2, FolderOpen, RefreshCw, ShieldCheck, Sparkles, Square, Stethoscope, XCircle } from "lucide-react";
+import { BootSequence } from "./components/BootSequence";
+import { CountUp } from "./components/CountUp";
+import { DeviceCheck } from "./components/DeviceCheck";
+import { HistoryPanel } from "./components/HistoryPanel";
+import { MilestoneFeed } from "./components/MilestoneFeed";
+import { RelayPipeline } from "./components/RelayPipeline";
 import { StartDialog } from "./components/StartDialog";
 import { StatGrid } from "./components/StatGrid";
+import { TransferStream } from "./components/TransferStream";
 import { useRelay } from "./lib/useRelay";
-import { titleCase } from "./lib/format";
+import { formatCount, titleCase } from "./lib/format";
 
-type Tab = "activity" | "log";
+type Tab = "activity" | "files" | "log";
 
 export default function App() {
   const { dashboard, events, busy, error, setError, refresh, preflight, startSync, stopSync, reveal } = useRelay();
   const [confirming, setConfirming] = useState(false);
-  const [tab, setTab] = useState<Tab>("activity");
+  const [tab, setTab] = useState<Tab>("files");
   const [deviceReport, setDeviceReport] = useState<string[] | null>(null);
   const [checking, setChecking] = useState(false);
+  const [booted, setBooted] = useState(false);
 
   // ⌘R refreshes, ⌘↵ starts a relay, Esc dismisses dialogs and reports.
   useEffect(() => {
@@ -44,22 +49,33 @@ export default function App() {
     setChecking(false);
   };
 
-  const status = dashboard.running ? "running" : dashboard.phase === "done" ? "done" : dashboard.phase === "failed" ? "failed" : "idle";
-  const statusText = dashboard.running
-    ? titleCase(dashboard.phase)
-    : dashboard.engineFound
-      ? "Ready"
-      : "Engine missing";
+  const finishBoot = useCallback(() => setBooted(true), []);
 
-  // Show the project folder name, not a truncated tail of its path. The full
-  // path stays available as a tooltip.
+  const status = dashboard.running ? "running" : dashboard.phase === "done" ? "done" : dashboard.phase === "failed" ? "failed" : "idle";
+  const statusText = dashboard.running ? titleCase(dashboard.phase) : dashboard.engineFound ? "Ready" : "Engine missing";
+
   const folderName = dashboard.projectRoot.split("/").filter(Boolean).at(-1) ?? "";
   const engineLabel = dashboard.engineVersion === "unknown" ? "engine" : `engine ${dashboard.engineVersion}`;
   const meta = folderName ? `${engineLabel} · ${folderName}` : engineLabel;
 
+  const ready = Boolean(dashboard.devices.iPhone?.online && dashboard.devices.Samsung?.online);
+
+  const bootSteps = [
+    { key: "engine", label: "Locating sync engine", ready: dashboard.engineFound || dashboard.projectRoot !== "" },
+    { key: "devices", label: "Probing connected devices", ready: Object.keys(dashboard.devices).length > 0 },
+    { key: "state", label: "Reading transfer state", ready: dashboard.status !== "" },
+  ];
+
   return (
     <div className="app">
-      <header className="titlebar">
+      <AnimatePresence>{!booted && <BootSequence steps={bootSteps} onDone={finishBoot} />}</AnimatePresence>
+
+      <motion.header
+        className="titlebar"
+        initial={{ opacity: 0, y: -6 }}
+        animate={{ opacity: booted ? 1 : 0, y: booted ? 0 : -6 }}
+        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+      >
         <div className="identity">
           <div className="identity-mark">
             <Sparkles size={14} />
@@ -80,16 +96,18 @@ export default function App() {
             <RefreshCw size={14} className={busy ? "spin" : undefined} />
           </button>
         </div>
-      </header>
+      </motion.header>
 
       <div className="app-body">
-        <div className="shell">
+        <motion.div
+          className="shell"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: booted ? 1 : 0, y: booted ? 0 : 12 }}
+          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+        >
           <section className="overview">
             <div className="headline">
-              <span className="headline-eyebrow">
-                <Radio size={11} />
-                Local photo bridge
-              </span>
+              <span className="headline-eyebrow">Local photo bridge</span>
               <h1 className="headline-title">
                 One path for <em>every</em> capture.
               </h1>
@@ -108,11 +126,7 @@ export default function App() {
                     Stop relay
                   </button>
                 ) : (
-                  <button
-                    className="button button-primary"
-                    onClick={() => setConfirming(true)}
-                    disabled={!dashboard.engineFound}
-                  >
+                  <button className="button button-primary" onClick={() => setConfirming(true)} disabled={!dashboard.engineFound}>
                     <Sparkles size={14} />
                     Start relay
                   </button>
@@ -124,11 +138,11 @@ export default function App() {
               </div>
               <p className="hint">
                 <ShieldCheck size={12} />
-                Staged files are only removed after the transfer is confirmed on the Samsung.
+                Staged files are removed only after the transfer is confirmed on the Samsung.
               </p>
             </div>
 
-            <RelayMap dashboard={dashboard} />
+            <RelayPipeline dashboard={dashboard} />
           </section>
 
           <StatGrid dashboard={dashboard} />
@@ -139,47 +153,57 @@ export default function App() {
                 <div className="panel-head">
                   <div className="panel-title">
                     <span className="panel-eyebrow">{dashboard.running ? "Live relay" : "Session"}</span>
-                    <span className="panel-heading">Transfer activity</span>
+                    <span className="panel-heading">
+                      {tab === "files" ? "Transferred files" : tab === "activity" ? "Milestones" : "Engine log"}
+                    </span>
                   </div>
-                  <div style={{ display: "flex", gap: 4 }}>
-                    {(["activity", "log"] as Tab[]).map((value) => (
+                  <div className="segmented">
+                    {(["files", "activity", "log"] as Tab[]).map((value) => (
                       <button
                         key={value}
-                        className={`button ${tab === value ? "button-secondary" : "button-ghost"}`}
+                        className="segment"
+                        data-active={tab === value}
                         onClick={() => setTab(value)}
                         aria-pressed={tab === value}
                       >
-                        {value === "activity" ? <ScrollText size={13} /> : <FolderOpen size={13} />}
-                        {value === "activity" ? "Activity" : "Log"}
+                        {value === "files" ? "Files" : value === "activity" ? "Stages" : "Log"}
                       </button>
                     ))}
                   </div>
                 </div>
 
-                {deviceReport && (
-                  <div className="console" style={{ borderRadius: 0, maxHeight: 150 }}>
-                    {deviceReport.length ? deviceReport.join("\n") : "No devices reported."}
-                  </div>
-                )}
-
-                {tab === "activity" ? (
-                  <ActivityFeed events={events} />
-                ) : (
-                  <pre className="console">
-                    {dashboard.latestLog || <span className="console-empty">No run log yet. Start a relay to create one.</span>}
-                  </pre>
-                )}
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={tab}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+                    className="panel-body"
+                  >
+                    {tab === "files" && <TransferStream transfers={dashboard.transfers} />}
+                    {tab === "activity" && <MilestoneFeed events={events} />}
+                    {tab === "log" &&
+                      (dashboard.latestLog ? (
+                        <pre className="console">{dashboard.latestLog}</pre>
+                      ) : (
+                        <div className="console-empty">No run log yet. Start a relay to create one.</div>
+                      ))}
+                  </motion.div>
+                </AnimatePresence>
               </article>
 
               <article className="panel">
                 <div className="panel-head">
                   <div className="panel-title">
-                    <span className="panel-eyebrow">Verified</span>
-                    <span className="panel-heading">Transferred this session</span>
+                    <span className="panel-eyebrow">Devices</span>
+                    <span className="panel-heading">Preflight report</span>
                   </div>
-                  <span className="badge">{dashboard.transfers.length}</span>
+                  <span className="badge" data-tone={ready ? "ok" : "warn"}>
+                    {ready ? "Ready" : "Incomplete"}
+                  </span>
                 </div>
-                <VerifiedPanel transfers={dashboard.transfers} onReveal={() => void reveal("runtime")} />
+                <DeviceCheck report={deviceReport} devices={dashboard.devices} />
               </article>
             </div>
 
@@ -196,17 +220,24 @@ export default function App() {
               </div>
               <HistoryPanel history={dashboard.history} />
               <div className="panel-foot">
-                <span>Watermark tracked in sync_engine/sync_state.json</span>
+                <span>
+                  <CountUp value={dashboard.totalSyncedFiles} format={(value) => formatCount(Math.round(value))} /> files secured in total
+                </span>
               </div>
             </article>
           </section>
-        </div>
+        </motion.div>
       </div>
 
-      <StartDialog open={confirming} busy={busy} onCancel={() => setConfirming(false)} onConfirm={() => {
-        setConfirming(false);
-        void startSync();
-      }} />
+      <StartDialog
+        open={confirming}
+        busy={busy}
+        onCancel={() => setConfirming(false)}
+        onConfirm={() => {
+          setConfirming(false);
+          void startSync();
+        }}
+      />
 
       <div className="toast-stack">
         <AnimatePresence>

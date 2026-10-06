@@ -1,5 +1,6 @@
-import { Check, FolderOpen, ShieldCheck, X } from "lucide-react";
-import type { RunSummary, TransferRecord } from "../types";
+import { motion } from "motion/react";
+import { Check, X } from "lucide-react";
+import type { RunSummary } from "../types";
 import { formatBytes, formatCount, formatDuration, formatStamp, titleCase } from "../lib/format";
 
 export function HistoryPanel({ history }: { history: RunSummary[] }) {
@@ -13,7 +14,13 @@ export function HistoryPanel({ history }: { history: RunSummary[] }) {
         recent.map((run, index) => {
           const failed = run.errors > 0 || run.status.toLowerCase().includes("fail");
           return (
-            <div className="history-row" key={run.runId || index}>
+            <motion.div
+              className="history-row"
+              key={run.runId || index}
+              initial={{ opacity: 0, x: -6 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.24, delay: Math.min(index * 0.04, 0.3), ease: [0.22, 1, 0.36, 1] }}
+            >
               <span className="history-icon" data-status={failed ? "failed" : "ok"}>
                 {failed ? <X size={10} /> : <Check size={10} />}
               </span>
@@ -26,42 +33,10 @@ export function HistoryPanel({ history }: { history: RunSummary[] }) {
                 </div>
               </div>
               <span className="history-count tnum">{formatCount(run.filesPushed)} files</span>
-            </div>
+            </motion.div>
           );
         })
       )}
     </div>
-  );
-}
-
-export function VerifiedPanel({ transfers, onReveal }: { transfers: TransferRecord[]; onReveal: () => void }) {
-  const recent = transfers.slice(-40).reverse();
-
-  return (
-    <>
-      <div className="verified">
-        {recent.length === 0 ? (
-          <div className="empty-row">Verified transfers appear here after the first relay.</div>
-        ) : (
-          recent.map((record, index) => (
-            <div className="verified-row" key={`${record.at}-${index}`}>
-              <ShieldCheck size={12} color="var(--success)" />
-              <span className="verified-name">
-                {record.file}
-                {record.livePhoto ? " · live" : ""}
-              </span>
-              <span className="verified-size tnum">{formatBytes(record.sizeBytes)}</span>
-            </div>
-          ))
-        )}
-      </div>
-      <div className="panel-foot">
-        <span>Appended to runtime/transfers.jsonl</span>
-        <button className="button button-ghost" onClick={onReveal}>
-          <FolderOpen size={13} />
-          Reveal
-        </button>
-      </div>
-    </>
   );
 }
