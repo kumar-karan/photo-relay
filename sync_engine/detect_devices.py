@@ -7,6 +7,7 @@
 import os
 import sys
 import json
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -14,8 +15,37 @@ SCRIPT_DIR = Path(__file__).parent.resolve()
 CONFIG_PATH = SCRIPT_DIR / "config.json"
 
 def load_config():
-    with open(CONFIG_PATH, "r") as f:
-        return json.load(f)
+    # A fresh clone has only config.example.json, so a missing or unreadable
+    # config must fall back to defaults rather than crash detection.
+    try:
+        with open(CONFIG_PATH, "r") as f:
+            data = json.load(f)
+            return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+def pymobiledevice3_command():
+    """Resolve the pymobiledevice3 entry point without relying on PATH.
+
+    A .app bundle launched from Finder inherits a minimal PATH that excludes
+    Homebrew, so a bare "pymobiledevice3" call reported no iPhone even while
+    one was plugged in. Try PATH first, then the usual install locations, then
+    the module itself under the interpreter running this script.
+    """
+    configured = load_config().get("pymobiledevice3_bin")
+    if configured and Path(configured).exists():
+        return [configured]
+
+    found = shutil.which("pymobiledevice3")
+    if found:
+        return [found]
+
+    for candidate in ("/opt/homebrew/bin/pymobiledevice3", "/usr/local/bin/pymobiledevice3"):
+        if Path(candidate).exists():
+            return [candidate]
+
+    return [sys.executable, "-m", "pymobiledevice3"]
+
 
 def list_iphone_devices():
     # usbmux is the authoritative source: it is the same channel the photo
@@ -24,9 +54,11 @@ def list_iphone_devices():
     # macOS releases, which made a connected phone look absent.
     try:
         res = subprocess.run(
-            ["pymobiledevice3", "usbmux", "list"],
+            pymobiledevice3_command() + ["usbmux", "list"],
             capture_output=True, text=True, timeout=15,
         )
+        if res.returncode != 0:
+            return []
         devices = json.loads(res.stdout)
     except Exception:
         return []
@@ -44,12 +76,11 @@ def list_iphone_devices():
     return found
 
 
-def check_iphone_connected():
-    return bool(list_iphone_devices())
+def check_iphone_connected(devices=None):
+    return bool(list_iphone_devices() if devices is None else devices)
 
 
-def iphone_connection_label():
-    devices = list_iphone_devices()
+def iphone_connection_label(devices):
     if not devices:
         return ""
     kinds = {d["connection"] for d in devices}
@@ -75,13 +106,14 @@ def detect_scenario():
     config = load_config()
     adb_bin = config.get("adb_bin", "/opt/homebrew/bin/adb")
 
-    iphone_present = check_iphone_connected()
+    iphone_devices = list_iphone_devices()
+    iphone_present = bool(iphone_devices)
     samsung_id = check_samsung_connected(adb_bin)
 
     print("==========================================================================")
     print(" 🔍 USB Device Auto-Detector Results")
     print("==========================================================================")
-    iphone_label = iphone_connection_label()
+    iphone_label = iphone_connection_label(iphone_devices)
     print(f" 📱 iPhone 17 Pro Connected : {'✅ YES (' + iphone_label + ')' if iphone_present else '❌ NO'}")
     print(f" 🤖 Samsung Phone Connected : {'✅ YES (' + samsung_id + ')' if samsung_id else '❌ NO'}")
     print("==========================================================================")
