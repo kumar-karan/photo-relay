@@ -1,0 +1,1371 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Photo Relay — Direction C, Split Deck</title>
+<style>
+/* =========================================================================
+   Photo Relay — Direction C "Split Deck"
+   Self-contained mockup. Dark theme, one accent, system fonts, no assets.
+   ========================================================================= */
+
+:root{
+  --bg:#080a0e;
+  --rail:#0b0e14;
+  --panel:#11151d;
+  --panel-2:#151a24;
+  --panel-3:#1a202b;
+  --sunken:#080b11;
+
+  --line:rgba(255,255,255,.075);
+  --line-2:rgba(255,255,255,.13);
+  --line-3:rgba(255,255,255,.20);
+
+  --tx:#e9ecf3;
+  --tx-2:#98a1b2;
+  --tx-3:#69707f;
+
+  --acc:#7c8cff;
+  --acc-deep:#5763d8;
+  --acc-soft:rgba(124,140,255,.13);
+  --acc-line:rgba(124,140,255,.40);
+  --acc-glow:rgba(124,140,255,.30);
+
+  --ok:#41cd93;
+  --ok-soft:rgba(65,205,147,.13);
+  --ok-line:rgba(65,205,147,.34);
+
+  --warn:#e0a94c;
+  --warn-soft:rgba(224,169,76,.13);
+  --warn-line:rgba(224,169,76,.34);
+
+  --bad:#f0606e;
+  --bad-soft:rgba(240,96,110,.13);
+  --bad-line:rgba(240,96,110,.34);
+
+  --r-xs:5px;
+  --r-sm:7px;
+  --r:10px;
+  --r-lg:14px;
+  --r-xl:18px;
+
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,"Helvetica Neue",Arial,sans-serif;
+  --ease:cubic-bezier(.22,1,.36,1);
+}
+
+*,*::before,*::after{box-sizing:border-box;}
+
+html,body{height:100%;}
+
+body{
+  margin:0;
+  padding:34px 24px;
+  display:flex;
+  align-items:flex-start;
+  justify-content:center;
+  font-family:var(--sans);
+  font-size:13px;
+  line-height:1.5;
+  color:var(--tx);
+  background:
+    radial-gradient(90% 70% at 50% -10%, #131826 0%, transparent 60%),
+    radial-gradient(60% 50% at 90% 110%, #16121f 0%, transparent 60%),
+    var(--bg);
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+
+svg{display:block;flex:none;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;padding:0;}
+h1,h2,h3,p{margin:0;}
+
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums;}
+.tnum{font-variant-numeric:tabular-nums;}
+
+::-webkit-scrollbar{width:9px;height:9px;}
+::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:99px;border:3px solid transparent;background-clip:padding-box;}
+::-webkit-scrollbar-track{background:transparent;}
+
+/* --------------------------------------------------------------- frame */
+
+.frame{
+  width:1280px;
+  height:860px;
+  flex:none;
+  display:grid;
+  grid-template-rows:29px 40px 1fr;
+  border-radius:var(--r-xl);
+  overflow:hidden;
+  background:var(--rail);
+  border:1px solid rgba(255,255,255,.09);
+  box-shadow:
+    0 0 0 1px rgba(0,0,0,.5),
+    0 40px 90px -30px rgba(0,0,0,.9),
+    0 4px 14px rgba(0,0,0,.5);
+}
+
+/* design-capture strip: deliberately not app chrome */
+.designbar{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:0 13px;
+  background:linear-gradient(180deg,#191c22,#15181e);
+  border-bottom:1px dashed rgba(224,169,76,.34);
+  font-family:var(--mono);
+  font-size:10px;
+  letter-spacing:.10em;
+  text-transform:uppercase;
+  color:#8c7a52;
+  white-space:nowrap;
+}
+.dbadge{
+  padding:2px 6px;
+  border:1px solid rgba(224,169,76,.45);
+  border-radius:4px;
+  color:#e0a94c;
+  background:rgba(224,169,76,.08);
+  font-weight:600;
+}
+.dtitle{color:#b9b2a2;font-weight:600;letter-spacing:.14em;}
+.dnote{color:#6d6a63;letter-spacing:.06em;text-transform:none;font-family:var(--sans);font-size:11px;}
+.dspacer{flex:1;}
+.dmeta{color:#5e5b55;}
+
+/* ------------------------------------------------------------ macOS bar */
+
+.titlebar{
+  display:grid;
+  grid-template-columns:1fr auto 1fr;
+  align-items:center;
+  gap:12px;
+  padding:0 14px;
+  background:linear-gradient(180deg,#14181f,#10131a);
+  border-bottom:1px solid var(--line);
+  user-select:none;
+}
+.lights{display:flex;gap:8px;}
+.light{width:11px;height:11px;border-radius:50%;box-shadow:inset 0 0 0 .5px rgba(0,0,0,.45);}
+.light.r{background:#ff5f57;}
+.light.y{background:#febc2e;}
+.light.g{background:#28c840;}
+.tb-title{
+  font-size:12.5px;font-weight:590;letter-spacing:-.01em;color:#c8cedb;
+  display:flex;align-items:center;gap:7px;
+}
+.tb-title svg{color:var(--tx-3);width:13px;height:13px;}
+.tb-right{display:flex;align-items:center;justify-content:flex-end;gap:8px;}
+.tb-seg{
+  display:flex;gap:2px;padding:2px;border-radius:var(--r-xs);
+  background:var(--sunken);border:1px solid var(--line);
+}
+.tb-seg i{
+  font-style:normal;font-size:10.5px;color:var(--tx-3);padding:2.5px 8px;border-radius:4px;
+}
+.tb-seg i.on{background:var(--panel-3);color:var(--tx);}
+.tb-btn{
+  display:grid;place-items:center;width:26px;height:24px;border-radius:var(--r-xs);
+  color:var(--tx-3);
+}
+.tb-btn svg{width:14px;height:14px;}
+.tb-btn:hover{background:var(--panel-2);color:var(--tx-2);}
+
+/* ----------------------------------------------------------------- app */
+
+.app{
+  display:grid;
+  grid-template-columns:232px minmax(0,1fr);
+  min-height:0;
+  background:var(--rail);
+}
+
+/* ---------------------------------------------------------------- rail */
+
+.rail{
+  display:flex;
+  flex-direction:column;
+  min-height:0;
+  padding:14px 10px 10px;
+  background:linear-gradient(180deg,#0c0f15,#0a0d12);
+  border-right:1px solid var(--line);
+}
+
+.brand{display:flex;align-items:center;gap:9px;padding:0 4px 14px;}
+.mark{
+  display:grid;place-items:center;width:30px;height:30px;flex:none;
+  border-radius:9px;color:#0b0e14;
+  background:linear-gradient(145deg,#8f9cff,var(--acc-deep));
+  box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 2px 8px rgba(87,99,216,.36);
+}
+.mark svg{width:16px;height:16px;stroke-width:1.9;}
+.brand-text{min-width:0;}
+.brand-name{font-size:13px;font-weight:610;letter-spacing:-.012em;line-height:1.15;}
+.brand-meta{
+  font-family:var(--mono);font-size:9.5px;color:var(--tx-3);letter-spacing:.01em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;
+}
+
+.nav{display:flex;flex-direction:column;gap:1px;margin-top:2px;}
+.nav-label{
+  padding:12px 8px 6px;
+  font-size:9.5px;font-weight:620;letter-spacing:.13em;text-transform:uppercase;color:#5a6272;
+}
+.nav-item{
+  display:flex;align-items:center;gap:9px;
+  height:31px;padding:0 9px;border-radius:var(--r-sm);
+  font-size:12.5px;color:var(--tx-2);
+  transition:background .13s var(--ease),color .13s var(--ease);
+  text-align:left;width:100%;
+}
+.nav-item svg{width:15px;height:15px;color:#6d7688;}
+.nav-item .kbd{margin-left:auto;font-family:var(--mono);font-size:9.5px;color:#4e5563;}
+.nav-item:hover{background:var(--panel);color:var(--tx);}
+.nav-item.on{
+  background:linear-gradient(90deg,var(--acc-soft),rgba(124,140,255,.04));
+  color:var(--tx);font-weight:540;
+  box-shadow:inset 2px 0 0 var(--acc);
+}
+.nav-item.on svg{color:var(--acc);}
+.nav-item .pill{
+  margin-left:auto;
+  display:inline-flex;align-items:center;gap:4px;
+  height:17px;padding:0 6px;border-radius:99px;
+  font-family:var(--mono);font-size:9.5px;font-weight:600;
+  color:var(--acc);background:var(--acc-soft);border:1px solid var(--acc-line);
+}
+.nav-item .pill.grey{color:var(--tx-3);background:rgba(255,255,255,.05);border-color:var(--line);}
+.nav-live{
+  width:5px;height:5px;border-radius:50%;background:var(--acc);flex:none;
+  animation:breathe 1.7s var(--ease) infinite;
+}
+
+.rail-spacer{flex:1;min-height:12px;}
+
+.runpin{
+  border:1px solid var(--line);
+  border-radius:var(--r);
+  background:linear-gradient(180deg,var(--panel),#0e1118);
+  padding:11px 11px 10px;
+  box-shadow:0 6px 18px -12px rgba(0,0,0,.9);
+}
+.runpin-top{display:flex;align-items:center;gap:7px;}
+.runpin-dot{
+  position:relative;width:7px;height:7px;border-radius:50%;background:var(--acc);flex:none;
+  animation:breathe 1.7s var(--ease) infinite;
+}
+.runpin-dot::after{
+  content:"";position:absolute;inset:-4px;border-radius:50%;
+  border:1px solid var(--acc-glow);
+  animation:ring 2.2s var(--ease) infinite;
+}
+.runpin-state{font-size:12px;font-weight:580;letter-spacing:-.01em;}
+.runpin-stage{
+  margin-left:auto;font-family:var(--mono);font-size:10px;font-weight:600;
+  color:var(--acc);background:var(--acc-soft);border:1px solid var(--acc-line);
+  padding:1px 6px;border-radius:99px;
+}
+.runpin-file{
+  margin-top:8px;font-family:var(--mono);font-size:10.5px;color:var(--tx-2);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+
+/* mini progress in the rail */
+.bar{
+  position:relative;height:5px;border-radius:99px;overflow:hidden;
+  background:var(--sunken);box-shadow:inset 0 0 0 1px var(--line);
+}
+.bar-fill{
+  position:relative;height:100%;border-radius:99px;
+  background:linear-gradient(90deg,var(--acc-deep),var(--acc) 72%,#9aa5ff);
+  box-shadow:0 0 12px rgba(124,140,255,.35);
+}
+.bar-fill::after{
+  content:"";position:absolute;inset:0;
+  background-image:repeating-linear-gradient(90deg,
+    rgba(255,255,255,0) 0 52px,
+    rgba(255,255,255,.26) 52px 74px,
+    rgba(255,255,255,0) 74px 126px);
+  background-size:126px 100%;
+  animation:sheen 1.7s linear infinite;
+}
+.runpin-bar{margin-top:9px;}
+.runpin-meta{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-top:7px;font-size:10.5px;color:var(--tx-3);
+}
+.runpin-meta b{color:var(--tx-2);font-weight:560;font-family:var(--mono);}
+.runpin-actions{display:flex;gap:6px;margin-top:10px;}
+
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  height:28px;padding:0 10px;border-radius:var(--r-sm);
+  font-size:11.5px;font-weight:540;white-space:nowrap;
+  transition:background .13s var(--ease),border-color .13s var(--ease),color .13s var(--ease),transform .1s var(--ease);
+}
+.btn svg{width:13px;height:13px;}
+.btn:active{transform:scale(.975);}
+.btn-fill{flex:1;}
+.btn-danger{
+  color:#ffd9dc;background:rgba(240,96,110,.16);
+  border:1px solid var(--bad-line);
+}
+.btn-danger:hover{background:rgba(240,96,110,.24);}
+.btn-quiet{
+  color:var(--tx-2);background:var(--panel-2);border:1px solid var(--line);
+}
+.btn-quiet:hover{background:var(--panel-3);color:var(--tx);}
+
+/* ---------------------------------------------------------------- main */
+
+.main{
+  display:flex;flex-direction:column;min-width:0;min-height:0;
+  padding:12px 16px 12px 18px;
+}
+
+.mainhead{
+  display:flex;align-items:flex-end;justify-content:space-between;gap:16px;
+  padding-bottom:10px;flex:none;
+}
+.head-left{min-width:0;}
+.eyebrow{
+  font-size:9.5px;font-weight:620;letter-spacing:.13em;text-transform:uppercase;color:#5a6272;
+}
+.head-title{
+  margin-top:3px;font-size:19px;font-weight:620;letter-spacing:-.028em;line-height:1.1;
+  display:flex;align-items:center;gap:9px;
+}
+.head-title .runid{
+  font-family:var(--mono);font-size:10.5px;font-weight:500;letter-spacing:0;
+  color:var(--tx-3);padding:2px 6px;border:1px solid var(--line);border-radius:var(--r-xs);
+  background:var(--panel);
+}
+.head-tools{display:flex;align-items:center;gap:10px;}
+.tabs{
+  display:flex;gap:2px;padding:3px;border-radius:9px;
+  background:var(--sunken);border:1px solid var(--line);
+}
+.tab{
+  height:24px;padding:0 11px;border-radius:6px;
+  font-size:11.5px;font-weight:500;color:var(--tx-3);
+  transition:background .14s var(--ease),color .14s var(--ease);
+  display:inline-flex;align-items:center;gap:6px;
+}
+.tab:hover{color:var(--tx-2);}
+.tab.on{
+  background:var(--panel-3);color:var(--tx);font-weight:560;
+  box-shadow:0 1px 2px rgba(0,0,0,.4),0 0 0 1px var(--line) inset;
+}
+.tab .dot{width:4px;height:4px;border-radius:50%;background:var(--acc);}
+.iconbtn{
+  display:grid;place-items:center;width:28px;height:28px;border-radius:var(--r-sm);
+  color:var(--tx-3);background:var(--panel);border:1px solid var(--line);
+}
+.iconbtn svg{width:14px;height:14px;}
+.iconbtn:hover{color:var(--tx);background:var(--panel-2);border-color:var(--line-2);}
+
+/* columns */
+
+.cols{
+  display:grid;grid-template-columns:minmax(0,1fr) 352px;gap:14px;
+  min-height:0;flex:1;
+}
+.col{
+  display:flex;flex-direction:column;gap:9px;min-height:0;
+  overflow-y:auto;overflow-x:hidden;padding-right:3px;
+}
+.col.flat{overflow:hidden;}
+
+.panel{
+  border:1px solid var(--line);border-radius:var(--r-lg);
+  background:linear-gradient(180deg,var(--panel),#0f131a);
+  box-shadow:0 10px 26px -20px rgba(0,0,0,.95);
+  animation:cardIn .55s var(--ease) both;animation-delay:var(--d,0ms);
+}
+.panel-head{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 14px;border-bottom:1px solid var(--line);
+}
+.panel-head .grow{flex:1;}
+.panel-title{font-size:12.5px;font-weight:580;letter-spacing:-.012em;}
+.panel-sub{font-family:var(--mono);font-size:10px;color:var(--tx-3);margin-top:2px;}
+.tagx{
+  display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 7px;border-radius:99px;
+  font-size:10px;font-weight:560;letter-spacing:.01em;
+  color:var(--tx-3);background:rgba(255,255,255,.045);border:1px solid var(--line);
+  font-family:var(--mono);
+}
+.tagx.acc{color:var(--acc);background:var(--acc-soft);border-color:var(--acc-line);}
+.tagx.ok{color:var(--ok);background:var(--ok-soft);border-color:var(--ok-line);}
+.tagx.warn{color:var(--warn);background:var(--warn-soft);border-color:var(--warn-line);}
+.tagx.bad{color:var(--bad);background:var(--bad-soft);border-color:var(--bad-line);}
+.ghost-link{
+  display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--tx-3);
+  padding:3px 7px;border-radius:var(--r-xs);
+}
+.ghost-link:hover{color:var(--tx);background:var(--panel-2);}
+.ghost-link svg{width:12px;height:12px;}
+.panel-body{padding:11px 14px 12px;}
+
+/* device chain */
+
+.chain{display:grid;grid-template-columns:1fr 46px 1fr 46px 1fr;align-items:stretch;gap:0;}
+.node{
+  position:relative;display:flex;align-items:center;gap:9px;
+  padding:8px 10px;border-radius:var(--r);
+  background:var(--panel-2);border:1px solid var(--line);
+}
+.node.sink{border-color:var(--acc-line);background:linear-gradient(180deg,rgba(124,140,255,.09),var(--panel-2));}
+.node-ico{
+  display:grid;place-items:center;width:28px;height:28px;flex:none;border-radius:8px;
+  color:var(--tx-2);background:var(--sunken);border:1px solid var(--line);
+}
+.node-ico svg{width:15px;height:15px;}
+.node.sink .node-ico{color:var(--acc);border-color:var(--acc-line);}
+.node-txt{min-width:0;display:flex;flex-direction:column;}
+.node-name{display:block;font-size:11.5px;font-weight:560;letter-spacing:-.01em;line-height:1.2;}
+.node-meta{
+  display:block;font-family:var(--mono);font-size:9.5px;color:var(--tx-3);margin-top:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.node-led{width:5px;height:5px;border-radius:50%;margin-left:auto;flex:none;background:var(--ok);box-shadow:0 0 7px var(--ok);}
+
+/* seamless one-directional flow: gradient tile width == animation step */
+.flow{
+  position:relative;align-self:center;height:2px;margin:0 7px;border-radius:99px;
+  background:rgba(255,255,255,.08);overflow:hidden;
+}
+.flow[data-live="1"]{
+  background-image:repeating-linear-gradient(90deg,
+    var(--acc) 0 11px,
+    rgba(124,140,255,0) 11px 26px);
+  background-size:26px 100%;
+  background-repeat:repeat;
+  animation:flowX .82s linear infinite;
+}
+.flow[data-live="1"].slow{animation-duration:1.5s;}
+.flow.done{
+  background:linear-gradient(90deg,rgba(124,140,255,.5),rgba(124,140,255,.18));
+}
+.flow-label{
+  position:absolute;top:-15px;left:50%;transform:translateX(-50%);
+  font-family:var(--mono);font-size:8.5px;letter-spacing:.06em;color:#5a6272;white-space:nowrap;
+}
+@keyframes flowX{
+  from{background-position:0 0;}
+  to{background-position:26px 0;}
+}
+
+/* stage rack */
+
+.rack{display:flex;align-items:stretch;flex-wrap:nowrap;margin-top:12px;}
+.rack-link{
+  position:relative;align-self:center;flex:1 1 auto;min-width:8px;max-width:30px;
+  height:2px;margin:0 5px;border-radius:99px;
+  background:rgba(255,255,255,.07);overflow:hidden;
+}
+.rack-link.live{
+  background-image:repeating-linear-gradient(90deg,
+    var(--acc) 0 8px, rgba(124,140,255,0) 8px 19px);
+  background-size:19px 100%;
+  animation:flowX .95s linear infinite;
+}
+.rack-link.done{background:linear-gradient(90deg,rgba(124,140,255,.55),rgba(124,140,255,.28));}
+.stage{
+  position:relative;display:flex;flex-direction:column;gap:3px;flex:0 1 auto;min-width:0;
+  padding:7px 9px 8px;border-radius:var(--r-sm);
+  background:var(--panel-2);border:1px solid var(--line);
+}
+.stage[data-s="done"]{background:var(--panel-2);}
+.stage[data-s="active"]{
+  border-color:var(--acc-line);
+  background:linear-gradient(180deg,rgba(124,140,255,.11),rgba(124,140,255,.03));
+  animation:breatheBg 2.6s var(--ease) infinite;
+}
+.stage[data-s="todo"]{opacity:.62;}
+.stage-top{display:flex;align-items:center;gap:6px;}
+.stage-dot{
+  display:grid;place-items:center;width:13px;height:13px;flex:none;border-radius:50%;
+  border:1px solid var(--line-2);color:var(--tx-3);
+}
+.stage-dot svg{width:8px;height:8px;stroke-width:3;}
+.stage[data-s="done"] .stage-dot{background:var(--ok);border-color:var(--ok);color:#06251a;}
+.stage[data-s="active"] .stage-dot{
+  border-color:var(--acc);background:var(--acc);color:#0a0d18;
+  animation:stagePulse 1.5s var(--ease) infinite;
+}
+.stage-name{font-size:11px;font-weight:580;letter-spacing:-.008em;}
+.stage[data-s="todo"] .stage-name{color:var(--tx-2);}
+.stage-count{font-family:var(--mono);font-size:9px;color:var(--tx-3);line-height:1.3;}
+.stage[data-s="active"] .stage-count{color:var(--acc);}
+
+@keyframes stagePulse{
+  0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(124,140,255,.45);}
+  50%{transform:scale(1.14);box-shadow:0 0 0 5px rgba(124,140,255,0);}
+}
+@keyframes breatheBg{
+  0%,100%{box-shadow:0 0 0 0 rgba(124,140,255,0);}
+  50%{box-shadow:0 0 16px -2px rgba(124,140,255,.30);}
+}
+@keyframes breathe{
+  0%,100%{opacity:1;transform:scale(1);}
+  50%{opacity:.45;transform:scale(.78);}
+}
+@keyframes ring{
+  0%{transform:scale(.7);opacity:.9;}
+  70%,100%{transform:scale(1.5);opacity:0;}
+}
+
+/* throughput stats */
+
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);}
+.stat{background:linear-gradient(180deg,var(--panel),#0f131a);padding:9px 13px 10px;}
+.stat-label{
+  display:flex;align-items:center;gap:5px;
+  font-size:9px;font-weight:620;letter-spacing:.12em;text-transform:uppercase;color:#5a6272;
+}
+.stat-label svg{width:11px;height:11px;}
+.stat-value{
+  margin-top:4px;font-size:20px;font-weight:620;letter-spacing:-.035em;line-height:1.05;
+  font-variant-numeric:tabular-nums;
+}
+.stat-value .u{font-size:11px;font-weight:520;color:var(--tx-3);letter-spacing:0;margin-left:2px;}
+.stat-value.acc{color:var(--acc);}
+.stat-note{margin-top:4px;font-family:var(--mono);font-size:9.5px;color:var(--tx-3);}
+
+.progress-block{padding:10px 14px 11px;}
+.prog-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:7px;}
+.prog-title{font-size:12px;font-weight:550;}
+.prog-title .mono{color:var(--tx-3);font-size:10.5px;margin-left:6px;}
+.prog-right{font-family:var(--mono);font-size:10.5px;color:var(--tx-3);}
+.prog-right b{color:var(--tx);font-weight:600;font-size:12px;}
+.bar.lg{height:7px;box-shadow:inset 0 0 0 1px var(--line);}
+.bar.lg .bar-fill{background:linear-gradient(90deg,#4d59c6,var(--acc) 60%,#a6b0ff);}
+.bar-edge{
+  position:absolute;top:0;bottom:0;right:0;width:22px;border-radius:99px;
+  background:radial-gradient(closest-side,rgba(255,255,255,.55),rgba(255,255,255,0));
+  animation:edgeGlow 1.9s var(--ease) infinite;
+}
+@keyframes sheen{
+  from{background-position:0 0;}
+  to{background-position:126px 0;}
+}
+@keyframes edgeGlow{
+  0%,100%{opacity:.25;}
+  50%{opacity:.9;}
+}
+
+/* in-flight card */
+
+.inflight{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;}
+.thumb{
+  position:relative;width:42px;height:42px;border-radius:9px;flex:none;overflow:hidden;
+  background:
+    radial-gradient(70% 60% at 30% 22%, #4b5b8f 0%, transparent 60%),
+    radial-gradient(60% 60% at 78% 80%, #7b5f8f 0%, transparent 62%),
+    linear-gradient(150deg,#1d2432,#12161e);
+  border:1px solid var(--line-2);
+}
+.thumb::after{
+  content:"";position:absolute;left:6px;right:6px;bottom:6px;height:2px;border-radius:2px;
+  background:linear-gradient(90deg,var(--acc),transparent);
+}
+.thumb.live::before{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(120deg,transparent 38%,rgba(255,255,255,.16) 50%,transparent 62%);
+  background-size:220px 100%;animation:thumbScan 1.7s linear infinite;
+}
+@keyframes thumbScan{from{background-position:-220px 0;}to{background-position:220px 0;}}
+.thumb.motion::before{
+  content:"";position:absolute;inset:0;
+  background:repeating-linear-gradient(115deg,rgba(255,255,255,.10) 0 6px,transparent 6px 14px);
+}
+.file-main{min-width:0;}
+.file-name{
+  font-family:var(--mono);font-size:12.5px;font-weight:560;letter-spacing:-.01em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.file-tags{display:flex;align-items:center;gap:6px;margin-top:5px;flex-wrap:wrap;}
+.chip{
+  display:inline-flex;align-items:center;gap:4px;height:18px;padding:0 6px;border-radius:var(--r-xs);
+  font-size:9.5px;font-weight:560;letter-spacing:.02em;
+  color:var(--tx-2);background:rgba(255,255,255,.05);border:1px solid var(--line);
+}
+.chip svg{width:10px;height:10px;}
+.chip.live{color:var(--acc);background:var(--acc-soft);border-color:var(--acc-line);}
+.chip.ok{color:var(--ok);background:var(--ok-soft);border-color:var(--ok-line);}
+.chip.warn{color:var(--warn);background:var(--warn-soft);border-color:var(--warn-line);}
+.chip.bad{color:var(--bad);background:var(--bad-soft);border-color:var(--bad-line);}
+.path{
+  display:flex;align-items:center;gap:6px;margin-top:6px;
+  font-family:var(--mono);font-size:9.5px;color:var(--tx-3);
+  white-space:nowrap;overflow:hidden;
+}
+.path svg{width:10px;height:10px;color:#4e5563;}
+.path b{color:var(--tx-2);font-weight:500;overflow:hidden;text-overflow:ellipsis;}
+.fileright{text-align:right;flex:none;}
+.fileright .n{font-family:var(--mono);font-size:13px;font-weight:600;letter-spacing:-.02em;}
+.fileright .l{font-family:var(--mono);font-size:9.5px;color:var(--tx-3);margin-top:3px;}
+
+/* per-file stage strip */
+.fstrip{
+  display:flex;align-items:center;gap:0;margin-top:9px;
+  padding-top:9px;border-top:1px solid var(--line);
+}
+.fstep{display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--tx-3);}
+.fstep .d{
+  display:grid;place-items:center;width:15px;height:15px;border-radius:50%;flex:none;
+  border:1px solid var(--line-2);color:var(--tx-3);
+}
+.fstep .d svg{width:8px;height:8px;stroke-width:3;}
+.fstep.done{color:var(--tx-2);}
+.fstep.done .d{background:var(--ok);border-color:var(--ok);color:#06251a;}
+.fstep.now{color:var(--acc);font-weight:560;}
+.fstep.now .d{border-color:var(--acc);background:var(--acc-soft);animation:breathe 1.4s var(--ease) infinite;}
+.fsep{flex:1;height:1px;margin:0 9px;position:relative;overflow:hidden;background:rgba(255,255,255,.07);}
+.fsep.done{background:rgba(65,205,147,.28);}
+
+/* milestone timeline */
+
+.mstone{display:grid;grid-template-columns:15px minmax(0,1fr) auto;gap:10px;padding:4px 0;position:relative;}
+.mstone > span:nth-child(2){display:flex;flex-direction:column;min-width:0;}
+.mstone + .mstone{border-top:1px solid rgba(255,255,255,.045);}
+.ml-glyph{
+  display:grid;place-items:center;width:15px;height:15px;margin-top:2px;border-radius:50%;
+  color:var(--tx-3);background:rgba(255,255,255,.06);border:1px solid var(--line);
+}
+.ml-glyph svg{width:8px;height:8px;stroke-width:2.6;}
+.mstone[data-k="ok"] .ml-glyph{color:var(--ok);background:var(--ok-soft);border-color:var(--ok-line);}
+.mstone[data-k="acc"] .ml-glyph{color:var(--acc);background:var(--acc-soft);border-color:var(--acc-line);}
+.mstone[data-k="warn"] .ml-glyph{color:var(--warn);background:var(--warn-soft);border-color:var(--warn-line);}
+.ml-msg{display:block;font-size:11.5px;color:var(--tx);letter-spacing:-.005em;}
+.ml-sub{display:block;font-family:var(--mono);font-size:9.5px;color:var(--tx-3);margin-top:2px;}
+.ml-time{font-family:var(--mono);font-size:9.5px;color:var(--tx-3);white-space:nowrap;padding-top:2px;}
+
+/* full milestone tab */
+.ml-full .mstone{padding:8px 0;}
+.ml-full .ml-glyph{width:19px;height:19px;}
+.ml-full .ml-glyph svg{width:10px;height:10px;}
+.ml-full .ml-msg{font-size:12px;}
+.ml-full .ml-sub{font-size:10px;}
+
+/* right column: file stream */
+
+.panel.stream-panel{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;}
+.stream{flex:1;min-height:0;overflow-y:auto;padding:9px 10px 10px;display:flex;flex-direction:column;gap:6px;}
+.fcard{
+  display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;
+  padding:9px 10px;border-radius:var(--r);
+  background:var(--panel-2);border:1px solid var(--line);
+  animation:cardIn .5s var(--ease) both;animation-delay:var(--d,0ms);
+  transition:border-color .14s var(--ease),background .14s var(--ease);
+}
+.fcard:hover{border-color:var(--line-2);background:var(--panel-3);}
+.fcard.warn{border-color:var(--warn-line);background:linear-gradient(180deg,rgba(224,169,76,.07),var(--panel-2));}
+.fc-ico{
+  display:grid;place-items:center;width:30px;height:30px;flex:none;border-radius:8px;
+  color:var(--tx-2);background:var(--sunken);border:1px solid var(--line);
+}
+.fc-ico svg{width:15px;height:15px;}
+.fcard.done .fc-ico{color:var(--ok);border-color:var(--ok-line);background:var(--ok-soft);}
+.fcard.warn .fc-ico{color:var(--warn);border-color:var(--warn-line);background:var(--warn-soft);}
+.fc-body{min-width:0;display:flex;flex-direction:column;}
+.fc-name{
+  display:block;font-family:var(--mono);font-size:11.5px;font-weight:540;letter-spacing:-.01em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.fc-meta{display:flex;align-items:center;gap:6px;margin-top:4px;flex-wrap:wrap;}
+.fc-note{font-family:var(--mono);font-size:9.5px;color:var(--tx-3);}
+.fc-note.warn{color:var(--warn);}
+.fc-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex:none;}
+.fc-size{font-family:var(--mono);font-size:10.5px;color:var(--tx-2);font-variant-numeric:tabular-nums;}
+.fc-time{font-family:var(--mono);font-size:9px;color:#565d6b;}
+.fc-paired{
+  display:flex;align-items:center;gap:5px;margin-left:6px;
+  font-family:var(--mono);font-size:9px;color:#5d6472;
+}
+.fc-paired .ln{width:9px;height:1px;background:var(--line-2);}
+
+@keyframes cardIn{
+  from{opacity:0;transform:translateY(9px);}
+  to{opacity:1;transform:none;}
+}
+
+.stream-foot{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:9px 12px;border-top:1px solid var(--line);font-family:var(--mono);font-size:9.5px;color:var(--tx-3);
+}
+
+/* inspector */
+details.inspector{border-top:1px solid var(--line);}
+details.inspector summary{
+  list-style:none;cursor:pointer;display:flex;align-items:center;gap:7px;
+  padding:9px 12px;font-size:10.5px;color:var(--tx-3);
+  font-family:var(--mono);letter-spacing:.02em;
+}
+details.inspector summary::-webkit-details-marker{display:none;}
+details.inspector summary:hover{color:var(--tx-2);background:rgba(255,255,255,.02);}
+details.inspector summary svg{width:12px;height:12px;transition:transform .18s var(--ease);}
+details.inspector[open] summary svg{transform:rotate(90deg);}
+details.inspector summary .kbdhint{margin-left:auto;font-size:9px;color:#4e5563;}
+.inspector pre{
+  margin:0;padding:10px 12px 12px;
+  font-family:var(--mono);font-size:9.5px;line-height:1.75;color:#7d8593;
+  background:var(--sunken);border-top:1px solid var(--line);
+  max-height:132px;overflow:auto;white-space:pre;
+}
+.inspector pre b{color:var(--acc);font-weight:500;}
+.inspector pre i{color:var(--warn);font-style:normal;}
+.inspector pre u{color:var(--ok);text-decoration:none;}
+
+/* lifetime card */
+.life{display:flex;align-items:center;gap:11px;padding:10px 13px;}
+.life-ico{
+  display:grid;place-items:center;width:30px;height:30px;flex:none;border-radius:9px;
+  color:var(--acc);background:var(--acc-soft);border:1px solid var(--acc-line);
+}
+.life-ico svg{width:15px;height:15px;}
+.life-n{display:block;font-size:17px;font-weight:620;letter-spacing:-.03em;font-variant-numeric:tabular-nums;}
+.life-l{display:block;font-size:10px;color:var(--tx-3);margin-top:2px;white-space:nowrap;}
+.life-right{margin-left:auto;text-align:right;}
+.life-right .n{font-family:var(--mono);font-size:11px;color:var(--tx-2);white-space:nowrap;}
+.life-right .l{font-family:var(--mono);font-size:9px;color:#565d6b;margin-top:3px;white-space:nowrap;}
+
+/* device rows / runs tab */
+.rows{display:flex;flex-direction:column;}
+.row{
+  display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:11px;align-items:center;
+  padding:11px 14px;border-bottom:1px solid var(--line);
+}
+.row:last-child{border-bottom:0;}
+.row-ico{
+  display:grid;place-items:center;width:32px;height:32px;flex:none;border-radius:9px;
+  color:var(--tx-2);background:var(--sunken);border:1px solid var(--line);
+}
+.row-ico svg{width:16px;height:16px;}
+.row-t{display:block;font-size:12.5px;font-weight:540;}
+.row-s{display:block;font-family:var(--mono);font-size:10px;color:var(--tx-3);margin-top:3px;}
+.checks{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;}
+.check{
+  display:inline-flex;align-items:center;gap:4px;height:18px;padding:0 6px;border-radius:var(--r-xs);
+  font-size:9.5px;color:var(--tx-2);background:rgba(255,255,255,.045);border:1px solid var(--line);
+}
+.check svg{width:9px;height:9px;stroke-width:3;color:var(--ok);}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.stack{display:flex;flex-direction:column;gap:12px;min-height:0;}
+
+.hidden{display:none !important;}
+
+/* reduced motion */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{
+    animation:none !important;
+    transition:none !important;
+    scroll-behavior:auto !important;
+  }
+}
+</style>
+</head>
+<body>
+
+<div class="frame">
+
+  <!-- ============ design capture strip (not app chrome) ============ -->
+  <div class="designbar">
+    <span class="dbadge">Direction C</span>
+    <span class="dtitle">Split Deck</span>
+    <span class="dnote">nav rail + two-column deck &middot; one accent &middot; seamless rail flow</span>
+    <span class="dspacer"></span>
+    <span class="dmeta">1280 &times; 860 &middot; dark &middot; mid-run</span>
+  </div>
+
+  <!-- ============ macOS window chrome ============ -->
+  <div class="titlebar">
+    <div class="lights"><span class="light r"></span><span class="light y"></span><span class="light g"></span></div>
+    <div class="tb-title">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="2.2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.48M2.6 4.1a10 10 0 0 1 0 15.8"/></svg>
+      Photo Relay
+    </div>
+    <div class="tb-right">
+      <div class="tb-seg"><i class="on">Deck</i><i>Inspector</i></div>
+      <button class="tb-btn" aria-label="Refresh"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg></button>
+    </div>
+  </div>
+
+  <!-- ============ app ============ -->
+  <div class="app">
+
+    <!-- ---------------- nav rail ---------------- -->
+    <aside class="rail">
+      <div class="brand">
+        <div class="mark">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="2.4"/><path d="M8.3 8.3a5.2 5.2 0 0 0 0 7.4M15.7 15.7a5.2 5.2 0 0 0 0-7.4M4.9 4.9a10 10 0 0 0 0 14.2M19.1 19.1a10 10 0 0 0 0-14.2"/></svg>
+        </div>
+        <div class="brand-text">
+          <div class="brand-name">Photo Relay</div>
+          <div class="brand-meta">engine 0.9.4 &middot; relay</div>
+        </div>
+      </div>
+
+      <nav class="nav" aria-label="Sections">
+        <div class="nav-label">Workspace</div>
+        <button class="nav-item on"><svg viewBox="0 0 24 24"><path d="M16.24 7.76a6 6 0 0 1 0 8.48M2.6 4.1a10 10 0 0 1 0 15.8M21.4 4.1a10 10 0 0 0 0 15.8M7.76 16.24a6 6 0 0 1 0-8.48"/><circle cx="12" cy="12" r="2"/></svg>Relay<span class="nav-live"></span></button>
+        <button class="nav-item"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Files<span class="pill">138</span></button>
+        <button class="nav-item"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3.5 2"/></svg>History</button>
+        <button class="nav-item"><svg viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M11 18.5h2"/></svg>Devices<span class="pill grey">2</span></button>
+        <button class="nav-item"><svg viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2.2"/><circle cx="8" cy="17" r="2.2"/></svg>Settings</button>
+
+        <div class="nav-label">Paths</div>
+        <button class="nav-item"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>Staging<span class="pill grey">3.3 GB</span></button>
+        <button class="nav-item"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 14h18"/><path d="M7 8h.01M11 8h.01"/></svg>Samsung DCIM</button>
+        <button class="nav-item"><svg viewBox="0 0 24 24"><path d="M5 7l4 4-4 4"/><path d="M12 17h7"/></svg>Run logs<span class="kbd">L</span></button>
+      </nav>
+
+      <div class="rail-spacer"></div>
+
+      <!-- pinned live run status -->
+      <div class="runpin">
+        <div class="runpin-top">
+          <span class="runpin-dot"></span>
+          <span class="runpin-state">Running</span>
+          <span class="runpin-stage">PUSH</span>
+        </div>
+        <div class="runpin-file">IMG_4202.HEIC &rarr; /sdcard/DCIM/Camera</div>
+        <div class="runpin-bar">
+          <div class="bar"><div class="bar-fill" style="width:67%"><span class="bar-edge"></span></div></div>
+        </div>
+        <div class="runpin-meta">
+          <span><b>92</b> of 138</span>
+          <span><b>1:24</b> left</span>
+        </div>
+        <div class="runpin-actions">
+          <button class="btn btn-danger btn-fill"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" stroke="none"/></svg>Stop</button>
+          <button class="btn btn-quiet"><svg viewBox="0 0 24 24"><path d="M3 12h4l2.5-6 4 12 2.5-6h5"/></svg></button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ---------------- main deck ---------------- -->
+    <main class="main">
+      <div class="mainhead">
+        <div class="head-left">
+          <div class="eyebrow">Live run &middot; started 08:12:04</div>
+          <div class="head-title">Relaying to Samsung <span class="runid">run-2481</span></div>
+        </div>
+        <div class="head-tools">
+          <div class="tabs" role="tablist">
+            <button class="tab on" data-tab="live" role="tab">Relay</button>
+            <button class="tab" data-tab="miles" role="tab">Milestones</button>
+            <button class="tab" data-tab="preflight" role="tab">Preflight</button>
+            <button class="tab" data-tab="runs" role="tab">Runs</button>
+          </div>
+          <button class="iconbtn" aria-label="Device check"><svg viewBox="0 0 24 24"><path d="M3 12h4l2.5-6 4 12 2.5-6h5"/></svg></button>
+          <button class="iconbtn" aria-label="Reveal staging"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M12 11v4M10 13h4"/></svg></button>
+        </div>
+      </div>
+
+      <div class="cols">
+
+        <!-- ============ LEFT: live relay ============ -->
+        <section class="col" data-panel="live">
+
+          <!-- pipeline -->
+          <article class="panel" style="--d:0ms">
+            <div class="panel-head">
+              <div class="grow">
+                <div class="panel-title">Pipeline</div>
+                <div class="panel-sub">stage 5 of 6 &middot; 92 of 138 secured</div>
+              </div>
+              <span class="tagx acc"><span class="nav-live"></span>push</span>
+              <span class="tagx">3.25 GB</span>
+            </div>
+            <div class="panel-body">
+
+              <div class="chain">
+                <div class="node">
+                  <span class="node-ico"><svg viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M11 18.5h2"/></svg></span>
+                  <span class="node-txt">
+                    <span class="node-name">iPhone 15 Pro</span>
+                    <span class="node-meta">USB &middot; trusted</span>
+                  </span>
+                  <span class="node-led"></span>
+                </div>
+                <div class="flow" data-live="1"></div>
+                <div class="node">
+                  <span class="node-ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M2 20h20"/></svg></span>
+                  <span class="node-txt">
+                    <span class="node-name">This Mac</span>
+                    <span class="node-meta">41.2 GB staged free</span>
+                  </span>
+                  <span class="node-led"></span>
+                </div>
+                <div class="flow" data-live="1"></div>
+                <div class="node sink">
+                  <span class="node-ico"><svg viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10 18h4"/></svg></span>
+                  <span class="node-txt">
+                    <span class="node-name">SM-S918B</span>
+                    <span class="node-meta">adb &middot; authorised</span>
+                  </span>
+                  <span class="node-led"></span>
+                </div>
+              </div>
+
+              <!-- stage rack: seamless one-directional flow between stages -->
+              <div class="rack">
+                <div class="stage" data-s="done">
+                  <span class="stage-top"><span class="stage-dot"><svg viewBox="0 0 24 24"><path d="M4 12.5 9.5 18 20 6"/></svg></span><span class="stage-name">Connect</span></span>
+                  <span class="stage-count">2 devices</span>
+                </div>
+                <div class="rack-link done"></div>
+                <div class="stage" data-s="done">
+                  <span class="stage-top"><span class="stage-dot"><svg viewBox="0 0 24 24"><path d="M4 12.5 9.5 18 20 6"/></svg></span><span class="stage-name">Scan</span></span>
+                  <span class="stage-count">138 new</span>
+                </div>
+                <div class="rack-link done"></div>
+                <div class="stage" data-s="done">
+                  <span class="stage-top"><span class="stage-dot"><svg viewBox="0 0 24 24"><path d="M4 12.5 9.5 18 20 6"/></svg></span><span class="stage-name">Pull</span></span>
+                  <span class="stage-count">31.8 s</span>
+                </div>
+                <div class="rack-link done"></div>
+                <div class="stage" data-s="done">
+                  <span class="stage-top"><span class="stage-dot"><svg viewBox="0 0 24 24"><path d="M4 12.5 9.5 18 20 6"/></svg></span><span class="stage-name">Convert</span></span>
+                  <span class="stage-count">62 motion</span>
+                </div>
+                <div class="rack-link live"></div>
+                <div class="stage" data-s="active">
+                  <span class="stage-top"><span class="stage-dot"><svg viewBox="0 0 24 24"><path d="M4 12.5 9.5 18 20 6"/></svg></span><span class="stage-name">Push</span></span>
+                  <span class="stage-count">92 / 138</span>
+                </div>
+                <div class="rack-link"></div>
+                <div class="stage" data-s="todo">
+                  <span class="stage-top"><span class="stage-dot"></span><span class="stage-name">Index</span></span>
+                  <span class="stage-count">queued</span>
+                </div>
+              </div>
+
+            </div>
+          </article>
+
+          <!-- throughput + progress -->
+          <article class="panel" style="--d:70ms">
+            <div class="stats">
+              <div class="stat">
+                <div class="stat-label">Secured</div>
+                <div class="stat-value acc tnum">92<span class="u">/138</span></div>
+                <div class="stat-note">46 remaining</div>
+              </div>
+              <div class="stat">
+                <div class="stat-label">Transferred</div>
+                <div class="stat-value tnum">1.94<span class="u">GB</span></div>
+                <div class="stat-note">of 3.25 GB</div>
+              </div>
+              <div class="stat">
+                <div class="stat-label">Rate</div>
+                <div class="stat-value tnum">88<span class="u">MB/s</span></div>
+                <div class="stat-note">usb peak 104</div>
+              </div>
+              <div class="stat">
+                <div class="stat-label">Remaining</div>
+                <div class="stat-value tnum">1:24</div>
+                <div class="stat-note">incl. convert + index</div>
+              </div>
+            </div>
+            <div class="progress-block">
+              <div class="prog-head">
+                <div class="prog-title">Run progress <span class="mono">92 of 138 files</span></div>
+                <div class="prog-right"><b>67%</b> &middot; 00:01:36 elapsed</div>
+              </div>
+              <div class="bar lg"><div class="bar-fill" style="width:67%"><span class="bar-edge"></span></div></div>
+            </div>
+          </article>
+
+          <!-- in-flight file -->
+          <article class="panel" style="--d:140ms">
+            <div class="panel-head">
+              <div class="grow">
+                <div class="panel-title">In flight</div>
+                <div class="panel-sub">adb push batch 7 of 9</div>
+              </div>
+              <span class="tagx acc">writing</span>
+            </div>
+            <div class="panel-body">
+              <div class="inflight">
+                <span class="thumb live"></span>
+                <div class="file-main">
+                  <div class="file-name">IMG_4202.HEIC</div>
+                  <div class="file-tags">
+                    <span class="chip live"><svg viewBox="0 0 24 24"><path d="m13 2-8 12h7l-1 8 8-12h-7z"/></svg>Live Photo</span>
+                    <span class="chip">4032 &times; 3024</span>
+                    <span class="chip">HEIC</span>
+                  </div>
+                  <div class="path">
+                    <svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+                    <b>staging/run-2481/IMG_4202.HEIC</b>
+                    <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                    <b>/sdcard/DCIM/Camera</b>
+                  </div>
+                </div>
+                <div class="fileright">
+                  <div class="n">14.8 MB</div>
+                  <div class="l">of 3.25 GB</div>
+                </div>
+              </div>
+
+              <div class="fstrip">
+                <span class="fstep done"><span class="d"><svg viewBox="0 0 24 24"><path d="M4 12.5 9.5 18 20 6"/></svg></span>Pull</span>
+                <span class="fsep done"></span>
+                <span class="fstep done"><span class="d"><svg viewBox="0 0 24 24"><path d="M4 12.5 9.5 18 20 6"/></svg></span>Convert</span>
+                <span class="fsep done"></span>
+                <span class="fstep now"><span class="d"><svg viewBox="0 0 24 24"><path d="M4 12.5 9.5 18 20 6"/></svg></span>Push</span>
+                <span class="fsep"></span>
+                <span class="fstep"><span class="d"></span>Index</span>
+                <span class="fsep"></span>
+                <span class="fstep"><span class="d"></span>Verify</span>
+              </div>
+            </div>
+          </article>
+
+          <!-- recent milestones -->
+          <article class="panel" style="--d:210ms">
+            <div class="panel-head">
+              <div class="grow">
+                <div class="panel-title">Milestones</div>
+                <div class="panel-sub">run-2481 &middot; 11 events</div>
+              </div>
+              <button class="ghost-link" data-goto="miles">All<svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+            </div>
+            <div class="panel-body" style="padding-top:6px;padding-bottom:7px">
+              <div class="mstone" data-k="acc">
+                <span class="ml-glyph"><svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span>
+                <span><span class="ml-msg">Push 92 of 138 written to Samsung</span><span class="ml-sub">batch 7 of 9 &middot; 88 MB/s</span></span>
+                <span class="ml-time">08:13:40</span>
+              </div>
+              <div class="mstone" data-k="ok">
+                <span class="ml-glyph"><svg viewBox="0 0 24 24"><path d="M4 12.5 9.5 18 20 6"/></svg></span>
+                <span><span class="ml-msg">62 Live Photos rebuilt as Motion Photos</span><span class="ml-sub">convert &middot; 0 failures</span></span>
+                <span class="ml-time">08:13:28</span>
+              </div>
+              <div class="mstone" data-k="ok">
+                <span class="ml-glyph"><svg viewBox="0 0 24 24"><path d="M4 12.5 9.5 18 20 6"/></svg></span>
+                <span><span class="ml-msg">Pulled 138 assets in 31.8 s</span><span class="ml-sub">AFC stream &middot; 1.71 GB &middot; 138 new since watermark 2 Sep</span></span>
+                <span class="ml-time">08:12:44</span>
+              </div>
+            </div>
+          </article>
+
+          <!-- ============ LEFT: tabs ============ -->
+          <section class="col hidden" data-panel="miles">
+            <article class="panel">
+              <div class="panel-head">
+                <div class="grow"><div class="panel-title">Milestone timeline</div><div class="panel-sub">run-2481 &middot; started 08:12:04</div></div>
+                <span class="tagx">11 events</span>
+              </div>
+              <div class="panel-body ml-full">
+                <div class="mstone" data-k="ok">
+                  <span class="ml-glyph"><svg viewBox="0 0 24 24"><path d="M4 12.5 9.5 18 20 6"/></svg></span>
+                  <span><span class="ml-msg">Relay started from sidebar</span><span class="ml-sub">source iphone-15-pro &rarr; sink SM-S918B</span></span>
+                  <span class="ml-time">08:12:04</span>
+                </div>
+                <div class="mstone" data-k="ok">
+                  <span class="ml-glyph"><svg viewBox="0 0 24 24"><path d="M4 12.5 9.5 18 20 6"/></svg></span>
+                  <span><span class="ml-msg">iPhone 15 Pro paired over USB</span><span class="ml-sub">pymobiledevice3 &middot; trust record cached</span></span>
+                  <span class="ml-time">08:12:05</span>
+                </div>
+                <div class="mstone" data-k="ok">
+                  <span class="ml-glyph"><svg viewBox="0 0 24 24"><path d="M4 12.5 9.5 18 20 6"/></svg></span>
+                  <span><span class="ml-msg">SM-S918B authorised for adb</span><span class="ml-sub">build 1UI2.2026.04 &middot; usb 3.2</span></span>
+                  <span class="ml-time">08:12:06</span>
+                </div>
+                <div class="mstone" data-k="ok">
+                  <span class="ml-glyph"><svg viewBox="0 0 24 24"><path d="M4 12.5 9.5 18 20 6"/></svg></span>
+                  <span><span class="ml-msg">Preflight passed &mdash; 3 checks</span><span class="ml-sub">engine, staging volume, media scanner</span></span>
+                  <span class="ml-time">08:12:07</span>
+                </div>
+                <div class="mstone" data-k="ok">
+                  <span class="ml-glyph"><svg viewBox="0 0 24 24"><path d="M4 12.5 9.5 18 20 6"/></svg></span>
+                  <span><span class="ml-msg">Watermark read</span><span class="ml-sub">2 Sep 2026, 19:42:08 &middot; last successful sync</span></span>
+                  <span class="ml-time">08:12:09</span>
+                </div>
+                <div class="mstone" data-k="ok">
+                  <span class="ml-glyph"><svg viewBox="0 0 24 24"><path d="M4 12.5 9.5 18 20 6"/></svg></span>
+                  <span><span class="ml-msg">Scan complete &mdash; 138 new assets</span><span class="ml-sub">62 Live Photos &middot; 41 video &middot; 35 still</span></span>
+                  <span class="ml-time">08:12:11</span>
+                </div>
+                <div class="mstone" data-k="ok">
+                  <span class="ml-glyph"><svg viewBox="0 0 24 24"><path d="M4 12.5 9.5 18 20 6"/></svg></span>
+                  <span><span class="ml-msg">Staging reserved &mdash; 3.25 GB</span><span class="ml-sub">41.2 GB free on internal SSD</span></span>
+                  <span class="ml-time">08:12:13</span>
+                </div>
+                <div class="mstone" data-k="ok">
+                  <span class="ml-glyph"><svg viewBox="0 0 24 24"><path d="M4 12.5 9.5 18 20 6"/></svg></span>
+                  <span><span class="ml-msg">Pull finished &mdash; 138 files, 1.71 GB</span><span class="ml-sub">31.8 s &middot; peak 104 MB/s</span></span>
+                  <span class="ml-time">08:12:44</span>
+                </div>
+                <div class="mstone" data-k="ok">
+                  <span class="ml-glyph"><svg viewBox="0 0 24 24"><path d="M4 12.5 9.5 18 20 6"/></svg></span>
+                  <span><span class="ml-msg">Convert finished &mdash; 62 motion photos</span><span class="ml-sub">IMG_4127.HEIC + .MOV paired &middot; 0 failures</span></span>
+                  <span class="ml-time">08:13:28</span>
+                </div>
+                <div class="mstone" data-k="warn">
+                  <span class="ml-glyph"><svg viewBox="0 0 24 24"><path d="M12 4v9M12 17.5v.5"/></svg></span>
+                  <span><span class="ml-msg">IMG_4195.HEIC push retry</span><span class="ml-sub">adb transport reset once &middot; retry 1 of 3</span></span>
+                  <span class="ml-time">08:13:31</span>
+                </div>
+                <div class="mstone" data-k="acc">
+                  <span class="ml-glyph"><svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span>
+                  <span><span class="ml-msg">Push 92 of 138 written</span><span class="ml-sub">batch 7 of 9 &middot; /sdcard/DCIM/Camera</span></span>
+                  <span class="ml-time">08:13:40</span>
+                </div>
+              </div>
+            </article>
+          </section>
+
+          <section class="col hidden" data-panel="preflight">
+            <article class="panel">
+              <div class="panel-head">
+                <div class="grow"><div class="panel-title">Preflight</div><div class="panel-sub">checked 08:12:07</div></div>
+                <span class="tagx ok">passed</span>
+              </div>
+              <div class="rows">
+                <div class="row">
+                  <span class="row-ico"><svg viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10 18h4"/></svg></span>
+                  <span><span class="row-t">iPhone 15 Pro</span><span class="row-s">usb 2.4 &middot; udid 00008030-001A2B3C &middot; iOS 18.4</span>
+                    <span class="checks"><span class="check"><svg viewBox="0 0 24 24"><path d="M4 12.5 9.5 18 20 6"/></svg>paired</span><span class="check"><svg viewBox="0 0 24 24"><path d="M4 12.5 9.5 18 20 6"/></svg>trust record</span><span class="check"><svg viewBox="0 0 24 24"><path d="M4 12.5 9.5 18 20 6"/></svg>dcim readable</span></span>
+                  </span>
+                  <span class="tagx ok">online</span>
+                </div>
+                <div class="row">
+                  <span class="row-ico"><svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="3"/><path d="M10 18h4"/></svg></span>
+                  <span><span class="row-t">Samsung SM-S918B</span><span class="row-s">adb 34 &middot; Android 14 &middot; /sdcard/DCIM writable</span>
+                    <span class="checks"><span class="check"><svg viewBox="0 0 24 24"><path d="M4 12.5 9.5 18 20 6"/></svg>authorised</span><span class="check"><svg viewBox="0 0 24 24"><path d="M4 12.5 9.5 18 20 6"/></svg>media scanner</span><span class="check"><svg viewBox="0 0 24 24"><path d="M4 12.5 9.5 18 20 6"/></svg>17.4 GB free</span></span>
+                  </span>
+                  <span class="tagx ok">online</span>
+                </div>
+                <div class="row">
+                  <span class="row-ico"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/></svg></span>
+                  <span><span class="row-t">Staging volume</span><span class="row-s">internal SSD &middot; run-2481 needs 3.25 GB</span>
+                    <span class="checks"><span class="check"><svg viewBox="0 0 24 24"><path d="M4 12.5 9.5 18 20 6"/></svg>41.2 GB free</span><span class="check"><svg viewBox="0 0 24 24"><path d="M4 12.5 9.5 18 20 6"/></svg>APFS local</span></span>
+                  </span>
+                  <span class="tagx ok">ready</span>
+                </div>
+                <div class="row">
+                  <span class="row-ico"><svg viewBox="0 0 24 24"><path d="M4 17.5V7l8-4 8 4v10.5L12 21.5z"/><path d="M12 21.5v-10"/></svg></span>
+                  <span><span class="row-t">Sync engine</span><span class="row-s">python 3.12 &middot; pymobiledevice3 4.14 &middot; ffmpeg 7.1</span>
+                    <span class="checks"><span class="check"><svg viewBox="0 0 24 24"><path d="M4 12.5 9.5 18 20 6"/></svg>engine 0.9.4</span><span class="check"><svg viewBox="0 0 24 24"><path d="M4 12.5 9.5 18 20 6"/></svg>muxer present</span></span>
+                  </span>
+                  <span class="tagx ok">ready</span>
+                </div>
+              </div>
+            </article>
+          </section>
+
+          <section class="col hidden" data-panel="runs">
+            <article class="panel">
+              <div class="panel-head">
+                <div class="grow"><div class="panel-title">Recent runs</div><div class="panel-sub">last 7 days</div></div>
+                <span class="tagx">2,796 files secured</span>
+              </div>
+              <div class="rows">
+                <div class="row">
+                  <span class="row-ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="12" cy="12" r="3.5"/></svg></span>
+                  <span><span class="row-t">run-2481 &middot; in progress</span><span class="row-s">push stage &middot; started 08:12:04</span></span>
+                  <span class="tagx acc">92 / 138</span>
+                </div>
+                <div class="row">
+                  <span class="row-ico"><svg viewBox="0 0 24 24"><path d="M4 12.5 9.5 18 20 6"/></svg></span>
+                  <span><span class="row-t">run-2473</span><span class="row-s">2 Sep, 19:44 &middot; 1.94 GB &middot; 96 s</span></span>
+                  <span class="tagx ok">212 files</span>
+                </div>
+                <div class="row">
+                  <span class="row-ico"><svg viewBox="0 0 24 24"><path d="M4 12.5 9.5 18 20 6"/></svg></span>
+                  <span><span class="row-t">run-2468</span><span class="row-s">28 Aug, 08:11 &middot; 0.61 GB &middot; 34 s</span></span>
+                  <span class="tagx ok">64 files</span>
+                </div>
+                <div class="row">
+                  <span class="row-ico"><svg viewBox="0 0 24 24"><path d="M12 4v9M12 17.5v.5"/></svg></span>
+                  <span><span class="row-t">run-2451</span><span class="row-s">19 Aug, 21:03 &middot; aborted by user at index</span></span>
+                  <span class="tagx warn">3 errors</span>
+                </div>
+                <div class="row">
+                  <span class="row-ico"><svg viewBox="0 0 24 24"><path d="M4 12.5 9.5 18 20 6"/></svg></span>
+                  <span><span class="row-t">run-2439</span><span class="row-s">11 Aug, 17:30 &middot; 4.02 GB &middot; 188 s</span></span>
+                  <span class="tagx ok">441 files</span>
+                </div>
+              </div>
+            </article>
+          </section>
+        </section>
+
+        <!-- ============ RIGHT: file stream ============ -->
+        <div class="col flat">
+
+          <article class="panel stream-panel" style="--d:120ms">
+            <div class="panel-head">
+              <div class="grow">
+                <div class="panel-title">File stream</div>
+                <div class="panel-sub">92 verified &middot; newest first</div>
+              </div>
+              <span class="tagx ok">secured</span>
+            </div>
+
+            <div class="stream">
+
+              <div class="fcard done" style="--d:0ms">
+                <span class="fc-ico"><svg viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="16" rx="2"/><path d="M7 4v16M17 4v16M2.5 12h19M2.5 8h4.5M2.5 16h4.5M17 8h4.5M17 16h4.5"/></svg></span>
+                <span class="fc-body">
+                  <span class="fc-name">IMG_4127.HEIC</span>
+                  <span class="fc-meta">
+                    <span class="chip live"><svg viewBox="0 0 24 24"><path d="m13 2-8 12h7l-1 8 8-12h-7z"/></svg>Live Photo</span>
+                    <span class="fc-note">motion photo rebuilt</span>
+                  </span>
+                </span>
+                <span class="fc-right"><span class="fc-size">14.2 MB</span><span class="fc-time">08:41</span></span>
+              </div>
+
+              <div class="fcard done" style="--d:55ms">
+                <span class="fc-ico"><svg viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="16" rx="2"/><path d="M7 4v16M17 4v16M2.5 12h19M2.5 8h4.5M2.5 16h4.5M17 8h4.5M17 16h4.5"/></svg></span>
+                <span class="fc-body">
+                  <span class="fc-name">IMG_4127.MOV</span>
+                  <span class="fc-meta">
+                    <span class="chip">motion video</span>
+                    <span class="fc-paired"><span class="ln"></span>paired to IMG_4127.HEIC</span>
+                  </span>
+                </span>
+                <span class="fc-right"><span class="fc-size">18.9 MB</span><span class="fc-time">08:41</span></span>
+              </div>
+
+              <div class="fcard done" style="--d:110ms">
+                <span class="fc-ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.8" cy="9.4" r="1.7"/><path d="M20.5 15.5 15.8 10.8 4.5 20"/></svg></span>
+                <span class="fc-body">
+                  <span class="fc-name">IMG_4198.HEIC</span>
+                  <span class="fc-meta"><span class="chip">still</span><span class="fc-note">12:04:31</span></span>
+                </span>
+                <span class="fc-right"><span class="fc-size">12.8 MB</span><span class="fc-time">08:40</span></span>
+              </div>
+
+              <div class="fcard done" style="--d:165ms">
+                <span class="fc-ico"><svg viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="16" rx="2"/><path d="M7 4v16M17 4v16M2.5 12h19M2.5 8h4.5M2.5 16h4.5M17 8h4.5M17 16h4.5"/></svg></span>
+                <span class="fc-body">
+                  <span class="fc-name">IMG_4196.MOV</span>
+                  <span class="fc-meta">
+                    <span class="chip">motion video</span>
+                    <span class="fc-paired"><span class="ln"></span>paired to IMG_4196.HEIC</span>
+                  </span>
+                </span>
+                <span class="fc-right"><span class="fc-size">19.6 MB</span><span class="fc-time">08:40</span></span>
+              </div>
+
+              <div class="fcard done" style="--d:220ms">
+                <span class="fc-ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.8" cy="9.4" r="1.7"/><path d="M20.5 15.5 15.8 10.8 4.5 20"/></svg></span>
+                <span class="fc-body">
+                  <span class="fc-name">IMG_4196.HEIC</span>
+                  <span class="fc-meta"><span class="chip live">Live Photo</span><span class="fc-note">motion photo rebuilt</span></span>
+                </span>
+                <span class="fc-right"><span class="fc-size">14.9 MB</span><span class="fc-time">08:40</span></span>
+              </div>
+
+              <div class="fcard warn" style="--d:275ms">
+                <span class="fc-ico"><svg viewBox="0 0 24 24"><path d="M12 4v9M12 17.5v.5"/></svg></span>
+                <span class="fc-body">
+                  <span class="fc-name">IMG_4195.HEIC</span>
+                  <span class="fc-meta">
+                    <span class="chip warn">retry 1 of 3</span>
+                    <span class="fc-note warn">adb transport reset</span>
+                  </span>
+                </span>
+                <span class="fc-right"><span class="fc-size">10.4 MB</span><span class="fc-time">08:39</span></span>
+              </div>
+
+              <div class="fcard done" style="--d:330ms">
+                <span class="fc-ico"><svg viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="16" rx="2"/><path d="M7 4v16M17 4v16M2.5 12h19M2.5 8h4.5M2.5 16h4.5M17 8h4.5M17 16h4.5"/></svg></span>
+                <span class="fc-body">
+                  <span class="fc-name">IMG_4194.MP4</span>
+                  <span class="fc-meta"><span class="chip">video 4K 60</span><span class="fc-note">01:12</span></span>
+                </span>
+                <span class="fc-right"><span class="fc-size">186.3 MB</span><span class="fc-time">08:38</span></span>
+              </div>
+
+              <div class="fcard done" style="--d:385ms">
+                <span class="fc-ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.8" cy="9.4" r="1.7"/><path d="M20.5 15.5 15.8 10.8 4.5 20"/></svg></span>
+                <span class="fc-body">
+                  <span class="fc-name">IMG_4193.HEIC</span>
+                  <span class="fc-meta"><span class="chip">still</span><span class="fc-note">11:58:02</span></span>
+                </span>
+                <span class="fc-right"><span class="fc-size">9.8 MB</span><span class="fc-time">08:37</span></span>
+              </div>
+
+              <div class="fcard done" style="--d:440ms">
+                <span class="fc-ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.8" cy="9.4" r="1.7"/><path d="M20.5 15.5 15.8 10.8 4.5 20"/></svg></span>
+                <span class="fc-body">
+                  <span class="fc-name">IMG_4192.HEIC</span>
+                  <span class="fc-meta"><span class="chip">still</span><span class="fc-note">11:47:19</span></span>
+                </span>
+                <span class="fc-right"><span class="fc-size">11.1 MB</span><span class="fc-time">08:36</span></span>
+              </div>
+
+            </div>
+
+            <div class="stream-foot">
+              <span>showing 9 of 92</span>
+              <span>1.94 GB secured</span>
+            </div>
+
+            <details class="inspector">
+              <summary>
+                <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                inspector &mdash; raw engine log
+                <span class="kbdhint">optional</span>
+              </summary>
+<pre><b>08:13:40</b> relay  push    IMG_4202.HEIC  14.8 MB  <u>ok</u> 118 ms
+<b>08:13:40</b> relay  push    IMG_4201.HEIC  10.9 MB  <u>ok</u> 104 ms
+<b>08:13:39</b> relay  push    IMG_4200.MOV   17.4 MB  <u>ok</u> 141 ms
+<b>08:13:31</b> relay  push    IMG_4195.HEIC  <i>adb transport reset, retry 1/3</i>
+<b>08:13:28</b> relay  convert IMG_4127      <u>motion photo muxed, 6.2 fps</u>
+<b>08:12:44</b> relay  pull    138 assets  1.71 GB  <u>31.8 s</u>  peak 104 MB/s</pre>
+            </details>
+          </article>
+
+          <article class="panel" style="--d:190ms">
+            <div class="life">
+              <span class="life-ico"><svg viewBox="0 0 24 24"><path d="M4 17.5V7l8-4 8 4v10.5L12 21.5z"/><path d="M9.5 9.5h5v5h-5z"/></svg></span>
+              <span>
+                <span class="life-n">2,796</span>
+                <span class="life-l">files secured on Samsung</span>
+              </span>
+              <span class="life-right">
+                <span class="n">141.2 GB</span>
+                <span class="l">31 runs since May</span>
+              </span>
+            </div>
+          </article>
+
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+(function () {
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('.tab'));
+  var panels = Array.prototype.slice.call(document.querySelectorAll('[data-panel]'));
+  var gotos = Array.prototype.slice.call(document.querySelectorAll('[data-goto]'));
+
+  function select(name) {
+    tabs.forEach(function (t) { t.classList.toggle('on', t.getAttribute('data-tab') === name); });
+    panels.forEach(function (p) { p.classList.toggle('hidden', p.getAttribute('data-panel') !== name); });
+  }
+
+  tabs.forEach(function (t) {
+    t.addEventListener('click', function () { select(t.getAttribute('data-tab')); });
+  });
+
+  gotos.forEach(function (b) {
+    b.addEventListener('click', function () { select(b.getAttribute('data-goto')); });
+  });
+})();
+</script>
+</body>
+</html>

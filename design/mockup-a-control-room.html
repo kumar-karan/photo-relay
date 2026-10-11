@@ -1,0 +1,1933 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Photo Relay — Direction A: Control Room</title>
+<style>
+/* ===========================================================================
+   Photo Relay — Direction A "Control Room"
+   A calm, information-dense operations console.
+   Self-contained: inline styles only, no network requests.
+   =========================================================================== */
+
+/* ---------------------------------------------------------------- tokens -- */
+:root {
+  color-scheme: dark;
+
+  /* surfaces: near-black, lifted only a hair at each step */
+  --desk:            #06070900;
+  --desk-solid:      #060709;
+  --chrome:          #0a0b0e;
+  --surface-1:       #0e1014;
+  --surface-2:       #13161b;
+  --surface-3:       #191d23;
+  --sunken:          #07080a;
+
+  /* hairlines */
+  --line:            rgba(255, 255, 255, 0.068);
+  --line-soft:       rgba(255, 255, 255, 0.040);
+  --line-strong:     rgba(255, 255, 255, 0.125);
+
+  /* type */
+  --text:            #e9ecf1;
+  --text-2:          #99a1ae;
+  --text-3:          #676e7a;
+  --text-4:          #4b515c;
+
+  /* one accent hue + semantics */
+  --accent:          #58a6ff;
+  --accent-hi:       #86bdff;
+  --accent-soft:     rgba(88, 166, 255, 0.13);
+  --accent-line:     rgba(88, 166, 255, 0.34);
+  --accent-glow:     rgba(88, 166, 255, 0.22);
+
+  --ok:              #3fb950;
+  --ok-soft:         rgba(63, 185, 80, 0.13);
+  --ok-line:         rgba(63, 185, 80, 0.32);
+  --warn:            #d6a01f;
+  --warn-soft:       rgba(214, 160, 31, 0.12);
+  --warn-line:       rgba(214, 160, 31, 0.30);
+  --danger:          #f0554b;
+  --danger-soft:     rgba(240, 85, 75, 0.12);
+  --danger-line:     rgba(240, 85, 75, 0.32);
+
+  --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas,
+          "Liberation Mono", monospace;
+
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --r-lg: 12px;
+  --r-md: 8px;
+  --r-sm: 5px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+body {
+  background:
+    radial-gradient(90% 60% at 50% 0%, #101319 0%, transparent 62%),
+    var(--desk-solid);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 13px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  padding: 34px 24px 56px;
+  display: flex;
+  justify-content: center;
+}
+
+svg { display: block; flex: none; }
+button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; }
+
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.tnum { font-variant-numeric: tabular-nums; }
+
+.eyebrow {
+  font-size: 9.5px;
+  font-weight: 620;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+::selection { background: var(--accent-soft); }
+
+/* ------------------------------------------------------------------ frame -- */
+.frame {
+  position: relative;
+  width: 1280px;
+  height: 860px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--chrome);
+  border: 1px solid rgba(255, 255, 255, 0.085);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.6),
+    0 42px 90px -28px rgba(0, 0, 0, 0.88),
+    0 12px 34px -14px rgba(0, 0, 0, 0.7);
+}
+
+/* macOS titlebar */
+.titlebar {
+  flex: none;
+  height: 40px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 0 14px;
+  background: linear-gradient(180deg, #1b1e24 0%, #14161b 100%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.65);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.lights { display: flex; gap: 8px; }
+.light { width: 12px; height: 12px; border-radius: 50%; box-shadow: inset 0 0 0 0.5px rgba(0,0,0,.28); }
+.light-r { background: #ff5f57; }
+.light-y { background: #febc2e; }
+.light-g { background: #28c840; }
+
+.win-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  font-weight: 590;
+  letter-spacing: -0.005em;
+  color: #d7dbe2;
+}
+.win-title .sep { color: var(--text-4); font-weight: 400; }
+.win-title .mono { color: var(--text-3); font-size: 11.5px; }
+
+.titlebar-right { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+
+.run-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 10px 0 8px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
+}
+.run-chip .led {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--accent);
+  animation: breathe 1.7s ease-in-out infinite;
+}
+
+.icon-btn {
+  display: grid;
+  place-items: center;
+  width: 24px; height: 24px;
+  border-radius: var(--r-sm);
+  color: var(--text-3);
+}
+.icon-btn:hover { color: var(--text); background: rgba(255,255,255,.06); }
+.icon-btn.spinning svg { animation: spin 1.1s linear infinite; }
+
+/* --------------------------------------------------- direction note strip -- */
+/* Deliberately different treatment from the app chrome: hatched fill,
+   dashed rules, swatch chips. Reads as a design annotation, not as UI. */
+.direction {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 36px;
+  padding: 0 16px 0 14px;
+  background-color: #0c0e13;
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(88, 166, 255, 0.055) 0 1px,
+    transparent 1px 7px
+  );
+  border-top: 1px dashed rgba(255, 255, 255, 0.16);
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.16);
+}
+
+.direction .dir-tag {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 4px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #06111f;
+  background: var(--accent);
+}
+
+.direction .dir-name {
+  font-size: 11.5px;
+  font-weight: 620;
+  letter-spacing: 0.04em;
+  color: #cdd6e4;
+}
+
+.direction .dir-rule {
+  flex: 1 1 auto;
+  height: 1px;
+  background: repeating-linear-gradient(90deg,
+    rgba(255,255,255,.16) 0 3px, transparent 3px 7px);
+}
+
+.direction .dir-note {
+  font-size: 10.5px;
+  color: var(--text-3);
+  letter-spacing: 0.01em;
+}
+
+.swatches { display: flex; gap: 4px; }
+.swatch { width: 9px; height: 9px; border-radius: 2px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.14); }
+.sw-surface { background: #13161b; }
+.sw-accent  { background: var(--accent); }
+.sw-ok      { background: var(--ok); }
+.sw-warn    { background: var(--warn); }
+.sw-danger  { background: var(--danger); }
+
+/* ------------------------------------------------------------------- body -- */
+.body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  background:
+    linear-gradient(180deg, #0b0c10 0%, #08090c 100%);
+}
+
+/* icon rail */
+.rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 0 12px;
+  border-right: 1px solid var(--line-soft);
+  background: rgba(255, 255, 255, 0.012);
+}
+
+.rail-mark {
+  display: grid;
+  place-items: center;
+  width: 28px; height: 28px;
+  margin-bottom: 10px;
+  border-radius: 8px;
+  color: #06111f;
+  background: linear-gradient(145deg, var(--accent-hi), var(--accent));
+  box-shadow: 0 2px 8px rgba(88, 166, 255, 0.25);
+}
+
+.rail-btn {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 34px; height: 34px;
+  border-radius: 9px;
+  color: var(--text-4);
+  transition: color .14s var(--ease), background .14s var(--ease);
+}
+.rail-btn:hover { color: var(--text-2); background: rgba(255,255,255,.045); }
+.rail-btn[aria-current="page"] { color: var(--accent); background: var(--accent-soft); }
+.rail-btn[aria-current="page"]::before {
+  content: "";
+  position: absolute;
+  left: -11px;
+  top: 50%;
+  width: 2px; height: 16px;
+  margin-top: -8px;
+  border-radius: 0 2px 2px 0;
+  background: var(--accent);
+}
+
+.rail-gap { flex: 1 1 auto; }
+
+.rail-foot {
+  display: grid;
+  place-items: center;
+  width: 34px; height: 34px;
+  border-radius: 9px;
+  color: var(--text-4);
+}
+
+/* ------------------------------------------------------------------- main -- */
+.main {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* The constrained content column. This is the core answer to "too wide". */
+.column {
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 22px 28px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+.card {
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: 0 1px 0 rgba(255,255,255,.018) inset, 0 8px 22px -18px rgba(0,0,0,.9);
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.card-head .title { display: flex; align-items: baseline; gap: 8px; }
+.card-head .heading { font-size: 13px; font-weight: 590; letter-spacing: -0.01em; }
+.card-head .count {
+  font-size: 10.5px;
+  color: var(--text-3);
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.045);
+  border: 1px solid var(--line-soft);
+}
+
+/* ============================================================== HERO ===== */
+.hero { display: grid; grid-template-columns: minmax(0,1fr) 232px; flex: none; }
+
+.hero-main { padding: 16px 18px 16px; min-width: 0; }
+
+.hero-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 20px;
+}
+
+.phase-lock { display: flex; align-items: center; gap: 12px; min-width: 0; }
+
+.phase-glyph {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 38px; height: 38px;
+  flex: none;
+  border-radius: 10px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
+}
+.phase-glyph::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 13px;
+  border: 1px solid var(--accent-glow);
+  animation: halo 2.1s var(--ease) infinite;
+}
+
+.phase-text { min-width: 0; }
+.phase-name {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 17px;
+  font-weight: 640;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+.phase-name .of { font-size: 12px; font-weight: 500; color: var(--text-3); letter-spacing: 0; }
+.phase-file {
+  margin-top: 4px;
+  font-size: 11.5px;
+  color: var(--text-2);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.phase-file .arrow { color: var(--text-4); }
+
+.hero-actions { display: flex; align-items: center; gap: 7px; flex: none; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 11px;
+  border-radius: var(--r-md);
+  font-size: 12px;
+  font-weight: 540;
+  color: var(--text-2);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  white-space: nowrap;
+  transition: background .13s var(--ease), color .13s var(--ease), border-color .13s var(--ease);
+}
+.btn:hover { color: var(--text); background: var(--surface-3); border-color: var(--line-strong); }
+.btn-quiet { background: transparent; border-color: transparent; color: var(--text-3); }
+.btn-quiet:hover { background: rgba(255,255,255,.05); }
+.btn-stop { color: var(--danger); border-color: var(--danger-line); background: var(--danger-soft); }
+.btn-stop:hover { color: #ff7d75; background: rgba(240,85,75,.19); border-color: rgba(240,85,75,.5); }
+
+/* ------------------------------------------------- the connected rail ---- */
+.stepper { position: relative; }
+
+/* the rail line itself — passes behind the nodes */
+.rail-track {
+  position: absolute;
+  left: 0; right: 0;
+  top: 11px;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.055);
+  overflow: hidden;
+}
+
+/* travelled portion: settled, no animation */
+.rail-done {
+  position: absolute;
+  left: 0;
+  width: 41.6667%;           /* node 3 of 6 -> (2 + .5) / 6 */
+  top: 0; bottom: 0;
+  border-radius: 999px 2px 2px 999px;
+  background: linear-gradient(90deg, rgba(63,185,80,.30), rgba(63,185,80,.58));
+}
+
+/*
+ * Remaining portion: a repeating linear gradient whose tile is exactly 40px
+ * wide, animated by exactly 40px. Because the tile width equals the shift
+ * distance, the gradient lands back on itself at 100% — the loop point is
+ * mathematically invisible. One direction only. No transform, no snap-back.
+ */
+.rail-live {
+  position: absolute;
+  left: 41.6667%;
+  right: 0;
+  top: 0; bottom: 0;
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(88,166,255,.90) 0px,
+    rgba(88,166,255,.90) 17px,
+    rgba(88,166,255,.14) 17px,
+    rgba(88,166,255,.14) 40px
+  );
+  background-size: 40px 100%;
+  background-repeat: repeat-x;
+  animation: flow 1.25s linear infinite;
+}
+
+/* a soft leading glow, also locked to the same 40px period */
+.rail-live::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(88,166,255,0) 0px,
+    rgba(88,166,255,0) 25px,
+    rgba(160,205,255,.40) 31px,
+    rgba(160,205,255,0) 37px,
+    rgba(88,166,255,0) 40px
+  );
+  background-size: 40px 100%;
+  animation: flow 1.25s linear infinite;
+}
+
+@keyframes flow {
+  from { background-position-x: 0; }
+  to   { background-position-x: 40px; }
+}
+
+/* the six stage nodes, evenly spaced on a 6-column grid */
+.nodes {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  text-align: center;
+  min-width: 0;
+}
+
+.node-dot {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  color: var(--text-4);
+  background: var(--surface-2);
+  border: 1px solid var(--line-strong);
+}
+.node-dot svg { stroke-width: 3; }
+
+.node[data-state="done"] .node-dot {
+  color: #08130a;
+  background: var(--ok);
+  border-color: var(--ok);
+}
+
+.node[data-state="active"] .node-dot {
+  color: #06111f;
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(88,166,255,.14);
+  animation: breathe 1.8s ease-in-out infinite;
+}
+
+.node-label {
+  margin-top: 9px;
+  font-size: 11.5px;
+  font-weight: 560;
+  letter-spacing: -0.005em;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.node[data-state="done"] .node-label { color: var(--text-2); }
+.node[data-state="active"] .node-label { color: var(--text); }
+
+.node-meta {
+  margin-top: 2px;
+  font-size: 10px;
+  color: var(--text-4);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.node[data-state="active"] .node-meta { color: var(--accent); }
+
+/* ------------------------------------------------ progress + throughput -- */
+.progress-block { margin-top: 20px; }
+
+.pb-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 8px;
+}
+.pb-file {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-2);
+  min-width: 0;
+}
+.pb-file .name { color: var(--text); font-size: 12px; }
+.pb-count { display: flex; align-items: baseline; gap: 10px; flex: none; font-size: 11.5px; color: var(--text-3); }
+.pb-count .big { font-size: 12.5px; font-weight: 620; color: var(--text); }
+.pb-count .pct { color: var(--accent); font-weight: 620; }
+
+.pb-track {
+  position: relative;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--sunken);
+  border: 1px solid var(--line-soft);
+  overflow: hidden;
+}
+
+.pb-fill {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 69.6%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #2f6fe0 0%, var(--accent) 68%, var(--accent-hi) 100%);
+}
+
+/* Sheen: a 56px-wide tile translating by exactly 56px. Seamless by
+   construction, same trick as the rail. */
+.pb-sheen {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+}
+.pb-sheen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(
+    90deg,
+    rgba(255,255,255,0) 0px,
+    rgba(255,255,255,0) 36px,
+    rgba(255,255,255,.30) 48px,
+    rgba(255,255,255,.30) 50px,
+    rgba(255,255,255,0) 56px
+  );
+  background-size: 56px 100%;
+  animation: sheen 1.9s linear infinite;
+}
+
+@keyframes sheen {
+  from { background-position-x: 0; }
+  to   { background-position-x: 56px; }
+}
+
+/* determinate ticks sit above the fill */
+.pb-ticks {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  pointer-events: none;
+}
+.pb-ticks span { border-right: 1px solid rgba(0,0,0,.30); }
+.pb-ticks span:last-child { border-right: 0; }
+
+.pb-foot {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-top: 9px;
+  font-size: 11px;
+  color: var(--text-3);
+}
+.pb-foot .seg { padding: 0 12px; border-left: 1px solid var(--line-soft); }
+.pb-foot .seg:first-child { padding-left: 0; border-left: 0; }
+.pb-foot .k { color: var(--text-4); margin-right: 6px; }
+.pb-foot .v { color: var(--text-2); }
+.pb-foot .v.hi { color: var(--accent); }
+
+/* --------------------------------------- device chips (compact, inline) -- */
+.devices {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 18px;
+  padding-top: 15px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.dev-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 30px;
+  padding: 0 10px 0 9px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+.dev-chip .glyph {
+  display: grid; place-items: center;
+  width: 20px; height: 20px;
+  border-radius: 5px;
+  color: var(--text-3);
+  background: var(--surface-3);
+}
+.dev-chip[data-role="source"] { border-color: var(--accent-line); background: rgba(88,166,255,.07); }
+.dev-chip[data-role="source"] .glyph { color: var(--accent); background: var(--accent-soft); }
+.dev-chip[data-role="sink"] { border-color: var(--ok-line); background: rgba(63,185,80,.06); }
+.dev-chip[data-role="sink"] .glyph { color: var(--ok); background: var(--ok-soft); }
+
+.dev-text { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
+.dev-name { font-size: 11.5px; font-weight: 560; white-space: nowrap; }
+.dev-sub { font-size: 10px; color: var(--text-3); white-space: nowrap; }
+
+.dev-leds { display: flex; gap: 3px; margin-left: 2px; }
+.led-sm { width: 4px; height: 4px; border-radius: 50%; background: var(--text-4); }
+.led-sm.on { background: var(--ok); }
+.led-sm.warn { background: var(--warn); }
+
+.dev-wire {
+  flex: 0 1 26px;
+  height: 1px;
+  min-width: 10px;
+  background: linear-gradient(90deg, var(--accent-line), var(--ok-line));
+}
+
+/* ------------------------------- hero aside: live throughput instrument -- */
+.hero-aside {
+  display: flex;
+  flex-direction: column;
+  padding: 15px 16px 14px;
+  border-left: 1px solid var(--line-soft);
+  background: linear-gradient(180deg, rgba(255,255,255,.022), rgba(255,255,255,0) 60%);
+}
+
+.ha-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.ha-rate {
+  margin-top: 9px;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+.ha-rate .n { font-size: 26px; font-weight: 620; letter-spacing: -0.03em; line-height: 1; }
+.ha-rate .u { font-size: 11px; color: var(--text-3); }
+
+.spark {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 44px;
+  margin-top: 12px;
+  padding-bottom: 1px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.spark i {
+  flex: 1 1 0;
+  min-width: 0;
+  height: calc(var(--h) * 1%);
+  border-radius: 1.5px 1.5px 0 0;
+  background: rgba(88,166,255,.26);
+  transform-origin: bottom;
+  animation: bar 2.6s ease-in-out infinite;
+  animation-delay: calc(var(--d) * 1ms);
+}
+.spark i.recent { background: rgba(88,166,255,.85); }
+.spark i.live { background: var(--accent); box-shadow: 0 0 8px var(--accent-glow); }
+
+@keyframes bar {
+  0%, 100% { transform: scaleY(1); }
+  50%      { transform: scaleY(.72); }
+}
+
+.ha-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 12px;
+  margin-top: 14px;
+}
+.ha-cell .k { display: block; font-size: 9.5px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-4); }
+.ha-cell .v { display: block; margin-top: 3px; font-size: 12.5px; color: var(--text); font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+.ha-bar {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line-soft);
+}
+.ha-bar-top { display: flex; align-items: baseline; justify-content: space-between; font-size: 10px; color: var(--text-4); }
+.ha-bar-track { margin-top: 6px; height: 3px; border-radius: 999px; background: var(--sunken); overflow: hidden; }
+.ha-bar-fill { height: 100%; width: 69.6%; border-radius: 999px; background: linear-gradient(90deg, #2f6fe0, var(--accent)); }
+
+/* ====================================================== STAT STRIP ======= */
+.strip {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  overflow: hidden;
+  flex: none;
+}
+
+.stat {
+  position: relative;
+  padding: 12px 16px 13px;
+  border-left: 1px solid var(--line-soft);
+  min-width: 0;
+}
+.stat:first-child { border-left: 0; }
+.stat .k {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9.5px;
+  font-weight: 620;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--text-4);
+}
+.stat .v {
+  margin-top: 7px;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 20px;
+  font-weight: 560;
+  letter-spacing: -0.025em;
+  line-height: 1.05;
+}
+.stat .v .s { font-size: 11px; color: var(--text-3); font-weight: 400; letter-spacing: 0; }
+.stat .v.accent { color: var(--accent); }
+.stat .v.ok { color: var(--ok); }
+.stat .d { margin-top: 4px; font-size: 10px; color: var(--text-4); }
+
+/* live underline on the headline stat */
+.stat.live::after {
+  content: "";
+  position: absolute;
+  left: 16px; right: 16px; bottom: 0;
+  height: 2px;
+  border-radius: 999px 999px 0 0;
+  background: linear-gradient(90deg, var(--accent), rgba(88,166,255,0));
+  transform-origin: left;
+  animation: grow 2.4s var(--ease) infinite;
+}
+@keyframes grow {
+  0%, 100% { transform: scaleX(.28); opacity: .55; }
+  50%      { transform: scaleX(1);   opacity: 1; }
+}
+
+/* ====================================================== BODY GRID ======== */
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 16px;
+  align-items: stretch;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+.col { display: flex; flex-direction: column; gap: 16px; min-height: 0; min-width: 0; }
+.col > .grow { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.col > .grow > .card-head { flex: none; }
+.ledger { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.inspector { flex: none; }
+
+/* --------------------------------------------------------------- tabs ---- */
+.pane-radio { position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none; }
+
+.segmented { display: inline-flex; gap: 2px; padding: 2px; border-radius: 7px; background: var(--sunken); border: 1px solid var(--line-soft); }
+.segmented label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  padding: 0 9px;
+  border-radius: 5px;
+  font-size: 11.5px;
+  font-weight: 520;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: background .13s var(--ease), color .13s var(--ease);
+}
+.segmented label:hover { color: var(--text-2); }
+.segmented .tally {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-4);
+  padding: 0 4px;
+  border-radius: 3px;
+  background: rgba(255,255,255,.05);
+}
+
+#p-files:checked ~ .card-head label[for="p-files"],
+#p-dev:checked   ~ .card-head label[for="p-dev"],
+#p-runs:checked  ~ .card-head label[for="p-runs"] {
+  color: var(--text);
+  background: var(--surface-3);
+  box-shadow: 0 1px 2px rgba(0,0,0,.35);
+}
+#p-files:checked ~ .card-head label[for="p-files"] .tally,
+#p-dev:checked   ~ .card-head label[for="p-dev"] .tally,
+#p-runs:checked  ~ .card-head label[for="p-runs"] .tally { color: var(--text-2); }
+
+.panes {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: block;
+}
+.panes > div { display: none; min-height: 0; height: 100%; }
+#p-files:checked ~ .panes .pane-files,
+#p-dev:checked   ~ .panes .pane-dev,
+#p-runs:checked  ~ .panes .pane-runs { display: block; }
+
+/* ---------------------------------------------------------- file cards --- */
+.files {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  gap: 1px;
+  background: var(--line-soft);
+  overflow-y: auto;
+  min-height: 0;
+  height: 100%;
+  -webkit-mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 26px), transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 26px), transparent 100%);
+}
+
+.fcard {
+  position: relative;
+  background: var(--surface-1);
+  padding: 10px 14px 11px;
+  min-width: 0;
+  animation: cardIn .52s var(--ease) both;
+  animation-delay: calc(var(--i) * 55ms);
+  transition: background .14s var(--ease);
+}
+.fcard:hover { background: var(--surface-2); }
+
+@keyframes cardIn {
+  from { opacity: 0; transform: translate3d(0, 9px, 0); }
+  to   { opacity: 1; transform: none; }
+}
+
+.fcard-top { display: flex; align-items: center; gap: 9px; min-width: 0; }
+
+.fcard-ico {
+  display: grid; place-items: center;
+  width: 24px; height: 24px;
+  flex: none;
+  border-radius: 6px;
+  color: var(--text-3);
+  background: var(--surface-3);
+  border: 1px solid var(--line-soft);
+}
+.fcard[data-kind="live"] .fcard-ico { color: var(--accent); background: var(--accent-soft); border-color: var(--accent-line); }
+.fcard[data-state="secured"] .fcard-ico { color: var(--ok); background: var(--ok-soft); border-color: var(--ok-line); }
+
+.fcard-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fcard[data-state="queued"] .fcard-name { color: var(--text-3); }
+
+.fcard-size {
+  flex: none;
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 10.5px;
+  color: var(--text-3);
+}
+
+/* per-file stage pips — structured, not log text */
+.pips { display: flex; gap: 2px; flex: none; }
+.pips i {
+  width: 10px; height: 3px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.10);
+}
+.pips i.done { background: rgba(63,185,80,.75); }
+.pips i.live { background: var(--accent); animation: breathe 1.3s ease-in-out infinite; }
+
+.fcard-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding-left: 33px;
+  min-width: 0;
+}
+.fcard-state {
+  font-size: 10px;
+  font-weight: 560;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-4);
+  white-space: nowrap;
+}
+.fcard[data-state="secured"] .fcard-state { color: var(--ok); }
+.fcard[data-state="pulling"] .fcard-state { color: var(--accent); }
+
+.fcard-bar {
+  margin-top: 7px;
+  margin-left: 33px;
+  height: 2px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.07);
+  overflow: hidden;
+}
+.fcard-bar span {
+  display: block;
+  height: 100%;
+  width: 62%;
+  border-radius: 999px;
+  background: var(--accent);
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--accent) 0 8px,
+    rgba(88,166,255,.55) 8px 16px
+  );
+  background-size: 16px 100%;
+  animation: flow 1s linear infinite;
+}
+
+.fcard-time {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 10px;
+  color: var(--text-4);
+  white-space: nowrap;
+}
+
+.tag-live {
+  display: inline-flex;
+  align-items: center;
+  height: 15px;
+  padding: 0 5px;
+  border-radius: 3px;
+  font-size: 9px;
+  font-weight: 650;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
+}
+
+/* --------------------------------------------------------- device rows --- */
+.rows { padding: 4px 0; }
+.row {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.row:last-child { border-bottom: 0; }
+.row-ico {
+  display: grid; place-items: center;
+  width: 24px; height: 24px;
+  border-radius: 6px;
+  color: var(--text-3);
+  background: var(--surface-3);
+  border: 1px solid var(--line-soft);
+}
+.row[data-tone="ok"]   .row-ico { color: var(--ok); background: var(--ok-soft); border-color: var(--ok-line); }
+.row[data-tone="warn"] .row-ico { color: var(--warn); background: var(--warn-soft); border-color: var(--warn-line); }
+
+.row-main { min-width: 0; }
+.row-name { display: block; font-size: 12px; font-weight: 540; }
+.row-sub { display: block; margin-top: 1px; font-family: var(--mono); font-size: 10px; color: var(--text-4); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.pill.ok    { color: var(--ok);     background: var(--ok-soft);     border: 1px solid var(--ok-line); }
+.pill.warn  { color: var(--warn);   background: var(--warn-soft);   border: 1px solid var(--warn-line); }
+.pill.idle  { color: var(--text-3); background: rgba(255,255,255,.04); border: 1px solid var(--line-soft); }
+.pill.live  { color: var(--accent); background: var(--accent-soft); border: 1px solid var(--accent-line); }
+
+/* ------------------------------------------------------------ run rows --- */
+.runs { padding: 4px 0; }
+.run-row {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr) 74px 60px 66px;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 16px;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 11.5px;
+}
+.run-row:last-child { border-bottom: 0; }
+.run-when { font-family: var(--mono); font-size: 10.5px; color: var(--text-3); }
+.run-what { color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.run-num  { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--text-2); text-align: right; }
+.run-bar  { height: 3px; border-radius: 999px; background: rgba(255,255,255,.07); overflow: hidden; }
+.run-bar span { display: block; height: 100%; border-radius: 999px; background: var(--ok); opacity: .6; }
+
+/* --------------------------------------------------- milestone timeline -- */
+.timeline {
+  padding: 8px 16px 14px;
+  overflow-y: auto;
+  min-height: 0;
+  flex: 1 1 auto;
+  -webkit-mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 24px), transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 24px), transparent 100%);
+}
+
+.ms {
+  display: grid;
+  grid-template-columns: 52px 13px minmax(0, 1fr);
+  align-items: start;
+  gap: 0 8px;
+  padding: 6px 0;
+}
+
+.ms-time {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 10px;
+  color: var(--text-4);
+  padding-top: 3px;
+  text-align: right;
+}
+
+.ms-rail { position: relative; align-self: stretch; display: grid; place-items: center; }
+
+.ms-rail::before {
+  content: "";
+  position: absolute;
+  top: 0; bottom: -10px;
+  width: 1px;
+  background: var(--line);
+}
+.ms:last-child .ms-rail::before { display: none; }
+
+.ms-dot {
+  position: relative;
+  width: 7px; height: 7px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: var(--text-4);
+  box-shadow: 0 0 0 3px var(--surface-1);
+}
+.ms[data-kind="ok"]   .ms-dot { background: var(--ok); }
+.ms[data-kind="warn"] .ms-dot { background: var(--warn); }
+.ms[data-kind="info"] .ms-dot { background: var(--accent); }
+.ms[data-kind="info"] .ms-dot { animation: breathe 1.6s ease-in-out infinite; }
+
+.ms-body { min-width: 0; padding-top: 1px; }
+.ms-stage {
+  font-size: 9.5px;
+  font-weight: 640;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-4);
+}
+.ms[data-kind="ok"]   .ms-stage { color: rgba(63,185,80,.85); }
+.ms[data-kind="warn"] .ms-stage { color: rgba(214,160,31,.9); }
+.ms[data-kind="info"] .ms-stage { color: var(--accent); }
+
+.ms-msg { margin-top: 1px; font-size: 11.5px; color: var(--text-2); line-height: 1.42; }
+.ms[data-kind="info"] .ms-msg { color: var(--text); }
+.ms-id { font-family: var(--mono); font-size: 10px; color: var(--text-4); }
+
+/* ----------------------------------------------------------- inspector --- */
+.inspector { overflow: hidden; }
+.inspector summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  font-size: 11.5px;
+  color: var(--text-3);
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  white-space: nowrap;
+  transition: color .13s var(--ease), background .13s var(--ease);
+}
+.inspector summary > span:first-of-type { flex: none; }
+.inspector summary .meta {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-4);
+  text-align: right;
+}
+.inspector summary::-webkit-details-marker { display: none; }
+.inspector summary:hover { color: var(--text-2); background: rgba(255,255,255,.028); }
+.inspector summary .chev { margin-left: auto; transition: transform .18s var(--ease); }
+.inspector[open] summary .chev { transform: rotate(180deg); }
+
+.log {
+  margin: 0;
+  padding: 10px 14px 12px;
+  max-height: 132px;
+  overflow: auto;
+  background: var(--sunken);
+  border-top: 1px solid var(--line-soft);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  line-height: 1.62;
+  color: var(--text-3);
+  white-space: pre;
+}
+.log .w { color: var(--warn); }
+.log .g { color: var(--ok); }
+
+/* ------------------------------------------------------------- utility --- */
+.rowline { display: flex; align-items: center; gap: 10px; }
+
+@keyframes breathe {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: .5; transform: scale(.84); }
+}
+@keyframes halo {
+  0%, 100% { opacity: .8; transform: scale(1); }
+  50%      { opacity: 0;  transform: scale(1.22); }
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+  /* keep the rail legible when motion is off: static stripes, no glow */
+  .rail-live { opacity: .85; }
+}
+</style>
+</head>
+<body>
+
+<main class="frame">
+
+  <!-- ===================================================== window chrome -->
+  <div class="titlebar">
+    <div class="lights">
+      <span class="light light-r"></span>
+      <span class="light light-y"></span>
+      <span class="light light-g"></span>
+    </div>
+
+    <div class="win-title">
+      <span>Photo Relay</span>
+      <span class="sep">/</span>
+      <span class="mono">relay-2026-10-11-1406</span>
+    </div>
+
+    <div class="titlebar-right">
+      <span class="run-chip"><i class="led"></i>Running · Pull</span>
+      <button class="icon-btn spinning" aria-label="Refreshing">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ================================================ design direction tag -->
+  <div class="direction">
+    <span class="dir-tag">Direction A</span>
+    <span class="dir-name">Control Room</span>
+    <span class="dir-rule"></span>
+    <span class="swatches">
+      <i class="swatch sw-surface"></i><i class="swatch sw-accent"></i><i class="swatch sw-ok"></i><i class="swatch sw-warn"></i><i class="swatch sw-danger"></i>
+    </span>
+    <span class="dir-note">1080px column · seamless directional flow · mono telemetry · no emoji, no raw log in the main view</span>
+  </div>
+
+  <!-- ========================================================== app body -->
+  <div class="body">
+
+    <!-- icon rail -->
+    <nav class="rail">
+      <div class="rail-mark">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4.5 13H11l-1 9 8.5-11H12z"/></svg>
+      </div>
+
+      <button class="rail-btn" aria-current="page" aria-label="Relay">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M7 9l2.5 2.5L12 8l2.5 3.5L17 9"/></svg>
+      </button>
+      <button class="rail-btn" aria-label="Ledger">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+      </button>
+      <button class="rail-btn" aria-label="Milestones">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 1.9"/></svg>
+      </button>
+      <button class="rail-btn" aria-label="Devices">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M11 18.5h2"/></svg>
+      </button>
+      <button class="rail-btn" aria-label="Runs">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      </button>
+      <button class="rail-btn" aria-label="Watermark">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5s6.5 7 6.5 11.4A6.5 6.5 0 0 1 12 20.4a6.5 6.5 0 0 1-6.5-6.5C5.5 9.5 12 2.5 12 2.5z"/></svg>
+      </button>
+
+      <div class="rail-gap"></div>
+      <div class="rail-foot">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .33 1.77l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.6 1.6 0 0 0-1.77-.33 1.6 1.6 0 0 0-1 1.47V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 9 19.4a1.6 1.6 0 0 0-1.77.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.6 1.6 0 0 0 4.6 15a1.6 1.6 0 0 0-1.47-1H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.6 9a1.6 1.6 0 0 0-.33-1.77l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.6 1.6 0 0 0 9 4.6a1.6 1.6 0 0 0 1-1.47V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.47 1.6 1.6 0 0 0 1.77-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.6 1.6 0 0 0 19.4 9v0a1.6 1.6 0 0 0 1.47 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.47 1z"/></svg>
+      </div>
+    </nav>
+
+    <!-- main pane -->
+    <div class="main">
+      <div class="column">
+
+        <!-- ================================================ HERO / pipeline -->
+        <section class="card hero">
+          <div class="hero-main">
+
+            <div class="hero-top">
+              <div class="phase-lock">
+                <div class="phase-glyph">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="m21 15-4.5-4.5"/><path d="M3 15v4a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>
+                </div>
+                <div class="phase-text">
+                  <div class="phase-name">Pull <span class="of">stage 3 of 6</span></div>
+                  <div class="phase-file">
+                    <span class="mono">IMG_4127.HEIC</span>
+                    <span class="arrow">/</span>
+                    <span class="mono">IMG_4127.MOV</span>
+                    <span class="tag-live">Live pair</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="hero-actions">
+                <button class="btn btn-quiet">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>
+                  Pause
+                </button>
+                <button class="btn btn-stop">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>
+                  Stop relay
+                </button>
+              </div>
+            </div>
+
+            <!-- connected rail: one uninterrupted line, no per-link pulses -->
+            <div class="stepper">
+              <div class="rail-track">
+                <div class="rail-done"></div>
+                <div class="rail-live"></div>
+              </div>
+
+              <div class="nodes">
+                <div class="node" data-state="done">
+                  <span class="node-dot">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                  </span>
+                  <span class="node-label">Connect</span>
+                  <span class="node-meta mono">usb · adb</span>
+                </div>
+
+                <div class="node" data-state="done">
+                  <span class="node-dot">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                  </span>
+                  <span class="node-label">Scan</span>
+                  <span class="node-meta mono">138 found</span>
+                </div>
+
+                <div class="node" data-state="active">
+                  <span class="node-dot">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="m7 10 5 5 5-5"/></svg>
+                  </span>
+                  <span class="node-label">Pull</span>
+                  <span class="node-meta mono">96 / 138</span>
+                </div>
+
+                <div class="node" data-state="pending">
+                  <span class="node-dot"></span>
+                  <span class="node-label">Convert</span>
+                  <span class="node-meta mono">11 pairs</span>
+                </div>
+
+                <div class="node" data-state="pending">
+                  <span class="node-dot"></span>
+                  <span class="node-label">Push</span>
+                  <span class="node-meta mono">0 / 138</span>
+                </div>
+
+                <div class="node" data-state="pending">
+                  <span class="node-dot"></span>
+                  <span class="node-label">Index</span>
+                  <span class="node-meta mono">queued</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- progress -->
+            <div class="progress-block">
+              <div class="pb-head">
+                <div class="pb-file">
+                  <span class="eyebrow">In flight</span>
+                  <span class="name mono">IMG_4127.HEIC</span>
+                  <span class="mono" style="color:var(--text-4)">3.6 of 5.8 MB</span>
+                </div>
+                <div class="pb-count mono">
+                  <span class="big">96 / 138</span>
+                  <span>files</span>
+                  <span class="pct">69.6%</span>
+                </div>
+              </div>
+
+              <div class="pb-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="70" aria-label="Relay progress">
+                <div class="pb-fill">
+                  <div class="pb-sheen"></div>
+                </div>
+                <div class="pb-ticks"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+              </div>
+
+              <div class="pb-foot mono">
+                <span class="seg"><span class="k">moved</span><span class="v">1.94 GB</span></span>
+                <span class="seg"><span class="k">of</span><span class="v">2.71 GB</span></span>
+                <span class="seg"><span class="k">rate</span><span class="v hi">88 MB/s</span></span>
+                <span class="seg"><span class="k">elapsed</span><span class="v">01:12</span></span>
+                <span class="seg"><span class="k">eta</span><span class="v">1:24</span></span>
+              </div>
+            </div>
+
+            <!-- device state: compact inline chips, not a panel -->
+            <div class="devices">
+              <div class="dev-chip" data-role="source">
+                <span class="glyph">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M11 18.5h2"/></svg>
+                </span>
+                <span class="dev-text">
+                  <span class="dev-name">iPhone 15 Pro</span>
+                  <span class="dev-sub mono">00008110 · usb 2.1 · trusted</span>
+                </span>
+                <span class="dev-leds"><i class="led-sm on"></i><i class="led-sm on"></i><i class="led-sm on"></i></span>
+              </div>
+
+              <span class="dev-wire"></span>
+
+              <div class="dev-chip">
+                <span class="glyph">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 16V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9m16 0H4m16 0 1.3 2.5a1 1 0 0 1-.9 1.5H3.6a1 1 0 0 1-.9-1.5L4 16"/></svg>
+                </span>
+                <span class="dev-text">
+                  <span class="dev-name">This Mac</span>
+                  <span class="dev-sub mono">pmd3 4.14.2 · stage ok</span>
+                </span>
+              </div>
+
+              <span class="dev-wire"></span>
+
+              <div class="dev-chip" data-role="sink">
+                <span class="glyph">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12H2"/><path d="m5.5 5.1-3.5 6.9v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.8 4H7.2a2 2 0 0 0-1.7 1.1z"/></svg>
+                </span>
+                <span class="dev-text">
+                  <span class="dev-name">Galaxy S24 Ultra</span>
+                  <span class="dev-sub mono">R5CT30 · adb · dcim/100G</span>
+                </span>
+                <span class="dev-leds"><i class="led-sm on"></i><i class="led-sm on"></i><i class="led-sm warn"></i></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- replaces the weak top-right animation block with live telemetry -->
+          <aside class="hero-aside">
+            <div class="ha-head">
+              <span class="eyebrow">Throughput</span>
+              <span class="eyebrow" style="color:var(--accent)">live</span>
+            </div>
+
+            <div class="ha-rate">
+              <span class="n">88</span>
+              <span class="u">MB/s</span>
+            </div>
+
+            <div class="spark" aria-hidden="true">
+              <i style="--h:30;--d:0"></i>
+              <i style="--h:46;--d:110"></i>
+              <i style="--h:63;--d:220"></i>
+              <i style="--h:38;--d:330"></i>
+              <i style="--h:74;--d:440"></i>
+              <i style="--h:55;--d:550"></i>
+              <i style="--h:82;--d:660"></i>
+              <i style="--h:47;--d:770"></i>
+              <i style="--h:68;--d:880"></i>
+              <i style="--h:94;--d:990"></i>
+              <i style="--h:41;--d:1100"></i>
+              <i style="--h:60;--d:1210"></i>
+              <i style="--h:77;--d:1320"></i>
+              <i style="--h:44;--d:1430"></i>
+              <i style="--h:88;--d:1540"></i>
+              <i style="--h:53;--d:1650"></i>
+              <i style="--h:71;--d:1760"></i>
+              <i class="recent" style="--h:97;--d:1870"></i>
+              <i class="recent" style="--h:58;--d:1980"></i>
+              <i class="live" style="--h:84;--d:2090"></i>
+            </div>
+
+            <div class="ha-grid">
+              <div class="ha-cell">
+                <span class="k">Peak</span>
+                <span class="v">88.4</span>
+              </div>
+              <div class="ha-cell">
+                <span class="k">In flight</span>
+                <span class="v">94</span>
+              </div>
+              <div class="ha-cell">
+                <span class="k">Errors</span>
+                <span class="v" style="color:var(--ok)">0</span>
+              </div>
+              <div class="ha-cell">
+                <span class="k">Skipped</span>
+                <span class="v">4</span>
+              </div>
+            </div>
+
+            <div class="ha-bar">
+              <div class="ha-bar-top">
+                <span>bytes secured this run</span>
+                <span class="mono" style="color:var(--text-2)">1.94 / 2.71 GB</span>
+              </div>
+              <div class="ha-bar-track"><div class="ha-bar-fill"></div></div>
+            </div>
+          </aside>
+        </section>
+
+        <!-- ==================================================== STAT STRIP -->
+        <section class="card strip">
+          <div class="stat live">
+            <span class="k">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4.5 13H11l-1 9 8.5-11H12z"/></svg>
+              Throughput
+            </span>
+            <span class="v accent">88<span class="s">MB/s</span></span>
+            <span class="d">peak 88.4 · 94 in flight</span>
+          </div>
+
+          <div class="stat">
+            <span class="k">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="1.6"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg>
+              Files this run
+            </span>
+            <span class="v">96<span class="s">/ 138</span></span>
+            <span class="d">11 live pairs · 4 skipped</span>
+          </div>
+
+          <div class="stat">
+            <span class="k">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></svg>
+              Moved
+            </span>
+            <span class="v">1.94<span class="s">GB</span></span>
+            <span class="d">of 2.71 GB queued</span>
+          </div>
+
+          <div class="stat">
+            <span class="k">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 1.9"/></svg>
+              Time left
+            </span>
+            <span class="v">1:24</span>
+            <span class="d">elapsed 01:12</span>
+          </div>
+
+          <div class="stat">
+            <span class="k">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+              Total secured
+            </span>
+            <span class="v ok">2796</span>
+            <span class="d">files across 31 runs</span>
+          </div>
+        </section>
+
+        <!-- ====================================================== BODY GRID -->
+        <div class="grid">
+
+          <!-- -------------------------------------------- left: tabbed ledger -->
+          <section class="card ledger">
+
+            <input class="pane-radio" type="radio" name="pane" id="p-files" checked>
+            <input class="pane-radio" type="radio" name="pane" id="p-dev">
+            <input class="pane-radio" type="radio" name="pane" id="p-runs">
+
+            <div class="card-head">
+              <div class="title">
+                <span class="heading" id="pane-title">Session ledger</span>
+              </div>
+              <div class="segmented">
+                <label for="p-files">Files<span class="tally">138</span></label>
+                <label for="p-dev">Devices<span class="tally">4</span></label>
+                <label for="p-runs">Runs<span class="tally">31</span></label>
+              </div>
+            </div>
+
+            <div class="panes">
+
+              <!-- files pane -->
+              <div class="pane-files">
+                <div class="files">
+
+                  <article class="fcard" data-state="secured" data-kind="still" style="--i:0">
+                    <div class="fcard-top">
+                      <span class="fcard-ico">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="1.6"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg>
+                      </span>
+                      <span class="fcard-name">IMG_4118.HEIC</span>
+                      <span class="pips"><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i></span>
+                      <span class="fcard-size">4.8 MB</span>
+                    </div>
+                    <div class="fcard-foot">
+                      <span class="fcard-state">Secured</span>
+                      <span class="fcard-time">14:06:41</span>
+                    </div>
+                  </article>
+
+                  <article class="fcard" data-state="secured" data-kind="live" style="--i:1">
+                    <div class="fcard-top">
+                      <span class="fcard-ico">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="3" width="19" height="18" rx="2.2"/><path d="M7 3v18M17 3v18M2.5 12h19M2.5 7.5H7M2.5 16.5H7M17 7.5h4.5M17 16.5h4.5"/></svg>
+                      </span>
+                      <span class="fcard-name">IMG_4118.MOV</span>
+                      <span class="pips"><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i></span>
+                      <span class="fcard-size">11.6 MB</span>
+                    </div>
+                    <div class="fcard-foot">
+                      <span class="tag-live">Live to motion</span>
+                      <span class="fcard-time">14:06:43</span>
+                    </div>
+                  </article>
+
+                  <article class="fcard" data-state="secured" data-kind="still" style="--i:2">
+                    <div class="fcard-top">
+                      <span class="fcard-ico">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="1.6"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg>
+                      </span>
+                      <span class="fcard-name">IMG_4121.HEIC</span>
+                      <span class="pips"><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i></span>
+                      <span class="fcard-size">3.2 MB</span>
+                    </div>
+                    <div class="fcard-foot">
+                      <span class="fcard-state">Secured</span>
+                      <span class="fcard-time">14:06:47</span>
+                    </div>
+                  </article>
+
+                  <article class="fcard" data-state="secured" data-kind="live" style="--i:3">
+                    <div class="fcard-top">
+                      <span class="fcard-ico">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="3" width="19" height="18" rx="2.2"/><path d="M7 3v18M17 3v18M2.5 12h19M2.5 7.5H7M2.5 16.5H7M17 7.5h4.5M17 16.5h4.5"/></svg>
+                      </span>
+                      <span class="fcard-name">IMG_4121.MOV</span>
+                      <span class="pips"><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i></span>
+                      <span class="fcard-size">9.4 MB</span>
+                    </div>
+                    <div class="fcard-foot">
+                      <span class="tag-live">Live to motion</span>
+                      <span class="fcard-time">14:06:49</span>
+                    </div>
+                  </article>
+
+                  <article class="fcard" data-state="secured" data-kind="still" style="--i:4">
+                    <div class="fcard-top">
+                      <span class="fcard-ico">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="1.6"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg>
+                      </span>
+                      <span class="fcard-name">IMG_4123.HEIC</span>
+                      <span class="pips"><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i></span>
+                      <span class="fcard-size">5.1 MB</span>
+                    </div>
+                    <div class="fcard-foot">
+                      <span class="fcard-state">Secured</span>
+                      <span class="fcard-time">14:06:52</span>
+                    </div>
+                  </article>
+
+                  <article class="fcard" data-state="secured" data-kind="still" style="--i:5">
+                    <div class="fcard-top">
+                      <span class="fcard-ico">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="1.6"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg>
+                      </span>
+                      <span class="fcard-name">IMG_4124.HEIC</span>
+                      <span class="pips"><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i></span>
+                      <span class="fcard-size">4.4 MB</span>
+                    </div>
+                    <div class="fcard-foot">
+                      <span class="fcard-state">Secured</span>
+                      <span class="fcard-time">14:06:55</span>
+                    </div>
+                  </article>
+
+                  <article class="fcard" data-state="pulling" data-kind="live" style="--i:6">
+                    <div class="fcard-top">
+                      <span class="fcard-ico">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="3" width="19" height="18" rx="2.2"/><path d="M7 3v18M17 3v18M2.5 12h19M2.5 7.5H7M2.5 16.5H7M17 7.5h4.5M17 16.5h4.5"/></svg>
+                      </span>
+                      <span class="fcard-name">IMG_4127.HEIC</span>
+                      <span class="pips"><i class="live"></i><i></i><i></i><i></i></span>
+                      <span class="fcard-size">5.8 MB</span>
+                    </div>
+                    <div class="fcard-foot">
+                      <span class="fcard-state">Pulling 62%</span>
+                      <span class="fcard-time">14:07:14</span>
+                    </div>
+                    <div class="fcard-bar"><span></span></div>
+                  </article>
+
+                  <article class="fcard" data-state="queued" data-kind="live" style="--i:7">
+                    <div class="fcard-top">
+                      <span class="fcard-ico">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="3" width="19" height="18" rx="2.2"/><path d="M7 3v18M17 3v18M2.5 12h19M2.5 7.5H7M2.5 16.5H7M17 7.5h4.5M17 16.5h4.5"/></svg>
+                      </span>
+                      <span class="fcard-name">IMG_4127.MOV</span>
+                      <span class="pips"><i></i><i></i><i></i><i></i></span>
+                      <span class="fcard-size">12.4 MB</span>
+                    </div>
+                    <div class="fcard-foot">
+                      <span class="fcard-state">Queued</span>
+                      <span class="fcard-time">--:--:--</span>
+                    </div>
+                  </article>
+
+                </div>
+              </div>
+
+              <!-- devices pane -->
+              <div class="pane-dev">
+                <div class="rows">
+                  <div class="row" data-tone="ok">
+                    <span class="row-ico">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M11 18.5h2"/></svg>
+                    </span>
+                    <span class="row-main">
+                      <span class="row-name">iPhone 15 Pro</span>
+                      <span class="row-sub">00008110-001A2C3D4E5F6002 · ios 18.4 · usb 2.1 · paired</span>
+                    </span>
+                    <span class="pill ok">Source ready</span>
+                  </div>
+
+                  <div class="row" data-tone="ok">
+                    <span class="row-ico">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 16V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9m16 0H4m16 0 1.3 2.5a1 1 0 0 1-.9 1.5H3.6a1 1 0 0 1-.9-1.5L4 16"/></svg>
+                    </span>
+                    <span class="row-main">
+                      <span class="row-name">Relay host</span>
+                      <span class="row-sub">macbook-pro · pymobiledevice3 4.14.2 · staging 412 MB free</span>
+                    </span>
+                    <span class="pill live">Active</span>
+                  </div>
+
+                  <div class="row" data-tone="ok">
+                    <span class="row-ico">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12H2"/><path d="m5.5 5.1-3.5 6.9v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.5-6.9A2 2 0 0 0 16.8 4H7.2a2 2 0 0 0-1.7 1.1z"/></svg>
+                    </span>
+                    <span class="row-main">
+                      <span class="row-name">Galaxy S24 Ultra</span>
+                      <span class="row-sub">R5CT30XXXXX · android 15 · adb 1 · dcim/100G/Camera</span>
+                    </span>
+                    <span class="pill ok">Sink ready</span>
+                  </div>
+
+                  <div class="row" data-tone="warn">
+                    <span class="row-ico">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="3" width="19" height="18" rx="2.2"/><path d="M7 3v18M17 3v18M2.5 12h19"/></svg>
+                    </span>
+                    <span class="row-main">
+                      <span class="row-name">Google Photos</span>
+                      <span class="row-sub">backup paused 14:02 · will resume on media scan</span>
+                    </span>
+                    <span class="pill warn">Paused</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- runs pane -->
+              <div class="pane-runs">
+                <div class="runs">
+                  <div class="run-row">
+                    <span class="run-when">today 08:41</span>
+                    <span class="run-what">Watermark 2026-10-10</span>
+                    <span class="run-num">96 files</span>
+                    <span class="run-num">1.61 GB</span>
+                    <span class="run-bar"><span style="width:96%"></span></span>
+                  </div>
+                  <div class="run-row">
+                    <span class="run-when">oct 10 19:40</span>
+                    <span class="run-what">Watermark 2026-10-08</span>
+                    <span class="run-num">212 files</span>
+                    <span class="run-num">3.84 GB</span>
+                    <span class="run-bar"><span style="width:100%"></span></span>
+                  </div>
+                  <div class="run-row">
+                    <span class="run-when">oct 09 07:55</span>
+                    <span class="run-what">Watermark 2026-10-06</span>
+                    <span class="run-num">143 files</span>
+                    <span class="run-num">2.20 GB</span>
+                    <span class="run-bar"><span style="width:100%"></span></span>
+                  </div>
+                  <div class="run-row">
+                    <span class="run-when">oct 07 21:12</span>
+                    <span class="run-what">Watermark 2026-10-04</span>
+                    <span class="run-num">58 files</span>
+                    <span class="run-num">0.94 GB</span>
+                    <span class="run-bar"><span style="width:100%"></span></span>
+                  </div>
+                  <div class="run-row">
+                    <span class="run-when">oct 05 06:30</span>
+                    <span class="run-what">Watermark 2026-10-01</span>
+                    <span class="run-num">174 files</span>
+                    <span class="run-num">2.61 GB</span>
+                    <span class="run-bar"><span style="width:100%"></span></span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </section>
+
+          <!-- ------------------------------- right: milestones + inspector -->
+          <div class="col">
+
+            <section class="card grow">
+              <div class="card-head">
+                <div class="title">
+                  <span class="eyebrow">Run</span>
+                  <span class="heading">Milestones</span>
+                </div>
+                <span class="count mono">7</span>
+              </div>
+
+              <ol class="timeline">
+                <li class="ms" data-kind="ok">
+                  <span class="ms-time">14:06:02</span>
+                  <span class="ms-rail"><i class="ms-dot"></i></span>
+                  <span class="ms-body">
+                    <span class="ms-stage">Connect</span>
+                    <span class="ms-msg">Paired iPhone 15 Pro <span class="ms-id">· 00008110-001A2C3D4E5F6002</span></span>
+                  </span>
+                </li>
+
+                <li class="ms" data-kind="ok">
+                  <span class="ms-time">14:06:03</span>
+                  <span class="ms-rail"><i class="ms-dot"></i></span>
+                  <span class="ms-body">
+                    <span class="ms-stage">Connect</span>
+                    <span class="ms-msg">Samsung SM-S921B on adb 1 <span class="ms-id">· /DCIM/100G/Camera</span></span>
+                  </span>
+                </li>
+
+                <li class="ms" data-kind="ok">
+                  <span class="ms-time">14:06:05</span>
+                  <span class="ms-rail"><i class="ms-dot"></i></span>
+                  <span class="ms-body">
+                    <span class="ms-stage">Scan</span>
+                    <span class="ms-msg">138 files queued, 2.71 GB <span class="ms-id">· watermark 10-08 19:41</span></span>
+                  </span>
+                </li>
+
+                <li class="ms" data-kind="warn">
+                  <span class="ms-time">14:06:06</span>
+                  <span class="ms-rail"><i class="ms-dot"></i></span>
+                  <span class="ms-body">
+                    <span class="ms-stage">Scan</span>
+                    <span class="ms-msg">4 already on Samsung, skipped</span>
+                  </span>
+                </li>
+
+                <li class="ms" data-kind="ok">
+                  <span class="ms-time">14:06:07</span>
+                  <span class="ms-rail"><i class="ms-dot"></i></span>
+                  <span class="ms-body">
+                    <span class="ms-stage">Scan</span>
+                    <span class="ms-msg">11 Live Photo pairs matched for convert</span>
+                  </span>
+                </li>
+
+                <li class="ms" data-kind="info">
+                  <span class="ms-time">14:06:08</span>
+                  <span class="ms-rail"><i class="ms-dot"></i></span>
+                  <span class="ms-body">
+                    <span class="ms-stage">Pull</span>
+                    <span class="ms-msg">AFC channel open, 4 parallel streams</span>
+                  </span>
+                </li>
+
+                <li class="ms" data-kind="info">
+                  <span class="ms-time">14:07:14</span>
+                  <span class="ms-rail"><i class="ms-dot"></i></span>
+                  <span class="ms-body">
+                    <span class="ms-stage">Pull</span>
+                    <span class="ms-msg">Peak held 12 s at 88.4 MB/s <span class="ms-id">· 94 in flight · 0 retries</span></span>
+                  </span>
+                </li>
+              </ol>
+            </section>
+
+            <details class="card inspector">
+              <summary>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m4 17 6-6-6-6"/><path d="M12 19h8"/></svg>
+                <span>Engine inspector</span>
+                <span class="meta">pymobiledevice3 · 4,182 lines</span>
+                <svg class="chev" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+              </summary>
+              <pre class="log">14:06:08.114 relay.pull  afc.open handle=0x3f uid=501 stream=4
+14:06:08.402 relay.pull  afc.read  IMG_4118.HEIC bytes=5033165 41.2 MB/s
+14:06:09.017 relay.pull  afc.read  IMG_4118.MOV bytes=12163126 78.9 MB/s
+14:06:09.930 relay.scan  dedup.skip name=IMG_4102.HEIC reason=present
+14:06:11.221 relay.pull  in_flight=94 rate=88.4MB/s retries=0
+14:06:12.880 relay.pull  live_pair IMG_4121 detected=motion:apple meta=heic+mov
+14:06:14.006 relay.pull  stage.write /var/relay/stage/IMG_4124.HEIC
+14:06:18.442 relay.pull  afc.read  IMG_4127.HEIC bytes=6081740 partial=3768320
+14:06:19.004 relay.core  watchdog ok rtt=11ms budget=0.00</pre>
+            </details>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</main>
+
+</body>
+</html>

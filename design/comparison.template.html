@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Photo Relay — UI direction comparison</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --page: #000;
+    --ink: #fff;
+    --dim: #9a9a9a;
+    --faint: #6a6a6a;
+    --edge: rgba(255,255,255,.12);
+    --panel: #0b0b0b;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--page); color: var(--ink); }
+  body {
+    font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 40px 24px 72px; }
+  h1 { font-size: 26px; letter-spacing: -.02em; margin: 0 0 8px; }
+  .lede { color: var(--dim); max-width: 68ch; margin: 0 0 28px; }
+  .lede strong { color: var(--ink); font-weight: 600; }
+
+  nav.toc {
+    position: sticky; top: 0; z-index: 50;
+    display: flex; gap: 8px; flex-wrap: wrap;
+    padding: 12px 0; margin-bottom: 26px;
+    background: rgba(0,0,0,.92); backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--edge);
+  }
+  nav.toc a {
+    color: var(--ink); text-decoration: none;
+    border: 1px solid var(--edge); border-radius: 7px;
+    padding: 6px 12px; font-size: 13px;
+  }
+  nav.toc a:hover { background: #151515; }
+
+  section.variant { margin: 0 0 64px; scroll-margin-top: 70px; }
+  .vhead { display: flex; align-items: baseline; gap: 12px; margin: 0 0 14px; flex-wrap: wrap; }
+  .vhead h2 { font-size: 19px; margin: 0; letter-spacing: -.01em; }
+  .vhead .tag {
+    font: 600 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+    letter-spacing: .1em; text-transform: uppercase; color: var(--dim);
+  }
+  .vhead .note { color: var(--faint); font-size: 13px; flex: 1 1 100%; }
+
+  /* Each mockup is a fixed 1280px-wide frame. Scale it to fit the column rather
+     than reflowing it, so what you judge is the real layout at real proportions.
+     --h is each variant's unscaled content height; --s is the shared scale.
+     The scaler's height must be exactly --h * --s, or the unscaled frame leaves
+     a large empty gap below the shot. */
+  :root { --s: .87; }
+  .va { --h: 860; }
+  .vb { --h: 880; }
+  .vc { --h: 860; }
+  .scaler { overflow: hidden; border: 1px solid var(--edge); border-radius: 12px; background: #000; }
+  .shot { width: 1280px; height: calc(var(--h) * 1px); transform-origin: 0 0; transform: scale(var(--s)); }
+  .scaler { height: calc(var(--h) * var(--s) * 1px); }
+
+  /* The mockups were authored as full pages, so their body rules carry page
+     layout (flex centering, padding, min-height). Those are scoped to .vbody;
+     neutralize them here so only the inherited typography and color survive,
+     and the fixed 1280px frame alone defines the box. Higher specificity than
+     the scoped `.vX .vbody` rule, so it wins. */
+  section.variant .vbody {
+    display: block; margin: 0; padding: 0;
+    min-height: 0; height: auto; width: 1280px;
+  }
+
+  .meta { display: grid; gap: 10px; margin-top: 14px; }
+  .meta ul { margin: 0; padding-left: 18px; color: var(--dim); font-size: 14px; }
+  .meta li { margin-bottom: 3px; }
+  .meta b { color: var(--ink); font-weight: 600; }
+
+  /* Three 1280x860 mockups each running a dozen infinite animations will pin a
+     CPU if all animate at once. Only the section on screen animates. */
+  section.variant { content-visibility: auto; contain-intrinsic-size: auto 1500px; }
+
+  footer { border-top: 1px solid var(--edge); padding-top: 20px; color: var(--faint); font-size: 13px; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
+
+  @media (max-width: 1180px) { :root { --s: .72; } }
+  @media (max-width: 940px) { :root { --s: .55; } }
+  @media (max-width: 720px) { :root { --s: .40; } }
+  @media (prefers-color-scheme: light) {
+    :root { --page: #fff; --ink: #111; --dim: #555; --faint: #777; --edge: rgba(0,0,0,.14); --panel: #fafafa; }
+    nav.toc { background: rgba(255,255,255,.92); }
+    nav.toc a:hover { background: #f0f0f0; }
+    .scaler { background: #fff; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  }
+</style>
+<script>
+  // Pause animations in mockups that are scrolled out of view.
+  (function () {
+    var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var sections = Array.prototype.slice.call(document.querySelectorAll("section.variant"));
+
+    function sync() {
+      sections.forEach(function (section) {
+        var box = section.getBoundingClientRect();
+        var onScreen = box.bottom > 0 && box.top < window.innerHeight;
+        section.getAnimations({ subtree: true }).forEach(function (a) {
+          if (onScreen && !reduce) a.play(); else a.pause();
+        });
+      });
+    }
+
+    var queued = false;
+    function schedule() {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(function () { queued = false; sync(); });
+    }
+
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    window.addEventListener("load", sync);
+    sync();
+  })();
+</script>
+</head>
+<body>
+<div class="wrap">
+  <h1>Photo Relay — three UI directions</h1>
+  <p class="lede">
+    Each mockup below is a live, self-contained rendering of the same moment: a relay
+    mid-run at <strong>112 of 138 files</strong>, <strong>1.94 GB</strong>, <strong>88 MB/s</strong>,
+    <strong>1:24 left</strong>. Pick a letter and it gets built into the app.
+  </p>
+
+  <nav class="toc">
+    <a href="#variant-a">A — Control Room</a>
+    <a href="#variant-b">B — Focused Relay</a>
+    <a href="#variant-c">C — Split Deck</a>
+  </nav>
+
+  <section class="variant va" id="variant-a">
+    <div class="vhead">
+      <h2>Direction A — Control Room</h2>
+      <span class="tag">Dense console</span>
+      <span class="note">Constrained 1080px column, dense stat strip, monospace numerics. For someone who reads state at a glance and wants maximum information per glance.</span>
+    </div>
+    <div class="scaler"><div class="shot">
+      <!--MOCKUP_A-->
+    </div></div>
+    <div class="meta"><ul>
+      <li><b>Structure</b> single column, 6 stage chips on a connected rail, stat strip, files + milestones + history below.</li>
+      <li><b>Stretch fix</b> max-width caps the canvas; everything sits on cards instead of full-bleed bands.</li>
+      <li><b>Flow fix</b> seamless one-directional pulse, no visible reset.</li>
+    </ul></div>
+  </section>
+
+  <section class="variant vb" id="variant-b">
+    <div class="vhead">
+      <h2>Direction B — Focused Relay</h2>
+      <span class="tag">Single hero</span>
+      <span class="note">Narrow 820px column. The device chain is the emotional centre; detail collapses into a bottom sheet. For someone who wants the app to feel calm, not technical.</span>
+    </div>
+    <div class="scaler"><div class="shot">
+      <!--MOCKUP_B-->
+    </div></div>
+    <div class="meta"><ul>
+      <li><b>Structure</b> hero chain, progress block, recent files, collapsible detail sheet.</li>
+      <li><b>Stretch fix</b> 820px column inside a 1280px window, nothing spans the full width.</li>
+      <li><b>Flow fix</b> repeating-gradient whose period equals its tile width, so one tile shift is a pixel-identical frame. Packets wrap entirely off-clip.</li>
+    </ul></div>
+  </section>
+
+  <section class="variant vc" id="variant-c">
+    <div class="vhead">
+      <h2>Direction C — Split Deck</h2>
+      <span class="tag">Workspace tool</span>
+      <span class="note">Left nav rail plus a two-column working surface: live relay on the left, streaming file list on the right. For someone who treats it as a tool they live in.</span>
+    </div>
+    <div class="scaler"><div class="shot">
+      <!--MOCKUP_C-->
+    </div></div>
+    <div class="meta"><ul>
+      <li><b>Structure</b> persistent sidebar with pinned run status, two-column work area, secondary tabs.</li>
+      <li><b>Stretch fix</b> the sidebar takes the width, so the main area keeps a readable measure.</li>
+      <li><b>Flow fix</b> seamless directional flow with staggered packets.</li>
+    </ul></div>
+  </section>
+
+  <footer>
+    Reply with a letter: <code>A</code>, <code>B</code>, or <code>C</code>. Mixes are fine too, for example
+    "B's hero, but C's sidebar".
+  </footer>
+</div>
+</body>
+</html>

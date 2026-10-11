@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Photo Relay — Direction Stage timeline</title>
+<style>
+html,body{margin:0;background:#000;color:#fff}
+body{display:grid;place-items:center;min-height:100vh;padding:28px;overflow:auto;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif}
+@media (prefers-reduced-motion: reduce){*{animation-duration:.01ms !important;animation-iteration-count:1 !important}}
+
+.c-root{
+  --bg:#0b0b0d; --surface:#141418; --surface-2:#191921; --sunken:#0e0e12;
+  --line:rgba(255,255,255,.085); --line-2:rgba(255,255,255,.16);
+  --ink:#f4f5f7; --dim:#a2a6b0; --faint:#6d7280;
+  --accent:#7d6cff; --accent-soft:rgba(125,108,255,.15); --on-accent:#0c0a1e;
+  --good:#43cf93; --warn:#f0b429; --bad:#f2696e; --live:#40c6dd;
+  --r:9px; --r2:13px; --rl:18px;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  width:1180px; background:var(--bg); color:var(--ink);
+  font-family:var(--sans); font-size:13px; line-height:1.5;
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  border:1px solid var(--line); border-radius:var(--rl);
+  overflow:hidden; position:relative;
+}
+.c-root *{box-sizing:border-box}
+.c-mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.c-tnum{font-variant-numeric:tabular-nums}
+.c-dim{color:var(--dim)}
+
+.c-tb{display:flex;align-items:center;justify-content:space-between;gap:16px;height:48px;padding:0 16px;
+  border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--bg) 82%,transparent)}
+.c-id{display:flex;align-items:center;gap:10px;min-width:0}
+.c-mark{display:grid;place-items:center;width:26px;height:26px;border-radius:8px;color:var(--on-accent);
+  background:linear-gradient(140deg,var(--accent),color-mix(in oklab,var(--accent) 45%,var(--live)))}
+.c-names{display:flex;flex-direction:column;line-height:1.15;min-width:0}
+.c-name{font-size:13px;font-weight:600;letter-spacing:-.01em}
+.c-sub{font-size:11px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c-tbactions{display:flex;align-items:center;gap:8px}
+
+.c-pill{display:inline-flex;align-items:center;gap:7px;height:26px;padding:0 11px;border-radius:999px;
+  background:var(--surface-2);border:1px solid var(--line);font-size:11.5px;font-weight:520;color:var(--dim)}
+.c-dot{width:6px;height:6px;border-radius:50%;background:var(--faint)}
+.c-pill[data-state="live"]{color:var(--ink)}
+.c-pill[data-state="live"] .c-dot{background:var(--live);box-shadow:0 0 0 3px color-mix(in srgb,var(--live) 22%,transparent)}
+
+.c-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:30px;padding:0 12px;border-radius:8px;
+  border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:12.5px;font-weight:520;
+  white-space:nowrap;cursor:pointer}
+.c-btn:hover{background:var(--surface-2);border-color:var(--line-2)}
+.c-btn-primary{background:var(--accent);border-color:transparent;color:var(--on-accent)}
+.c-btn-primary:hover{background:color-mix(in oklab,var(--accent) 88%,white)}
+.c-btn-ghost{background:transparent;border-color:transparent;color:var(--dim)}
+.c-btn-ghost:hover{color:var(--ink);background:var(--surface-2)}
+.c-btn-danger{background:transparent;border-color:color-mix(in srgb,var(--bad) 42%,transparent);color:var(--bad)}
+.c-btn-danger:hover{background:color-mix(in srgb,var(--bad) 12%,transparent)}
+.c-iconbtn{display:grid;place-items:center;width:30px;height:30px;border-radius:8px;color:var(--dim);cursor:pointer;border:0;background:none}
+.c-iconbtn:hover{color:var(--ink);background:var(--surface-2)}
+
+.c-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r2)}
+.c-cardhead{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 15px;border-bottom:1px solid var(--line)}
+.c-cardtitle{font-size:12.5px;font-weight:560;letter-spacing:-.005em}
+.c-count{font-size:11.5px;color:var(--faint)}
+
+.c-bar{position:relative;height:8px;border-radius:999px;background:var(--sunken);overflow:hidden}
+.c-barfill{height:100%;border-radius:inherit;position:relative;overflow:hidden;
+  background:linear-gradient(90deg,var(--accent),color-mix(in oklab,var(--accent) 48%,var(--live)))}
+.c-barfill::after{content:"";position:absolute;inset:0;
+  background:repeating-linear-gradient(90deg,transparent 0 30px,rgba(255,255,255,.5) 42px,transparent 54px);
+  animation:c-sheen 1.15s linear infinite}
+@keyframes c-sheen{from{background-position:0 0}to{background-position:54px 0}}
+
+.c-led{width:8px;height:8px;border-radius:50%;background:var(--faint);flex:none}
+.c-led[data-on="1"]{background:var(--good);box-shadow:0 0 0 3px color-mix(in srgb,var(--good) 18%,transparent)}
+.c-led[data-state="live"]{background:var(--live);box-shadow:0 0 0 3px color-mix(in srgb,var(--live) 22%,transparent);animation:c-pulse 1.7s ease-in-out infinite}
+@keyframes c-pulse{0%,100%{box-shadow:0 0 0 3px color-mix(in srgb,var(--live) 22%,transparent)}50%{box-shadow:0 0 0 6px color-mix(in srgb,var(--live) 6%,transparent)}}
+
+.c-tag{display:inline-flex;align-items:center;gap:5px;height:19px;padding:0 7px;border-radius:6px;font-size:10.5px;font-weight:540;
+  background:var(--accent-soft);color:color-mix(in oklab,var(--accent) 60%,white)}
+.c-tag[data-tone="live"]{background:color-mix(in srgb,var(--live) 16%,transparent);color:var(--live)}
+
+.c-row{display:grid;grid-template-columns:20px minmax(0,1fr) auto;align-items:center;gap:10px;padding:8px 15px;border-bottom:1px solid var(--line)}
+.c-row:last-child{border-bottom:0}
+.c-rowicon{display:grid;place-items:center;width:20px;height:20px;border-radius:6px;background:var(--surface-2);color:var(--dim)}
+.c-rowname{font-size:12.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c-rowmeta{display:flex;align-items:center;gap:7px;margin-top:1px;font-size:10.5px;color:var(--faint)}
+.c-rowright{display:flex;align-items:center;gap:10px;color:var(--dim)}
+.c-rowsize{font-size:11.5px}
+.c-check{color:var(--good);display:grid;place-items:center}
+
+.c-steps{position:relative;display:flex;padding:2px 0}
+.c-steps::before{content:"";position:absolute;left:calc(100%/12);right:calc(100%/12);top:11px;height:2px;background:var(--line)}
+.c-step{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--faint)}
+.c-step-dot{display:grid;place-items:center;width:18px;height:18px;border-radius:50%;border:1.5px solid var(--line-2);
+  background:var(--bg);color:transparent;z-index:1}
+.c-step[data-state="done"] .c-step-dot{background:var(--good);border-color:var(--good);color:#06251a}
+.c-step[data-state="done"]{color:var(--dim)}
+.c-step[data-state="active"]{color:var(--ink)}
+.c-step[data-state="active"] .c-step-dot{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+.c-step-label{font-size:11.5px;white-space:nowrap}
+
+
+.c-layout2{display:grid;grid-template-columns:minmax(0,1fr) 380px}
+.c-time{padding:20px 22px}
+.c-h2{margin:0;font-size:15px;font-weight:600;letter-spacing:-.01em}
+.c-timesub{margin:3px 0 20px;font-size:12px;color:var(--faint)}
+.c-stage{display:grid;grid-template-columns:22px minmax(0,1fr);gap:13px;position:relative}
+.c-rail{display:flex;flex-direction:column;align-items:center}
+.c-dot{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line-2);background:var(--bg);color:transparent;flex:none}
+.c-stage[data-state="done"] .c-dot{background:var(--good);border-color:var(--good);color:#06251a}
+.c-stage[data-state="active"] .c-dot{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+.c-line{flex:1;width:2px;background:var(--line);margin:4px 0}
+.c-stage[data-state="done"] .c-line{background:color-mix(in srgb,var(--good) 55%,var(--line))}
+.c-stagebody{padding-bottom:18px;min-width:0}
+.c-stagetop{display:flex;align-items:center;gap:9px;margin-top:-1px}
+.c-stagename{font-size:13.5px;font-weight:560}
+.c-stage[data-state="todo"] .c-stagename{color:var(--faint);font-weight:520}
+.c-stage[data-state="done"] .c-stagename{color:var(--dim)}
+.c-badge{font-size:10.5px;font-weight:540;padding:2px 7px;border-radius:6px;background:var(--accent-soft);color:color-mix(in oklab,var(--accent) 60%,white)}
+.c-sum{margin-top:4px;font-size:12px;color:var(--dim)}
+.c-stage[data-state="todo"] .c-sum{color:var(--faint)}
+.c-expand{margin-top:12px;padding:13px;border-radius:var(--r2);background:var(--surface);border:1px solid var(--line);display:flex;flex-direction:column;gap:11px}
+.c-exphead{display:flex;align-items:center;gap:8px}
+.c-expfile{font-size:12px}
+.c-mini .c-row{padding:7px 0;border-bottom:1px solid var(--line)}
+.c-mini .c-row:last-child{border-bottom:0}
+.c-panel{border-left:1px solid var(--line);padding:20px;display:flex;flex-direction:column;gap:15px;background:color-mix(in srgb,var(--bg) 55%,transparent)}
+.c-pct{display:flex;align-items:baseline;line-height:.95}
+.c-pctnum{font-size:46px;font-weight:640;letter-spacing:-.04em}
+.c-pctsign{font-size:19px;font-weight:600;color:var(--dim);margin-left:3px}
+.c-pctsub{font-size:12px;color:var(--dim);margin-top:6px}
+.c-kvs2{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
+.c-kv2{display:flex;flex-direction:column;gap:2px}
+.c-kvl2{font-size:10.5px;color:var(--faint)}
+.c-kvv2{font-size:13px;font-weight:560}
+.c-group{border-top:1px solid var(--line);padding-top:14px}
+.c-grouplabel2{font-size:10.5px;font-weight:560;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin-bottom:10px}
+.c-runs .c-row{padding:7px 0}
+
+</style>
+</head>
+<body>
+<div class="c-root">
+<header class="c-tb">
+  <div class="c-id">
+    <div class="c-mark"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.8L18.5 9.6l-4.7 1.8L12 16l-1.8-4.6L5.5 9.6l4.7-1.8z"/></svg></div>
+    <div class="c-names"><span class="c-name">Photo Relay</span><span class="c-sub">engine 1.4.2 · iphone-samsung-photo-backup</span></div>
+  </div>
+  <div class="c-tbactions">
+    <span class="c-pill" data-state="live"><span class="c-dot"></span>Pulling</span>
+    <button class="c-iconbtn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v4h-4"/></svg></button>
+  </div>
+</header>
+<div class="c-layout2">
+  <section class="c-time">
+    <h2 class="c-h2">Run progress</h2>
+    <p class="c-timesub">138 files queued · started 21:26</p>
+    <div class="c-stage" data-state="done">
+  <div class="c-rail"><span class="c-dot"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span><span class="c-line"></span></div>
+  <div class="c-stagebody">
+    <div class="c-stagetop"><span class="c-stagename">Connect</span></div>
+    <div class="c-sum">iPhone 17 Pro recognized over USB</div>
+    
+  </div>
+</div>
+    <div class="c-stage" data-state="done">
+  <div class="c-rail"><span class="c-dot"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span><span class="c-line"></span></div>
+  <div class="c-stagebody">
+    <div class="c-stagetop"><span class="c-stagename">Scan</span></div>
+    <div class="c-sum">138 new items found since the last run</div>
+    
+  </div>
+</div>
+    <div class="c-stage" data-state="active">
+  <div class="c-rail"><span class="c-dot"></span><span class="c-line"></span></div>
+  <div class="c-stagebody">
+    <div class="c-stagetop"><span class="c-stagename">Pull</span><span class="c-badge">in progress</span></div>
+    <div class="c-sum">112 of 138 files copied off the iPhone</div>
+    <div class="c-expand">
+      <div class="c-exphead"><span class="c-led" data-state="live"></span><span class="c-expfile c-mono">IMG_4127.HEIC</span><span class="c-tag" data-tone="live">Live Photo</span></div>
+      <div class="c-bar"><div class="c-barfill" style="width:81%"></div></div>
+      <div class="c-mini"><div class="c-row"><span class="c-rowicon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 3 8l9 5 9-5z"/><path d="M3 13l9 5 9-5"/></svg></span><div><div class="c-rowname c-mono">IMG_4126.HEIC</div></div><span class="c-rowright"><span class="c-rowsize c-mono">3.9 MB</span><span class="c-check"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span></span></div><div class="c-row"><span class="c-rowicon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 3 8l9 5 9-5z"/><path d="M3 13l9 5 9-5"/></svg></span><div><div class="c-rowname c-mono">IMG_4125.MOV</div></div><span class="c-rowright"><span class="c-rowsize c-mono">88 MB</span><span class="c-check"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span></span></div><div class="c-row"><span class="c-rowicon"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 3 8l9 5 9-5z"/><path d="M3 13l9 5 9-5"/></svg></span><div><div class="c-rowname c-mono">IMG_4124.HEIC</div></div><span class="c-rowright"><span class="c-rowsize c-mono">3.8 MB</span><span class="c-check"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span></span></div></div>
+    </div>
+  </div>
+</div>
+    <div class="c-stage" data-state="todo">
+  <div class="c-rail"><span class="c-dot"></span><span class="c-line"></span></div>
+  <div class="c-stagebody">
+    <div class="c-stagetop"><span class="c-stagename">Convert</span></div>
+    <div class="c-sum">Apple Live Photos → Google Motion Photos</div>
+    
+  </div>
+</div>
+    <div class="c-stage" data-state="todo">
+  <div class="c-rail"><span class="c-dot"></span><span class="c-line"></span></div>
+  <div class="c-stagebody">
+    <div class="c-stagetop"><span class="c-stagename">Push</span></div>
+    <div class="c-sum">Write each file to the Samsung DCIM folder</div>
+    
+  </div>
+</div>
+    <div class="c-stage" data-state="last">
+  <div class="c-rail"><span class="c-dot"></span></div>
+  <div class="c-stagebody">
+    <div class="c-stagetop"><span class="c-stagename">Index</span></div>
+    <div class="c-sum">Trigger MediaScanner so the gallery updates</div>
+    
+  </div>
+</div>
+  </section>
+  <aside class="c-panel">
+    <div>
+      <div class="c-pct"><span class="c-pctnum c-tnum">81</span><span class="c-pctsign">%</span></div>
+      <div class="c-pctsub">112 of 138 files</div>
+    </div>
+    <div class="c-bar"><div class="c-barfill" style="width:81%"></div></div>
+    <div class="c-kvs2">
+      <div class="c-kv2"><span class="c-kvl2">Rate</span><span class="c-kvv2 c-mono">88 MB/s</span></div>
+      <div class="c-kv2"><span class="c-kvl2">Time left</span><span class="c-kvv2 c-mono">10s</span></div>
+      <div class="c-kv2"><span class="c-kvl2">Moved</span><span class="c-kvv2 c-mono">3.72 GB</span></div>
+      <div class="c-kv2"><span class="c-kvl2">Total</span><span class="c-kvv2 c-mono">4.60 GB</span></div>
+    </div>
+    <div class="c-group">
+      <div class="c-grouplabel2">Devices</div>
+      <div class="c-dev"><span class="c-led" data-on="1"></span><div><div class="c-devn">iPhone 17 Pro</div><div class="c-devd">USB · trusted</div></div></div>
+      <div class="c-dev"><span class="c-led" data-on="1"></span><div><div class="c-devn">Galaxy S23</div><div class="c-devd">ADB · 118 GB free</div></div></div>
+    </div>
+    <div class="c-group c-runs">
+      <div class="c-grouplabel2">Recent runs</div>
+      <div class="c-row">
+      <span class="c-rowicon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+      <div><div class="c-rowname">Completed</div><div class="c-rowmeta"><span>10 Oct · 23m 24s · 6.4 GB</span></div></div>
+      <span class="c-rowright"><span class="c-rowsize c-mono">312 files</span></span>
+    </div>
+<div class="c-row">
+      <span class="c-rowicon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+      <div><div class="c-rowname">Completed</div><div class="c-rowmeta"><span>9 Oct · 15m 05s · 1.7 GB</span></div></div>
+      <span class="c-rowright"><span class="c-rowsize c-mono">88 files</span></span>
+    </div>
+<div class="c-row">
+      <span class="c-rowicon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+      <div><div class="c-rowname">Completed</div><div class="c-rowmeta"><span>8 Oct · 41m 12s · 9.8 GB</span></div></div>
+      <span class="c-rowright"><span class="c-rowsize c-mono">504 files</span></span>
+    </div>
+    </div>
+  </aside>
+</div>
+</div>
+</body>
+</html>

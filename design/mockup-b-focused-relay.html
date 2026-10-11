@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Photo Relay — Direction B, Focused Relay</title>
+<style>
+  :root {
+    color-scheme: dark;
+
+    --ink-900: #0e0c0a;
+    --ink-850: #131110;
+    --ink-800: #181513;
+    --ink-750: #1e1a17;
+    --ink-700: #241f1b;
+    --ink-650: #2b2521;
+
+    --surface: linear-gradient(180deg, rgba(255,244,230,0.045), rgba(255,244,230,0.012));
+    --surface-solid: #1b1714;
+    --surface-sunken: #131110;
+
+    --hairline: rgba(255, 238, 214, 0.075);
+    --hairline-2: rgba(255, 238, 214, 0.13);
+    --hairline-3: rgba(255, 238, 214, 0.22);
+
+    --text: #f7f2ea;
+    --text-2: #b4a999;
+    --text-3: #7d7265;
+    --text-4: #5b5349;
+
+    --accent: oklch(81% 0.145 74);
+    --accent-hi: oklch(90% 0.115 82);
+    --accent-lo: oklch(66% 0.155 55);
+    --accent-ink: #2b1c05;
+    --accent-08: rgba(242, 169, 60, 0.08);
+    --accent-14: rgba(242, 169, 60, 0.14);
+    --accent-28: rgba(242, 169, 60, 0.28);
+    --accent-45: rgba(242, 169, 60, 0.45);
+
+    --ok: oklch(79% 0.135 156);
+    --ok-18: rgba(92, 210, 148, 0.18);
+    --cool: oklch(74% 0.09 232);
+
+    --r-sm: 6px;
+    --r-md: 10px;
+    --r-lg: 14px;
+    --r-xl: 18px;
+    --r-full: 999px;
+
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --shadow-card: 0 1px 0 rgba(255, 240, 220, 0.045) inset, 0 14px 34px -22px rgba(0, 0, 0, 0.9);
+    --shadow-lift: 0 1px 0 rgba(255, 240, 220, 0.06) inset, 0 24px 48px -26px rgba(0, 0, 0, 0.95);
+
+    --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    padding: 36px 24px 44px;
+    background:
+      radial-gradient(1100px 620px at 50% -8%, rgba(242, 169, 60, 0.075), transparent 62%),
+      radial-gradient(820px 520px at 82% 106%, rgba(120, 150, 210, 0.05), transparent 60%),
+      var(--ink-900);
+    font-family: var(--sans);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 22px;
+  }
+
+  .caption { width: 1280px; max-width: 100%; display: flex; justify-content: space-between; align-items: baseline; }
+  .caption h1 { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.02em; color: var(--text-2); }
+  .caption p { margin: 0; font-size: 11.5px; color: var(--text-4); letter-spacing: 0.01em; }
+
+  .frame {
+    width: 1280px;
+    height: 860px;
+    max-width: 100%;
+    border-radius: 13px;
+    overflow: hidden;
+    background: var(--ink-850);
+    border: 1px solid rgba(255, 238, 214, 0.09);
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.6),
+      0 50px 110px -40px rgba(0, 0, 0, 0.95),
+      0 12px 32px -18px rgba(0, 0, 0, 0.8);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+  .frame::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 13px;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 22%);
+  }
+
+  .titlebar {
+    height: 40px;
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 0 14px;
+    background: linear-gradient(180deg, #2a2521, #211d1a);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.6);
+    box-shadow: inset 0 1px 0 rgba(255, 240, 220, 0.06);
+  }
+  .lights { display: flex; gap: 8px; }
+  .light { width: 12px; height: 12px; border-radius: 50%; box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.35); }
+  .light.r { background: #ff5f57; }
+  .light.y { background: #febc2e; }
+  .light.g { background: #28c840; }
+  .tb-title {
+    flex: 1;
+    text-align: center;
+    font-size: 12.5px;
+    font-weight: 590;
+    color: #ded5c8;
+    letter-spacing: 0.005em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+  }
+  .tb-title svg { width: 13px; height: 13px; color: var(--accent); }
+  .tb-right { display: flex; align-items: center; gap: 10px; min-width: 210px; justify-content: flex-end; }
+
+  .live-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    height: 22px;
+    padding: 0 10px 0 8px;
+    border-radius: var(--r-full);
+    font-size: 11px;
+    font-weight: 560;
+    letter-spacing: 0.012em;
+    color: var(--accent-hi);
+    background: linear-gradient(180deg, rgba(242, 169, 60, 0.16), rgba(242, 169, 60, 0.07));
+    border: 1px solid rgba(242, 169, 60, 0.3);
+    box-shadow: 0 1px 0 rgba(255, 240, 220, 0.07) inset;
+  }
+  .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent-hi); box-shadow: 0 0 0 0 var(--accent-45); animation: ping 1.9s var(--ease) infinite; }
+  @keyframes ping {
+    0% { box-shadow: 0 0 0 0 rgba(242, 169, 60, 0.5); }
+    70% { box-shadow: 0 0 0 6px rgba(242, 169, 60, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(242, 169, 60, 0); }
+  }
+  .tb-icon-btn {
+    width: 24px; height: 24px;
+    display: grid; place-items: center;
+    border-radius: var(--r-sm);
+    color: var(--text-3);
+    background: rgba(255, 244, 230, 0.045);
+    border: 1px solid var(--hairline);
+  }
+  .tb-icon-btn svg { width: 13px; height: 13px; }
+
+  .dirbar {
+    flex: none;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 16px;
+    background: linear-gradient(90deg, rgba(242, 169, 60, 0.1), rgba(242, 169, 60, 0.025) 58%, transparent);
+    border-bottom: 1px solid rgba(242, 169, 60, 0.22);
+    box-shadow: inset 3px 0 0 0 var(--accent);
+  }
+  .dir-tag {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent-hi);
+    padding: 3px 8px;
+    border-radius: 5px;
+    background: rgba(242, 169, 60, 0.14);
+    border: 1px solid rgba(242, 169, 60, 0.3);
+  }
+  .dir-main { font-size: 12px; font-weight: 560; color: #efe4d2; letter-spacing: 0.005em; }
+  .dir-meta { margin-left: auto; font-size: 10.5px; color: var(--text-4); letter-spacing: 0.05em; text-transform: uppercase; font-weight: 600; }
+
+  .body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    justify-content: center;
+    padding: 22px 24px 20px;
+    background:
+      radial-gradient(720px 300px at 50% 0%, rgba(242, 169, 60, 0.05), transparent 70%),
+      linear-gradient(180deg, #16130f, #100e0c);
+  }
+  .col { width: 820px; max-width: 100%; display: flex; flex-direction: column; gap: 12px; min-height: 0; }
+
+  .card {
+    background: var(--surface);
+    background-color: var(--surface-solid);
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-card);
+    position: relative;
+  }
+  .card-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 13px 16px 0;
+  }
+  .eyebrow {
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-4);
+  }
+  .card-title { font-size: 13.5px; font-weight: 600; color: var(--text); letter-spacing: 0.004em; }
+  .head-rule { flex: 1; height: 1px; background: linear-gradient(90deg, var(--hairline), transparent); }
+
+  .hero { height: 176px; flex: none; overflow: hidden; }
+  .hero .card-head { padding-bottom: 2px; }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 10.5px; font-weight: 600; letter-spacing: 0.03em;
+    color: var(--accent-hi);
+    padding: 3px 9px;
+    border-radius: var(--r-full);
+    background: var(--accent-08);
+    border: 1px solid rgba(242, 169, 60, 0.24);
+  }
+  .hero-badge svg { width: 11px; height: 11px; }
+  .plan-count { font-size: 10.5px; color: var(--text-3); font-variant-numeric: tabular-nums; letter-spacing: 0.01em; }
+
+  .chain {
+    display: flex;
+    align-items: center;
+    padding: 12px 22px 4px;
+    position: relative;
+  }
+  .chain::before {
+    content: "";
+    position: absolute;
+    left: 50%; top: 4px;
+    width: 640px; height: 210px;
+    transform: translateX(-50%);
+    background: radial-gradient(closest-side, rgba(242, 169, 60, 0.075), transparent 72%);
+    pointer-events: none;
+  }
+
+  .node {
+    width: 206px;
+    flex: none;
+    border-radius: var(--r-lg);
+    padding: 12px 14px;
+    background: linear-gradient(180deg, rgba(255, 244, 230, 0.055), rgba(255, 244, 230, 0.014));
+    background-color: #201b17;
+    border: 1px solid var(--hairline-2);
+    box-shadow: 0 1px 0 rgba(255, 240, 220, 0.05) inset, 0 12px 26px -20px rgba(0, 0, 0, 0.95);
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    position: relative;
+    animation: rise 0.62s var(--ease) both;
+  }
+  .node.n1 { animation-delay: 0.06s; }
+  .node.n2 { animation-delay: 0.14s; }
+  .node.n3 { animation-delay: 0.22s; }
+  .node[data-active="1"] {
+    border-color: rgba(242, 169, 60, 0.42);
+    background: linear-gradient(180deg, rgba(242, 169, 60, 0.11), rgba(242, 169, 60, 0.03));
+    background-color: #241c13;
+    box-shadow: 0 1px 0 rgba(255, 240, 220, 0.08) inset, 0 0 0 1px rgba(242, 169, 60, 0.14), 0 16px 34px -20px rgba(0, 0, 0, 0.95);
+    animation: rise 0.62s var(--ease) both, breathe 3.1s ease-in-out 0.7s infinite;
+  }
+  @keyframes rise { from { opacity: 0; transform: translateY(11px); } to { opacity: 1; transform: none; } }
+  @keyframes breathe {
+    0%, 100% { box-shadow: 0 1px 0 rgba(255,240,220,.08) inset, 0 0 0 1px rgba(242,169,60,.12), 0 16px 34px -20px rgba(0,0,0,.95); }
+    50% { box-shadow: 0 1px 0 rgba(255,240,220,.1) inset, 0 0 0 4px rgba(242,169,60,.07), 0 20px 44px -20px rgba(0,0,0,.95); }
+  }
+
+  .node-tile {
+    width: 36px; height: 36px;
+    flex: none;
+    border-radius: 11px;
+    display: grid; place-items: center;
+    background: linear-gradient(160deg, rgba(255, 244, 230, 0.1), rgba(255, 244, 230, 0.02));
+    border: 1px solid var(--hairline-2);
+    color: var(--text-2);
+  }
+  .node-tile svg { width: 17px; height: 17px; }
+  .node[data-active="1"] .node-tile {
+    background: linear-gradient(160deg, rgba(242, 169, 60, 0.3), rgba(242, 169, 60, 0.09));
+    border-color: rgba(242, 169, 60, 0.4);
+    color: var(--accent-hi);
+  }
+  .node-txt { min-width: 0; flex: 1; }
+  .node-name { display: block; font-size: 13px; font-weight: 600; color: var(--text); letter-spacing: 0.005em; }
+  .node-detail {
+    display: block;
+    margin-top: 2px;
+    font-size: 10.5px;
+    color: var(--text-3);
+    letter-spacing: 0.012em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .node[data-active="1"] .node-detail { color: var(--accent-hi); }
+  .led {
+    position: absolute;
+    top: 11px; right: 11px;
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--ok);
+    box-shadow: 0 0 7px 1px var(--ok-18);
+  }
+  .led[data-on="0"] { background: var(--text-4); box-shadow: none; }
+
+  .link { flex: 1 1 auto; height: 52px; position: relative; overflow: hidden; min-width: 40px; }
+  .link-rail { position: absolute; left: 0; right: 0; top: 50%; height: 2px; margin-top: -1px; background: rgba(255, 238, 214, 0.09); }
+  .link-rail::after {
+    content: "";
+    position: absolute; inset: 0;
+    background-image: repeating-linear-gradient(90deg, rgba(255, 238, 214, 0.16) 0 3px, transparent 3px 9px);
+    opacity: 0;
+  }
+  .link[data-state="queued"] .link-rail::after { opacity: 1; }
+  .link[data-state="done"] .link-rail { background: linear-gradient(90deg, rgba(242, 169, 60, 0.5), rgba(242, 169, 60, 0.22)); }
+
+  .link-flow {
+    position: absolute; left: 0; right: 0; top: 50%; height: 2px; margin-top: -1px;
+    background-image: repeating-linear-gradient(90deg,
+      rgba(242, 169, 60, 0) 0 11px,
+      var(--accent) 11px 27px,
+      rgba(242, 169, 60, 0) 27px 36px);
+    background-size: 36px 100%;
+    background-repeat: repeat-x;
+    animation: flowR 1.05s linear infinite;
+  }
+  .link-glow {
+    position: absolute; left: 0; right: 0; top: 50%; height: 12px; margin-top: -6px;
+    filter: blur(7px);
+    opacity: 0.42;
+    background-image: repeating-linear-gradient(90deg,
+      rgba(242, 169, 60, 0) 0 11px,
+      rgba(242, 169, 60, 0.75) 11px 27px,
+      rgba(242, 169, 60, 0) 27px 36px);
+    background-size: 36px 100%;
+    background-repeat: repeat-x;
+    animation: flowR2 1.05s linear infinite;
+  }
+  @keyframes flowR { from { background-position: 0 0; } to { background-position: 36px 0; } }
+  @keyframes flowR2 { from { background-position: 0 0; } to { background-position: 36px 0; } }
+
+  .link[data-state="queued"] .link-flow,
+  .link[data-state="queued"] .link-glow { display: none; }
+  .link[data-state="done"] .link-flow { opacity: 0.22; animation: none; background-position: 4px 0; }
+  .link[data-state="done"] .link-glow { display: none; }
+  .link[data-state="done"] .packet { display: none; }
+
+  .packet {
+    position: absolute;
+    top: 50%;
+    left: -6%;
+    width: 7px; height: 7px;
+    border-radius: 2px;
+    background: var(--accent-hi);
+    box-shadow: 0 0 12px 2px rgba(242, 169, 60, 0.5);
+    animation: travel 1.72s linear infinite;
+  }
+  @keyframes travel {
+    from { transform: translateY(-50%); left: -6%; }
+    to { transform: translateY(-50%); left: 106%; }
+  }
+
+  .stages {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    margin: 0 22px 0;
+    padding-top: 11px;
+  }
+  .stages::before {
+    content: "";
+    position: absolute;
+    left: 8.333%; right: 8.333%;
+    top: 19px;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(242,169,60,.34) 0%, rgba(242,169,60,.34) 45%, rgba(255,238,214,.09) 45%, rgba(255,238,214,.09) 100%);
+  }
+  .stage { display: flex; flex-direction: column; align-items: center; gap: 7px; position: relative; }
+  .stage-dot {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    background: #16120f;
+    border: 1.5px solid rgba(255, 238, 214, 0.14);
+    color: var(--accent-ink);
+    position: relative;
+  }
+  .stage-dot svg { width: 8px; height: 8px; stroke-width: 3.2; }
+  .stage[data-state="done"] .stage-dot { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .stage[data-state="active"] .stage-dot {
+    background: var(--accent-hi);
+    border-color: var(--accent-hi);
+    animation: halo 2.1s ease-in-out infinite;
+  }
+  @keyframes halo {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(242, 169, 60, 0.42); }
+    55% { box-shadow: 0 0 0 7px rgba(242, 169, 60, 0); }
+  }
+  .stage-label {
+    font-size: 10px;
+    letter-spacing: 0.075em;
+    text-transform: uppercase;
+    font-weight: 650;
+    color: var(--text-4);
+  }
+  .stage[data-state="done"] .stage-label { color: var(--text-2); }
+  .stage[data-state="active"] .stage-label { color: var(--accent-hi); }
+
+  .progress-card { flex: none; padding: 15px 16px 0; }
+  .progress-grid { display: grid; grid-template-columns: 1.18fr 1fr; gap: 18px; align-items: start; }
+  .pct-row { display: flex; align-items: baseline; gap: 8px; }
+  .pct {
+    font-size: 40px;
+    line-height: 0.92;
+    font-weight: 640;
+    letter-spacing: -0.032em;
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+  }
+  .pct-of { font-size: 11.5px; color: var(--text-3); letter-spacing: 0.01em; }
+
+  .bar {
+    margin-top: 11px;
+    height: 9px;
+    border-radius: var(--r-full);
+    background: rgba(255, 238, 214, 0.07);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+    position: relative;
+  }
+  .bar-fill {
+    position: relative;
+    height: 100%;
+    width: 81%;
+    border-radius: var(--r-full);
+    background: linear-gradient(90deg, var(--accent-lo), var(--accent) 62%, var(--accent-hi));
+    background-size: 240px 100%;
+    box-shadow: 0 0 14px 1px rgba(242, 169, 60, 0.35);
+    overflow: hidden;
+  }
+  .bar-fill::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: repeating-linear-gradient(90deg,
+      rgba(255, 255, 255, 0) 0 34px,
+      rgba(255, 255, 255, 0.26) 34px 62px,
+      rgba(255, 255, 255, 0) 62px 96px);
+    background-size: 96px 100%;
+    background-repeat: repeat-x;
+    animation: flowR 1.4s linear infinite;
+  }
+  .bar-cap {
+    position: absolute;
+    right: -2px; top: 50%;
+    width: 4px; height: 18px;
+    transform: translateY(-50%);
+    border-radius: var(--r-full);
+    background: var(--accent-hi);
+    box-shadow: 0 0 10px 2px rgba(242, 169, 60, 0.5);
+    animation: capBreathe 2.4s ease-in-out infinite;
+  }
+  @keyframes capBreathe { 0%, 100% { opacity: 0.75; } 50% { opacity: 1; } }
+
+  .current {
+    border-radius: var(--r-md);
+    border: 1px solid rgba(242, 169, 60, 0.2);
+    background: linear-gradient(180deg, rgba(242, 169, 60, 0.075), rgba(242, 169, 60, 0.02));
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 11px;
+  }
+  .thumb {
+    width: 34px; height: 34px;
+    flex: none;
+    border-radius: 8px;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--hairline-2);
+    background:
+      linear-gradient(145deg, rgba(255, 244, 230, 0.16), rgba(255, 244, 230, 0.02)),
+      linear-gradient(200deg, #3c4a63 0%, #5c4a52 48%, #7a5a3c 100%);
+  }
+  .thumb::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 3px;
+    background: rgba(0, 0, 0, 0.4);
+  }
+  .current-meta { min-width: 0; flex: 1; }
+  .current-name { display: block; font-size: 12.5px; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; letter-spacing: 0.004em; }
+  .current-sub { display: block; margin-top: 2px; font-size: 10.5px; color: var(--text-3); letter-spacing: 0.01em; }
+  .current-size { font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+
+  .readouts {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    margin: 14px -16px 0;
+    border-top: 1px solid var(--hairline);
+  }
+  .readout { padding: 10px 16px 11px; position: relative; }
+  .readout + .readout::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 12px; bottom: 12px;
+    width: 1px;
+    background: var(--hairline);
+  }
+  .r-label { font-size: 9.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-4); }
+  .r-value {
+    margin-top: 3px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.006em;
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+  }
+  .r-value em { font-style: normal; font-size: 10.5px; font-weight: 500; color: var(--text-3); letter-spacing: 0.01em; }
+  .r-value.accent { color: var(--accent-hi); }
+
+  .files { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+  .files .card-head { padding-bottom: 10px; }
+  .files-list { overflow: hidden; padding: 0 8px 8px; flex: 1; min-height: 0; }
+  .file-row {
+    display: grid;
+    grid-template-columns: 30px 1fr 78px 86px;
+    align-items: center;
+    gap: 10px;
+    padding: 3px 8px;
+    border-radius: var(--r-sm);
+    animation: rowIn 0.55s var(--ease) both;
+  }
+  .file-row:nth-child(1) { animation-delay: 0.30s; }
+  .file-row:nth-child(2) { animation-delay: 0.36s; }
+  .file-row:nth-child(3) { animation-delay: 0.42s; }
+  .file-row:nth-child(4) { animation-delay: 0.48s; }
+  .file-row:nth-child(5) { animation-delay: 0.54s; }
+  .file-row:nth-child(6) { animation-delay: 0.60s; }
+  .file-row:nth-child(7) { animation-delay: 0.66s; }
+  @keyframes rowIn { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: none; } }
+  .file-row.live {
+    background: linear-gradient(90deg, rgba(242, 169, 60, 0.1), rgba(242, 169, 60, 0.02));
+    box-shadow: inset 0 0 0 1px rgba(242, 169, 60, 0.2);
+  }
+  .file-ico { width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; border: 1px solid var(--hairline); background: rgba(255, 244, 230, 0.04); }
+  .file-ico svg { width: 11px; height: 11px; color: var(--text-3); }
+  .file-ico.ok { border-color: rgba(92, 210, 148, 0.24); background: rgba(92, 210, 148, 0.08); }
+  .file-ico.ok svg { color: var(--ok); }
+  .file-ico.live { border-color: rgba(242, 169, 60, 0.36); background: rgba(242, 169, 60, 0.14); }
+  .file-ico.live svg { color: var(--accent-hi); }
+  .file-name { font-size: 12px; color: var(--text); font-variant-numeric: tabular-nums; letter-spacing: 0.003em; }
+  .file-row.live .file-name { color: var(--accent-hi); font-weight: 600; }
+  .file-size { font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums; text-align: right; }
+  .file-state { display: flex; align-items: center; justify-content: flex-end; gap: 5px; font-size: 10.5px; font-weight: 560; letter-spacing: 0.02em; color: var(--text-3); }
+  .file-state .st-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--text-4); }
+  .file-state[data-tone="ok"] { color: var(--ok); }
+  .file-state[data-tone="ok"] .st-dot { background: var(--ok); }
+  .file-state[data-tone="live"] { color: var(--accent-hi); }
+  .file-state[data-tone="live"] .st-dot { background: var(--accent-hi); animation: blink 1.4s ease-in-out infinite; }
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+  .spin { animation: spin 1.5s linear infinite; transform-origin: 50% 50%; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .sheet { flex: none; display: flex; flex-direction: column; overflow: hidden; }
+  .sheet-bar { display: flex; align-items: center; gap: 10px; padding: 9px 12px 9px 16px; }
+  .grabber { width: 26px; height: 3px; border-radius: var(--r-full); background: var(--hairline-3); flex: none; }
+  .tabs { margin-right: auto; display: flex; gap: 2px; background: rgba(255, 238, 214, 0.045); border: 1px solid var(--hairline); border-radius: 8px; padding: 2px; }
+  .tab {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: var(--text-3);
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.025em;
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: color 0.16s var(--ease), background 0.16s var(--ease);
+  }
+  .tab svg { width: 11px; height: 11px; }
+  .tab:hover { color: var(--text-2); }
+  .tab[aria-selected="true"] {
+    color: var(--accent-hi);
+    background: linear-gradient(180deg, rgba(242, 169, 60, 0.18), rgba(242, 169, 60, 0.07));
+    box-shadow: 0 1px 0 rgba(255, 240, 220, 0.07) inset, 0 1px 3px rgba(0, 0, 0, 0.4);
+  }
+  .collapse {
+    appearance: none;
+    border: 1px solid var(--hairline);
+    background: rgba(255, 244, 230, 0.04);
+    color: var(--text-3);
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    transition: transform 0.3s var(--ease), color 0.16s var(--ease);
+  }
+  .collapse svg { width: 12px; height: 12px; }
+  .sheet[data-collapsed="1"] .collapse { transform: rotate(-90deg); }
+  .sheet[data-collapsed="1"] .sheet-body { display: none; }
+  .sheet-body {
+    height: 112px;
+    overflow: hidden;
+    border-top: 1px solid var(--hairline);
+    background: rgba(0, 0, 0, 0.18);
+    padding: 8px 12px 10px;
+  }
+  .panel[hidden] { display: none; }
+
+  .ms { list-style: none; margin: 0; padding: 0; }
+  .ms li {
+    display: grid;
+    grid-template-columns: 58px 14px 1fr auto;
+    align-items: center;
+    gap: 10px;
+    padding: 3px 4px;
+    position: relative;
+    animation: rowIn 0.5s var(--ease) both;
+  }
+  .ms li:nth-child(1) { animation-delay: 0.05s; }
+  .ms li:nth-child(2) { animation-delay: 0.1s; }
+  .ms li:nth-child(3) { animation-delay: 0.15s; }
+  .ms li:nth-child(4) { animation-delay: 0.2s; }
+  .ms li:nth-child(5) { animation-delay: 0.25s; }
+  .ms-time { font-family: var(--mono); font-size: 10.5px; color: var(--text-4); letter-spacing: -0.01em; }
+  .ms-rail { position: relative; height: 16px; display: grid; place-items: center; }
+  .ms-rail::before {
+    content: "";
+    position: absolute;
+    top: 0; bottom: 0; left: 50%;
+    width: 1px;
+    background: var(--hairline-2);
+  }
+  .ms li:first-child .ms-rail::before { top: 50%; }
+  .ms li:last-child .ms-rail::before { bottom: 50%; }
+  .ms-node { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px rgba(242, 169, 60, 0.12); position: relative; z-index: 1; }
+  .ms li[data-state="queued"] .ms-node { background: transparent; box-shadow: inset 0 0 0 1px var(--hairline-3); }
+  .ms li[data-state="pending"] .ms-node { background: var(--hairline-3); box-shadow: none; }
+  .ms-text { font-size: 11.5px; color: var(--text-2); letter-spacing: 0.006em; }
+  .ms li[data-state="queued"] .ms-text { color: var(--text-4); }
+  .ms-tag {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: 0.02em;
+    color: var(--text-4);
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(255, 244, 230, 0.05);
+    border: 1px solid var(--hairline);
+  }
+
+  .dev-rows { display: flex; flex-direction: column; gap: 6px; }
+  .dev-row {
+    display: grid;
+    grid-template-columns: 26px 118px 1fr auto;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 8px;
+    border-radius: var(--r-sm);
+    background: rgba(255, 244, 230, 0.028);
+    border: 1px solid var(--hairline);
+    animation: rowIn 0.5s var(--ease) both;
+  }
+  .dev-row:nth-child(2) { animation-delay: 0.08s; }
+  .dev-row:nth-child(3) { animation-delay: 0.16s; }
+  .dev-row svg { width: 14px; height: 14px; color: var(--text-3); }
+  .dev-name { font-size: 11.5px; font-weight: 600; color: var(--text); }
+  .dev-detail { font-family: var(--mono); font-size: 10.5px; color: var(--text-3); letter-spacing: -0.008em; }
+  .kv { display: flex; gap: 5px; }
+  .kv span {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    color: var(--text-3);
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(255, 244, 230, 0.045);
+    border: 1px solid var(--hairline);
+  }
+  .dev-state { font-size: 10px; font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ok); }
+  .dev-row[data-state="warn"] .dev-state { color: var(--accent-hi); }
+
+  .hist { display: flex; flex-direction: column; gap: 5px; }
+  .hist-row {
+    display: grid;
+    grid-template-columns: 92px 1fr 58px 58px 74px;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 8px;
+    border-radius: var(--r-sm);
+    animation: rowIn 0.5s var(--ease) both;
+  }
+  .hist-row:nth-child(2) { animation-delay: 0.08s; }
+  .hist-row:nth-child(3) { animation-delay: 0.16s; }
+  .hist-row:nth-child(4) { animation-delay: 0.24s; }
+  .hist-row > * { font-size: 10.5px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+  .hist-row .h-dim { color: var(--text-4); }
+  .hist-row .h-ok { color: var(--ok); font-weight: 600; }
+  .hist-total {
+    margin-top: 4px;
+    padding: 7px 8px 0;
+    border-top: 1px solid var(--hairline);
+    font-size: 11px;
+    color: var(--text-3);
+    letter-spacing: 0.01em;
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+  .hist-total b { font-size: 14px; color: var(--text); font-weight: 620; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+
+  .inspect {
+    margin: 0;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    line-height: 1.62;
+    color: var(--text-3);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .inspect b { color: var(--accent-hi); font-weight: 500; }
+  .inspect u { color: var(--ok); text-decoration: none; }
+  .inspect i { color: var(--text-4); font-style: normal; }
+
+  .statusbar {
+    flex: none;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 16px;
+    background: linear-gradient(180deg, #1c1815, #16120f);
+    border-top: 1px solid rgba(0, 0, 0, 0.55);
+    box-shadow: inset 0 1px 0 rgba(255, 240, 220, 0.04);
+    font-size: 11px;
+    color: var(--text-4);
+    letter-spacing: 0.012em;
+  }
+  .statusbar .sb-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 6px 1px var(--ok-18); flex: none; }
+  .statusbar .sb-sep { width: 1px; height: 13px; background: var(--hairline); flex: none; }
+  .statusbar .sb-strong { color: var(--text-2); font-variant-numeric: tabular-nums; }
+  .sb-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+  .btn {
+    appearance: none;
+    font-family: inherit;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 26px;
+    padding: 0 12px;
+    border-radius: 7px;
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.012em;
+    cursor: pointer;
+    transition: background 0.16s var(--ease), border-color 0.16s var(--ease), transform 0.16s var(--ease);
+  }
+  .btn svg { width: 12px; height: 12px; }
+  .btn-ghost { background: rgba(255, 244, 230, 0.045); border: 1px solid var(--hairline); color: var(--text-2); }
+  .btn-ghost:hover { background: rgba(255, 244, 230, 0.08); }
+  .btn-danger {
+    background: linear-gradient(180deg, rgba(226, 87, 70, 0.26), rgba(226, 87, 70, 0.14));
+    border: 1px solid rgba(226, 87, 70, 0.38);
+    color: oklch(84% 0.11 40);
+  }
+  .btn-danger:hover { background: linear-gradient(180deg, rgba(226, 87, 70, 0.36), rgba(226, 87, 70, 0.2)); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .live-dot, .node[data-active="1"], .stage[data-state="active"] .stage-dot,
+    .link-flow, .link-glow, .packet, .bar-fill::after, .bar-cap,
+    .file-state[data-tone="live"] .st-dot, .spin,
+    .node, .file-row, .ms li, .dev-row, .hist-row {
+      animation: none !important;
+    }
+    .packet { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="caption">
+  <h1>Photo Relay — design mockup</h1>
+  <p>Fixed 1280 × 860 · dark, warm charcoal, single amber accent · self-contained, no network</p>
+</div>
+
+<div class="frame">
+
+  <div class="titlebar">
+    <div class="lights"><span class="light r"></span><span class="light y"></span><span class="light g"></span></div>
+    <div class="tb-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13"/><path d="m5 11 7 7 7-7"/><circle cx="12" cy="3" r="1.6"/><path d="M4 21h16"/></svg>
+      Photo Relay
+    </div>
+    <div class="tb-right">
+      <span class="live-pill"><span class="live-dot"></span>Relaying · Pull</span>
+      <button class="tb-icon-btn" aria-label="Refresh devices">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+      </button>
+      <button class="tb-icon-btn" aria-label="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="dirbar">
+    <span class="dir-tag">Direction B</span>
+    <span class="dir-main">Focused Relay — one hero, everything else recedes</span>
+    <span class="dir-meta">820px column · cards, not full-bleed rows · bottom sheet for detail</span>
+  </div>
+
+  <div class="body">
+    <div class="col">
+
+      <section class="card hero">
+        <div class="card-head">
+          <span class="eyebrow">Relay</span>
+          <span class="card-title">iPhone &rarr; This Mac &rarr; Samsung</span>
+          <span class="head-rule"></span>
+          <span class="plan-count">138 of 138 planned</span>
+          <span class="hero-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="m8 10 4-4 4 4"/><path d="M12 6v7"/><path d="M6 18h12"/><path d="M8 22h8"/></svg>
+            USB-C 88 MB/s
+          </span>
+        </div>
+
+        <div class="chain">
+          <div class="node n1">
+            <span class="led" data-on="1"></span>
+            <span class="node-tile">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="13" r="3.2"/></svg>
+            </span>
+            <span class="node-txt">
+              <span class="node-name">iPhone</span>
+              <span class="node-detail">17 Pro · 512 GB</span>
+            </span>
+          </div>
+
+          <div class="link" data-state="active">
+            <span class="link-rail"></span>
+            <span class="link-flow"></span>
+            <span class="link-glow"></span>
+            <span class="packet" style="animation-delay:0s"></span>
+            <span class="packet" style="animation-delay:-0.575s"></span>
+            <span class="packet" style="animation-delay:-1.15s"></span>
+          </div>
+
+          <div class="node n2" data-active="1">
+            <span class="led" data-on="1"></span>
+            <span class="node-tile">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M2 20h20"/></svg>
+            </span>
+            <span class="node-txt">
+              <span class="node-name">This Mac</span>
+              <span class="node-detail">Pulling · 88 MB/s</span>
+            </span>
+          </div>
+
+          <div class="link" data-state="queued">
+            <span class="link-rail"></span>
+            <span class="link-flow"></span>
+            <span class="link-glow"></span>
+          </div>
+
+          <div class="node n3">
+            <span class="led" data-on="1"></span>
+            <span class="node-tile">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M11 18.5h2"/></svg>
+            </span>
+            <span class="node-txt">
+              <span class="node-name">Samsung</span>
+              <span class="node-detail">SM-S928B · adb</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="stages">
+          <div class="stage" data-state="done"><span class="stage-dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span><span class="stage-label">Connect</span></div>
+          <div class="stage" data-state="done"><span class="stage-dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span><span class="stage-label">Scan</span></div>
+          <div class="stage" data-state="active"><span class="stage-dot"></span><span class="stage-label">Pull</span></div>
+          <div class="stage"><span class="stage-dot"></span><span class="stage-label">Convert</span></div>
+          <div class="stage"><span class="stage-dot"></span><span class="stage-label">Push</span></div>
+          <div class="stage"><span class="stage-dot"></span><span class="stage-label">Index</span></div>
+        </div>
+      </section>
+
+      <section class="card progress-card">
+        <div class="progress-grid">
+          <div>
+            <div class="pct-row">
+              <span class="pct">81</span>
+              <span class="pct-of">% relayed · 1.94 GB total</span>
+            </div>
+            <div class="bar" role="progressbar" aria-valuenow="81" aria-valuemin="0" aria-valuemax="100" aria-label="Relay progress">
+              <div class="bar-fill"><span class="bar-cap"></span></div>
+            </div>
+          </div>
+
+          <div class="current">
+            <span class="thumb"></span>
+            <span class="current-meta">
+              <span class="current-name">IMG_4127.HEIC</span>
+              <span class="current-sub">Motion photo &middot; pairs IMG_4127.MOV</span>
+            </span>
+            <span class="current-size">4.2 MB</span>
+          </div>
+        </div>
+
+        <div class="readouts">
+          <div class="readout">
+            <div class="r-label">Files</div>
+            <div class="r-value">112 <em>of 138</em></div>
+          </div>
+          <div class="readout">
+            <div class="r-label">Rate</div>
+            <div class="r-value accent">88 <em>MB/s</em></div>
+          </div>
+          <div class="readout">
+            <div class="r-label">Remaining</div>
+            <div class="r-value">1:24 <em>left</em></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card files">
+        <div class="card-head">
+          <span class="eyebrow">Live relay</span>
+          <span class="card-title">Recent files</span>
+          <span class="head-rule"></span>
+          <span class="plan-count">26 more staged</span>
+        </div>
+        <div class="files-list">
+          <div class="file-row live">
+            <span class="file-ico live"><svg class="spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.2-8.56"/></svg></span>
+            <span class="file-name">IMG_4127.HEIC</span>
+            <span class="file-size">4.2 MB</span>
+            <span class="file-state" data-tone="live"><span class="st-dot"></span>Merging</span>
+          </div>
+          <div class="file-row">
+            <span class="file-ico ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+            <span class="file-name">IMG_4127.MOV</span>
+            <span class="file-size">31.8 MB</span>
+            <span class="file-state" data-tone="ok">Motion photo</span>
+          </div>
+          <div class="file-row">
+            <span class="file-ico ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+            <span class="file-name">IMG_4126.HEIC</span>
+            <span class="file-size">3.9 MB</span>
+            <span class="file-state" data-tone="ok">Copied</span>
+          </div>
+          <div class="file-row">
+            <span class="file-ico ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+            <span class="file-name">IMG_4126.MOV</span>
+            <span class="file-size">28.4 MB</span>
+            <span class="file-state" data-tone="ok">Motion photo</span>
+          </div>
+          <div class="file-row">
+            <span class="file-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
+            <span class="file-name">IMG_4125.HEIC</span>
+            <span class="file-size">5.1 MB</span>
+            <span class="file-state"><span class="st-dot"></span>Queued</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="card sheet" id="sheet" data-collapsed="0">
+        <div class="sheet-bar">
+          <span class="grabber"></span>
+          <div class="tabs" role="tablist" aria-label="Relay detail">
+            <button class="tab" role="tab" aria-selected="true" data-tab="milestones">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16"/><path d="M4 12h10"/><path d="M4 18h6"/><circle cx="18" cy="16" r="2.2"/></svg>
+              Milestones
+            </button>
+            <button class="tab" role="tab" aria-selected="false" data-tab="devices">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M2 20h20"/></svg>
+              Devices
+            </button>
+            <button class="tab" role="tab" aria-selected="false" data-tab="history">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 2.6-6.36"/><path d="M3 4v5h5"/><path d="M12 8v4l3 2"/></svg>
+              History
+            </button>
+            <button class="tab" role="tab" aria-selected="false" data-tab="inspector">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m7 9 3 3-3 3"/><path d="M13 15h4"/></svg>
+              Inspector
+            </button>
+          </div>
+          <button class="collapse" id="collapse" aria-label="Collapse detail sheet">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+        </div>
+
+        <div class="sheet-body">
+          <div class="panel" data-panel="milestones">
+            <ul class="ms">
+              <li data-state="done">
+                <span class="ms-time">09:14:02</span>
+                <span class="ms-rail"><span class="ms-node"></span></span>
+                <span class="ms-text">Connected to SM-S928B over USB-C · adb 1.0.41 · Android 15</span>
+                <span class="ms-tag">preflight</span>
+              </li>
+              <li data-state="done">
+                <span class="ms-time">09:14:05</span>
+                <span class="ms-rail"><span class="ms-node"></span></span>
+                <span class="ms-text">Scan complete — 138 new since 4 Oct watermark · 1.94 GB</span>
+                <span class="ms-tag">scan</span>
+              </li>
+              <li data-state="done">
+                <span class="ms-time">09:14:07</span>
+                <span class="ms-rail"><span class="ms-node"></span></span>
+                <span class="ms-text">Pull started from iPhone 17 Pro · pymobiledevice3 · usbmux</span>
+                <span class="ms-tag">pull</span>
+              </li>
+              <li data-state="queued">
+                <span class="ms-time">—</span>
+                <span class="ms-rail"><span class="ms-node"></span></span>
+                <span class="ms-text">Push to /sdcard/DCIM/Camera, then media scanner refresh</span>
+                <span class="ms-tag">push</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="panel" data-panel="devices" hidden>
+            <div class="dev-rows">
+              <div class="dev-row" data-state="ok">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="13" r="3.2"/></svg>
+                <span class="dev-name">iPhone 17 Pro</span>
+                <span class="dev-detail">00008110-000A1B2C3D4E · iOS 26.1</span>
+                <span class="kv"><span>usbmux</span><span>paired</span></span>
+                <span class="dev-state">Source</span>
+              </div>
+              <div class="dev-row" data-state="ok">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M2 20h20"/></svg>
+                <span class="dev-name">This Mac</span>
+                <span class="dev-detail">engine 2.4.1 · staging 412 MB free</span>
+                <span class="kv"><span>afc</span><span>convert</span></span>
+                <span class="dev-state">Relay</span>
+              </div>
+              <div class="dev-row" data-state="warn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M11 18.5h2"/></svg>
+                <span class="dev-name">SM-S928B</span>
+                <span class="dev-detail">R5CT30ABCDE · Android 15 · 78.4 GB free</span>
+                <span class="kv"><span>adb</span><span>dcim</span></span>
+                <span class="dev-state">Target</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel" data-panel="history" hidden>
+            <div class="hist">
+              <div class="hist-row">
+                <span class="h-dim">8 Oct, 21:40</span><span>Relay to Samsung</span><span class="h-dim">212 files</span><span class="h-dim">2.31 GB</span><span class="h-ok">Complete</span>
+              </div>
+              <div class="hist-row">
+                <span class="h-dim">7 Oct, 08:12</span><span>Relay to Samsung</span><span class="h-dim">96 files</span><span class="h-dim">1.02 GB</span><span class="h-ok">Complete</span>
+              </div>
+              <div class="hist-row">
+                <span class="h-dim">5 Oct, 19:33</span><span>Relay to Samsung</span><span class="h-dim">148 files</span><span class="h-dim">1.74 GB</span><span class="h-ok">Complete</span>
+              </div>
+            </div>
+            <div class="hist-total"><b>2,796</b> files secured · 31.4 GB relayed since 12 Sep</div>
+          </div>
+
+          <div class="panel" data-panel="inspector" hidden>
+            <pre class="inspect"><i>09:14:02</i> <b>preflight</b>  adb devices -> SM-S928B  device (usb)
+<i>09:14:03</i> <b>preflight</b>  dcim writable, 78.4G free on /sdcard
+<i>09:14:05</i> <b>scan</b>     watermark=2025-10-04T22:14:03Z new=138 bytes=2079714304
+<i>09:14:07</i> <b>pull</b>     lockdown.start_service com.apple.mobilebackup
+<i>09:14:09</i> <b>pull</b>     AFC open /DCIM/100APPLE  queued=138
+<i>09:14:22</i> <u>pull</u>     IMG_4126.HEIC  4180736 B  t=0.21s
+<i>09:14:31</i> <u>convert</u>  IMG_4126 pair merged -> motion photo  ok
+<i>09:14:44</i> <u>convert</u>  12 live photos merged, 0 failures
+<i>09:14:51</i> <b>pull</b>     IMG_4127.HEIC  4404019 B  in flight
+<i>09:14:52</i> <b>stats</b>    done=112/138  rate=88MB/s  eta=84s</pre>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <div class="statusbar">
+    <span class="sb-dot"></span>
+    <span>engine 2.4.1</span>
+    <span class="sb-sep"></span>
+    <span class="sb-strong">iphone-samsung-photo-backup</span>
+    <span class="sb-sep"></span>
+    <div class="sb-actions">
+      <span class="sb-strong">112 of 138 relayed</span>
+      <button class="btn btn-ghost">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m3 7 2 12h14l2-12"/><path d="M8 7V5a4 4 0 0 1 8 0v2"/></svg>
+        Staging
+      </button>
+      <button class="btn btn-danger">
+        <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+        Stop relay
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  (function () {
+    var sheet = document.getElementById('sheet');
+    var tabs = Array.prototype.slice.call(sheet.querySelectorAll('.tab'));
+    var panels = Array.prototype.slice.call(sheet.querySelectorAll('.panel'));
+
+    tabs.forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        var name = tab.dataset.tab;
+        if (sheet.dataset.collapsed === '1') { sheet.dataset.collapsed = '0'; }
+        tabs.forEach(function (t) { t.setAttribute('aria-selected', String(t === tab)); });
+        panels.forEach(function (p) { p.hidden = p.dataset.panel !== name; });
+      });
+    });
+
+    document.getElementById('collapse').addEventListener('click', function () {
+      sheet.dataset.collapsed = sheet.dataset.collapsed === '1' ? '0' : '1';
+    });
+  })();
+</script>
+
+</body>
+</html>
