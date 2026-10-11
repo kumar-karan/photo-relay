@@ -1,19 +1,21 @@
 import { useCallback, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { CheckCircle2, FolderOpen, RefreshCw, ShieldCheck, Sparkles, Square, Stethoscope, XCircle } from "lucide-react";
+import { CheckCircle2, FolderOpen, RefreshCw, XCircle } from "lucide-react";
 import { BootSequence } from "./components/BootSequence";
 import { CountUp } from "./components/CountUp";
+import { DeviceChain } from "./components/DeviceChain";
 import { DeviceCheck } from "./components/DeviceCheck";
+import { Hero } from "./components/Hero";
 import { HistoryPanel } from "./components/HistoryPanel";
+import { Logo } from "./components/Logo";
 import { MilestoneFeed } from "./components/MilestoneFeed";
-import { RelayPipeline } from "./components/RelayPipeline";
+import { StageRail } from "./components/StageRail";
 import { StartDialog } from "./components/StartDialog";
-import { StatGrid } from "./components/StatGrid";
 import { TransferStream } from "./components/TransferStream";
 import { useRelay } from "./lib/useRelay";
 import { formatCount, titleCase } from "./lib/format";
 
-type Tab = "activity" | "files" | "log";
+type Tab = "files" | "activity" | "log";
 
 export default function App() {
   const { dashboard, events, busy, error, setError, refresh, preflight, startSync, stopSync, reveal } = useRelay();
@@ -23,7 +25,7 @@ export default function App() {
   const [checking, setChecking] = useState(false);
   const [booted, setBooted] = useState(false);
 
-  // ⌘R refreshes, ⌘↵ starts a relay, Esc dismisses dialogs and reports.
+  // Cmd R refreshes, Cmd Enter starts a relay, Esc dismisses dialogs and reports.
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       const meta = event.metaKey || event.ctrlKey;
@@ -62,10 +64,6 @@ export default function App() {
         ? "Waiting"
         : "Engine missing";
 
-  const folderName = dashboard.projectRoot.split("/").filter(Boolean).at(-1) ?? "";
-  const engineLabel = dashboard.engineVersion === "unknown" ? "engine" : `engine ${dashboard.engineVersion}`;
-  const meta = folderName ? `${engineLabel} · ${folderName}` : engineLabel;
-
   const bootSteps = [
     { key: "engine", label: "Locating sync engine", ready: dashboard.engineFound || dashboard.projectRoot !== "" },
     { key: "devices", label: "Probing connected devices", ready: Object.keys(dashboard.devices).length > 0 },
@@ -84,12 +82,9 @@ export default function App() {
       >
         <div className="identity">
           <div className="identity-mark">
-            <Sparkles size={14} />
+            <Logo size={17} />
           </div>
-          <div className="identity-text">
-            <span className="identity-name">Photo Relay</span>
-
-          </div>
+          <span className="identity-name">Photo Relay</span>
         </div>
         <div className="titlebar-actions">
           <span className="status-pill" data-state={status}>
@@ -109,53 +104,25 @@ export default function App() {
           animate={{ opacity: booted ? 1 : 0, y: booted ? 0 : 12 }}
           transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
         >
-          <section className="overview">
-            <div className="headline">
-              <h1 className="headline-title">
-                Photo Relay
-              </h1>
-              <div className="headline-actions">
-                <button className="button button-secondary" onClick={() => void runDeviceCheck()} disabled={checking || dashboard.running}>
-                  <Stethoscope size={14} className={checking ? "spin" : undefined} />
-                  {checking ? "Checking…" : "Device check"}
-                </button>
-                {dashboard.running ? (
-                  <button className="button button-danger" onClick={() => void stopSync()} disabled={busy}>
-                    <Square size={13} fill="currentColor" />
-                    Stop relay
-                  </button>
-                ) : (
-                  <button className="button button-primary" onClick={() => setConfirming(true)} disabled={!dashboard.engineFound}>
-                    <Sparkles size={14} />
-                    Start relay
-                  </button>
-                )}
-                <button className="button button-ghost" onClick={() => void reveal("runtime")}>
-                  <FolderOpen size={14} />
-                  Data
-                </button>
-              </div>
-              <p className="hint">
-                <ShieldCheck size={12} />
-                Staged files are removed after confirmation on Samsung
-              </p>
-            </div>
+          <Hero
+            dashboard={dashboard}
+            checking={checking}
+            busy={busy}
+            onDeviceCheck={() => void runDeviceCheck()}
+            onStart={() => setConfirming(true)}
+            onStop={() => void stopSync()}
+            onReveal={() => void reveal("runtime")}
+          />
 
-            <RelayPipeline dashboard={dashboard} />
-          </section>
+          <DeviceChain dashboard={dashboard} />
 
-          <StatGrid dashboard={dashboard} />
+          <StageRail dashboard={dashboard} />
 
           <section className="grid">
             <div className="stack">
               <article className="panel">
                 <div className="panel-head">
-                  <div className="panel-title">
-                    <span className="panel-eyebrow">{dashboard.running ? "Live relay" : "Session"}</span>
-                    <span className="panel-heading">
-                      {tab === "files" ? "Transferred files" : tab === "activity" ? "Milestones" : "Engine log"}
-                    </span>
-                  </div>
+                  <span className="panel-heading">{tab === "files" ? "Transfers" : tab === "activity" ? "Stages" : "Engine log"}</span>
                   <div className="segmented">
                     {(["files", "activity", "log"] as Tab[]).map((value) => (
                       <button
@@ -194,10 +161,7 @@ export default function App() {
 
               <article className="panel">
                 <div className="panel-head">
-                  <div className="panel-title">
-                    <span className="panel-eyebrow">Devices</span>
-                    <span className="panel-heading">Preflight report</span>
-                  </div>
+                  <span className="panel-heading">Devices</span>
                   <span className="badge" data-tone={ready ? "ok" : "warn"}>
                     {ready ? "Ready" : "Incomplete"}
                   </span>
@@ -208,10 +172,7 @@ export default function App() {
 
             <article className="panel">
               <div className="panel-head">
-                <div className="panel-title">
-                  <span className="panel-eyebrow">Local history</span>
-                  <span className="panel-heading">Recent runs</span>
-                </div>
+                <span className="panel-heading">Recent runs</span>
                 <button className="button button-ghost" onClick={() => void reveal("logs")}>
                   <FolderOpen size={13} />
                   Logs
@@ -272,9 +233,7 @@ export default function App() {
               <span className="toast-glyph">
                 <CheckCircle2 size={14} />
               </span>
-              <div>
-                Relay running — {titleCase(dashboard.phase)}
-              </div>
+              <div>Relay running: {titleCase(dashboard.phase)}</div>
             </motion.div>
           )}
         </AnimatePresence>

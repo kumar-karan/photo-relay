@@ -1441,17 +1441,33 @@ button:disabled {
   height: 100%;
 }
 
+/* One travelling segment inside a track that is exactly the segment's own width,
+   so the reset at the end of the loop happens while the segment is fully outside
+   the track. No visible snap-back. */
 .pipeline-link-pulse {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
   width: 40%;
+  height: 100%;
   border-radius: var(--radius-full);
   background: linear-gradient(90deg, transparent, var(--accent), transparent);
   opacity: 0;
+  transform: translateX(0);
 }
 
 .pipeline-link[data-active="true"] .pipeline-link-pulse {
   opacity: 1;
+  animation: pipeline-flow 1.6s linear infinite;
+}
+
+@keyframes pipeline-flow {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
 }
 
 .pipeline-node {
@@ -2087,6 +2103,230 @@ button:disabled {
   to {
     transform: rotate(360deg);
   }
+}
+
+/* =========================================================================
+   Mark
+   ========================================================================= */
+
+.logo {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+}
+
+.logo svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* =========================================================================
+   Hero: one progress reading owns the top band
+   ========================================================================= */
+
+.hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin: 24px 0 14px;
+  padding: 20px 22px 18px;
+  overflow: hidden;
+}
+
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: -60% 30% 40%;
+  pointer-events: none;
+  background: radial-gradient(closest-side, var(--accent-soft), transparent 72%);
+  opacity: 0;
+  transition: opacity var(--slow) var(--ease);
+}
+
+.hero[data-running="true"]::after {
+  opacity: 1;
+}
+
+.hero-top {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.hero-headline {
+  min-width: 0;
+}
+
+.hero-value {
+  display: flex;
+  align-items: baseline;
+  line-height: 0.95;
+}
+
+.hero-num {
+  font-size: clamp(42px, 6vw, 58px);
+  font-weight: 640;
+  letter-spacing: -0.045em;
+}
+
+.hero-pct {
+  margin-left: 3px;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text-faint);
+}
+
+.hero-word {
+  font-size: clamp(26px, 3.6vw, 34px);
+  font-weight: 620;
+  letter-spacing: -0.03em;
+}
+
+.hero-caption {
+  margin-top: 9px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.hero-metrics {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 11px 34px;
+  text-align: right;
+}
+
+.hero-metric {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.hero-metric-label {
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+.hero-metric-value {
+  font-size: 14px;
+  font-weight: 560;
+}
+
+.hero-bar {
+  height: 8px;
+}
+
+.hero-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.hero-current {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.hero-led {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: var(--radius-full);
+  background: var(--text-faint);
+}
+
+.hero-led[data-on="true"] {
+  background: var(--success);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 20%, transparent);
+}
+
+.hero-file {
+  overflow: hidden;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+/* =========================================================================
+   Device chain (source to destination rail)
+   ========================================================================= */
+
+.chain {
+  position: relative;
+  margin-bottom: 12px;
+  padding: 16px 18px;
+  overflow: hidden;
+}
+
+.chain::after {
+  content: "";
+  position: absolute;
+  inset: -40% -10%;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(50% 50% at 50% 50%, var(--accent-soft), transparent 70%);
+  transition: opacity var(--slow) var(--ease);
+}
+
+.chain[data-flowing="true"]::after {
+  opacity: 1;
+  animation: pipeline-glow 3.2s var(--ease-in-out) infinite;
+}
+
+.chain .pipeline-track {
+  z-index: 1;
+}
+
+/* =========================================================================
+   Stage strip (slim single-line stepper)
+   ========================================================================= */
+
+.stage-strip {
+  margin-bottom: 16px;
+  padding: 9px 18px;
+}
+
+.stage-strip .stages {
+  margin-top: 0;
+  gap: 2px;
+}
+
+.stage-strip .stage {
+  flex: 1 1 0;
+  justify-content: center;
+}
+
+/* =========================================================================
+   Boot mark
+   ========================================================================= */
+
+.boot-core {
+  width: 46px;
+  height: 46px;
+  background: var(--accent);
+  box-shadow: 0 0 30px var(--accent-ring);
+}
+
+.boot-logo {
+  position: absolute;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  color: var(--on-accent);
 }
 
 @media (prefers-reduced-motion: reduce) {

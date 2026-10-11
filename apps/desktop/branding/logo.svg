@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- Photo Relay app icon: two device panels bridged by a transfer arrow. -->
+  <defs>
+    <linearGradient id="pr-bg" x1="0" y1="0" x2="0" y2="1024" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#12111b"/>
+      <stop offset="1" stop-color="#0b0b0d"/>
+    </linearGradient>
+    <radialGradient id="pr-glow" cx="512" cy="470" r="500" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7d6cff" stop-opacity="0.30"/>
+      <stop offset="0.55" stop-color="#7d6cff" stop-opacity="0.07"/>
+      <stop offset="1" stop-color="#7d6cff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1024" height="1024" rx="224" fill="url(#pr-bg)"/>
+  <rect width="1024" height="1024" rx="224" fill="url(#pr-glow)"/>
+
+  <!-- Glyph drawn on a 24 unit grid, scaled to about 12 percent side padding. -->
+  <g transform="translate(96.9387 96.9387) scale(34.588444)">
+    <rect x="0.75" y="3" width="6.5" height="18" rx="2.6" fill="#7d6cff"/>
+    <rect x="16.75" y="3" width="6.5" height="18" rx="2.6" fill="#7d6cff"/>
+    <rect x="8.9" y="10.8" width="3.1" height="2.4" rx="1.2" fill="#40c6dd"/>
+    <path d="M11.7 8.9L15.1 12L11.7 15.1Z" fill="#40c6dd"/>
+  </g>
+</svg>

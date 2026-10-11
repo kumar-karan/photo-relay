@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
+import { Logo } from "./Logo";
 
 /** Ordered startup checks. Each line resolves as the app confirms it. */
 type BootStep = {
@@ -60,6 +61,9 @@ export function BootSequence({ steps, onDone }: { steps: BootStep[]; onDone: () 
         >
           <span className="boot-ring" />
           <span className="boot-core" />
+          <span className="boot-logo">
+            <Logo size={30} />
+          </span>
         </motion.div>
 
         <div className="boot-name">Photo Relay</div>

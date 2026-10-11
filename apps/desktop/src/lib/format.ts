@@ -11,7 +11,7 @@ export function formatBytes(bytes: number | undefined | null, precision = 1): st
 
 export function formatRate(mbps: number | undefined | null): string {
   const value = Number(mbps ?? 0);
-  if (!Number.isFinite(value) || value <= 0) return "—";
+  if (!Number.isFinite(value) || value <= 0) return "-";
   return `${value.toFixed(1)} MB/s`;
 }
 
@@ -21,7 +21,7 @@ export function formatCount(value: number | undefined | null): string {
 
 /** Trim an engine timestamp down to a readable minute. */
 export function formatClock(value: string | undefined | null): string {
-  if (!value) return "—";
+  if (!value) return "-";
   const text = value.trim();
   const time = text.match(/(\d{2}:\d{2}:\d{2})/);
   if (time) return time[1];
