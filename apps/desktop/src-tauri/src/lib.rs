@@ -407,6 +407,13 @@ fn discover_devices(engine: &Path) -> BTreeMap<String, DeviceStatus> {
     };
     let text = format!("{}{}", String::from_utf8_lossy(&output.stdout), String::from_utf8_lossy(&output.stderr));
     for line in text.lines() {
+        // Only the detector's per-device lines carry a status marker. The
+        // trailing "Detected Mode" summary names a device too ("Samsung Only
+        // Connected") and contains the word "detected", so without this guard
+        // it was parsed as a live device and overwrote the real reading.
+        if !line.contains('✅') && !line.contains('❌') {
+            continue;
+        }
         let lower = line.to_lowercase();
         let key = if lower.contains("samsung") || lower.contains("android") {
             "Samsung"

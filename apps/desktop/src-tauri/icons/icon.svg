@@ -1,25 +1,24 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
-  <!-- Photo Relay app icon: two device panels bridged by a transfer arrow. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-label="Photo Relay">
   <defs>
-    <linearGradient id="pr-bg" x1="0" y1="0" x2="0" y2="1024" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#12111b"/>
-      <stop offset="1" stop-color="#0b0b0d"/>
+    <linearGradient id="citrine" x1="0.12" y1="0.06" x2="0.88" y2="0.94">
+      <stop offset="0" stop-color="#d6f586"/>
+      <stop offset="0.46" stop-color="#a8e063"/>
+      <stop offset="1" stop-color="#5fb321"/>
     </linearGradient>
-    <radialGradient id="pr-glow" cx="512" cy="470" r="500" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#7d6cff" stop-opacity="0.30"/>
-      <stop offset="0.55" stop-color="#7d6cff" stop-opacity="0.07"/>
-      <stop offset="1" stop-color="#7d6cff" stop-opacity="0"/>
+    <radialGradient id="veil" cx="0.5" cy="0.3" r="0.82">
+      <stop offset="0" stop-color="#e9f9c4" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#e9f9c4" stop-opacity="0"/>
     </radialGradient>
   </defs>
 
-  <rect width="1024" height="1024" rx="224" fill="url(#pr-bg)"/>
-  <rect width="1024" height="1024" rx="224" fill="url(#pr-glow)"/>
+  <rect width="1024" height="1024" rx="232" fill="#f6f9f0"/>
+  <rect width="1024" height="1024" rx="232" fill="url(#veil)"/>
+  <rect x="7" y="7" width="1010" height="1010" rx="226" fill="none" stroke="#0f1a06" stroke-opacity="0.07" stroke-width="14"/>
 
-  <!-- Glyph drawn on a 24 unit grid, scaled to about 12 percent side padding. -->
-  <g transform="translate(96.9387 96.9387) scale(34.588444)">
-    <rect x="0.75" y="3" width="6.5" height="18" rx="2.6" fill="#7d6cff"/>
-    <rect x="16.75" y="3" width="6.5" height="18" rx="2.6" fill="#7d6cff"/>
-    <rect x="8.9" y="10.8" width="3.1" height="2.4" rx="1.2" fill="#40c6dd"/>
-    <path d="M11.7 8.9L15.1 12L11.7 15.1Z" fill="#40c6dd"/>
+  <g transform="translate(102.4 102.4) scale(34.1333)" fill="none" stroke="url(#citrine)"
+     stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="2.4" y="4.3" width="6.2" height="15.4" rx="2.4"/>
+    <rect x="15.4" y="4.3" width="6.2" height="15.4" rx="2.4"/>
+    <path d="M9.8 9.8 14.2 12l-4.4 2.2"/>
   </g>
 </svg>

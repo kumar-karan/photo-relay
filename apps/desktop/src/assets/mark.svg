@@ -1,7 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-  <!-- Photo Relay mark: two device panels bridged by a transfer arrow. -->
-  <rect x="0.75" y="3" width="6.5" height="18" rx="2.6"/>
-  <rect x="16.75" y="3" width="6.5" height="18" rx="2.6"/>
-  <rect x="8.9" y="10.8" width="3.1" height="2.4" rx="1.2"/>
-  <path d="M11.7 8.9L15.1 12L11.7 15.1Z"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Photo Relay">
+  <rect x="2.4" y="4.3" width="6.2" height="15.4" rx="2.4"/>
+  <rect x="15.4" y="4.3" width="6.2" height="15.4" rx="2.4"/>
+  <path d="M9.8 9.8 14.2 12l-4.4 2.2"/>
 </svg>

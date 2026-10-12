@@ -91,16 +91,29 @@ def iphone_connection_label(devices):
         return f"{name} (Wi-Fi)"
     return f"{name} ({'/'.join(sorted(kinds))})"
 
+def _adb_devices(adb_bin, timeout):
+    res = subprocess.run([adb_bin, "devices"], capture_output=True, text=True, timeout=timeout)
+    lines = [line.strip() for line in res.stdout.splitlines() if line.strip() and not line.startswith("List")]
+    return [l.split()[0] for l in lines if "device" in l]
+
+
 def check_samsung_connected(adb_bin):
-    try:
-        res = subprocess.run([adb_bin, "devices"], capture_output=True, text=True, timeout=5)
-        lines = [line.strip() for line in res.stdout.splitlines() if line.strip() and not line.startswith("List")]
-        devices = [l.split()[0] for l in lines if "device" in l]
+    # The first `adb devices` of a session starts the adb server, which can
+    # outlast a short timeout and made a plugged-in phone look absent. Give the
+    # cold start room, then retry once so detection is stable.
+    for attempt, timeout in enumerate((20, 10)):
+        try:
+            devices = _adb_devices(adb_bin, timeout)
+        except Exception:
+            devices = []
         if devices:
             return devices[0]
-        return None
-    except Exception:
-        return None
+        if attempt == 0:
+            try:
+                subprocess.run([adb_bin, "start-server"], capture_output=True, text=True, timeout=20)
+            except Exception:
+                pass
+    return None
 
 def detect_scenario():
     config = load_config()
