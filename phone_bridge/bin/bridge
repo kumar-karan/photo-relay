@@ -1,0 +1,309 @@
+#!/usr/bin/env bash
+# bridge — reach the Android phone over the network instead of USB.
+#
+#   bridge status              show what transport is live, or why none is
+#   bridge exec <cmd>          run a shell command inside Termux
+#   bridge run <script>        run a script inside Termux
+#   bridge push <src> <dest>   copy a file or directory onto the phone
+#   bridge pull <src> <dest>   copy a file or directory from the phone to local
+#   bridge setup               ONE-TIME, needs USB. Writes the config for good.
+#
+# Both transports are normalised to the same thing: a shell inside Termux.
+# That matters more than it looks. Running `adb shell` gives you the shell uid,
+# which cannot read /data/data/com.termux, so the server, its venv and its
+# tokens are all invisible. `run-as com.termux` fixes that over USB. SSH into
+# Termux's own sshd is already inside that context. So a project writes one
+# command and it behaves identically either way.
+
+set -uo pipefail
+
+BRIDGE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# config.env and known_hosts sit beside bin/, not inside it. Getting this wrong
+# fails silently: the config does not load, PHONE_SSH_HOST ends up empty, and
+# the bridge quietly falls back to adb while appearing to work.
+BRIDGE_ROOT="$(cd "$BRIDGE_DIR/.." && pwd)"
+CONF="${PHONE_BRIDGE_CONFIG:-$BRIDGE_ROOT/config.env}"
+
+[[ -f "$CONF" ]] && { set -a; . "$CONF"; set +a; }
+
+: "${PHONE_SSH_HOST:=}"            # Tailscale name or IP, or LAN IP
+: "${PHONE_SSH_PORT:=8023}"
+: "${PHONE_SSH_USER:=termux}"
+: "${PHONE_SSH_KEY:=}"
+: "${PHONE_ADB_SERIAL:=}"          # empty = whatever adb picks
+: "${PHONE_SSH_TIMEOUT:=6}"
+
+TERMUX_BASH="/data/data/com.termux/files/usr/bin/bash"
+SSH_HOST_KEY_FILE="$BRIDGE_ROOT/known_hosts"
+
+c_red=$'\033[31m'; c_dim=$'\033[90m'; c_b=$'\033[1m'; c_off=$'\033[0m'
+
+die() { printf '%s\n' "${c_red}bridge: $*${c_off}" >&2; exit 1; }
+note() { printf '%s\n' "${c_dim}  $*${c_off}" >&2; }
+
+adb_serial() {
+  if [[ -n "$PHONE_ADB_SERIAL" ]]; then echo "$PHONE_ADB_SERIAL"; return; fi
+  adb devices | awk 'NR>1 && $2=="device" {print $1; exit}'
+}
+
+# macOS still ships bash 3.2, which has no mapfile. So the option list is built
+# into a global array rather than printed and read back through a subshell.
+SSH_OPTS=()
+build_ssh_opts() {
+  SSH_OPTS=(-p "$PHONE_SSH_PORT"
+            -o ConnectTimeout="$PHONE_SSH_TIMEOUT"
+            -o BatchMode=yes
+            -o StrictHostKeyChecking=accept-new
+            -o UserKnownHostsFile="$SSH_HOST_KEY_FILE"
+            -o LogLevel=ERROR)
+  if [[ -n "$PHONE_SSH_KEY" ]]; then
+    SSH_OPTS+=(-i "$PHONE_SSH_KEY" -o IdentitiesOnly=yes)
+  fi
+}
+
+SCP_OPTS=()
+build_scp_opts() {
+  # scp uses -P (uppercase) for port number, whereas ssh uses -p (lowercase).
+  SCP_OPTS=(-P "$PHONE_SSH_PORT"
+            -o ConnectTimeout="$PHONE_SSH_TIMEOUT"
+            -o BatchMode=yes
+            -o StrictHostKeyChecking=accept-new
+            -o UserKnownHostsFile="$SSH_HOST_KEY_FILE"
+            -o LogLevel=ERROR)
+  if [[ -n "$PHONE_SSH_KEY" ]]; then
+    SCP_OPTS+=(-i "$PHONE_SSH_KEY" -o IdentitiesOnly=yes)
+  fi
+}
+
+# --- transports -------------------------------------------------------------
+
+try_ssh() {
+  [[ -z "$PHONE_SSH_HOST" ]] && return 1
+  build_ssh_opts
+  ssh "${SSH_OPTS[@]}" "$PHONE_SSH_USER@$PHONE_SSH_HOST" true >/dev/null 2>&1
+}
+
+try_adb() {
+  local s; s="$(adb_serial)"
+  [[ -n "$s" ]] || return 1
+  # run-as is the whole point. Without it we are a different, weaker user.
+  adb -s "$s" shell "run-as com.termux $TERMUX_BASH -c true" >/dev/null 2>&1
+}
+
+detect() {
+  if try_ssh; then echo ssh; return 0; fi
+  if try_adb; then echo adb; return 0; fi
+  return 1
+}
+
+# --- primitives -------------------------------------------------------------
+# Both read the script on stdin. Nesting quotes through two shells is how these
+# scripts usually break, and this avoids it entirely.
+#
+# Every script is wrapped in a prelude that pins HOME and PREFIX. Under
+# `run-as com.termux` the Termux profile is never sourced, so `~` expands to the
+# app data dir instead of files/home and $PREFIX is unbound. A real ssh login
+# gets both correct. Without this the same command would mean two different
+# things depending on transport, which is the one thing this script promises not
+# to do.
+
+PRELUDE='
+export PREFIX="${PREFIX:-/data/data/com.termux/files/usr}"
+export HOME="${HOME:-/data/data/com.termux/files/home}"
+[ -d "$HOME/.photo-drop" ] || [ -d /data/data/com.termux/files/home ] && export HOME=/data/data/com.termux/files/home
+export PATH="$PREFIX/bin:$PATH"
+'
+
+run_script() {
+  local t="$1" src="${2:-}"
+  local tmp="${TMPDIR:-/tmp}/pd_bridge.$$.sh"
+  if [[ -n "$src" && -f "$src" ]]; then
+    { printf '%s\n' "$PRELUDE"; cat "$src"; } > "$tmp"
+  else
+    { printf '%s\n' "$PRELUDE"; cat; } > "$tmp"
+  fi
+  case "$t" in
+    ssh)
+      build_ssh_opts
+      ssh "${SSH_OPTS[@]}" "$PHONE_SSH_USER@$PHONE_SSH_HOST" \
+          "$TERMUX_BASH -s" < "$tmp"
+      local rc=$?
+      rm -f "$tmp"
+      return $rc
+      ;;
+    adb)
+      local s; s="$(adb_serial)"
+      adb -s "$s" shell "run-as com.termux $TERMUX_BASH -s" < "$tmp"
+      local rc=$?
+      rm -f "$tmp"
+      return $rc
+      ;;
+  esac
+}
+
+# --- commands ---------------------------------------------------------------
+
+cmd_status() {
+  printf '%s\n' "${c_b}phone bridge${c_off}"
+  local t
+  if t="$(detect)"; then
+    case "$t" in
+      ssh)
+        printf '  transport   %s\n' "ssh"
+        printf '  target      %s@%s:%s\n' "$PHONE_SSH_USER" "$PHONE_SSH_HOST" "$PHONE_SSH_PORT"
+        printf '  termux uid  %s\n' "$(run_script ssh <(echo 'id -u') 2>/dev/null || echo '?')"
+        ;;
+      adb)
+        printf '  transport   %s\n' "adb"
+        printf '  device      %s\n' "$(adb_serial)"
+        printf '  termux uid  %s\n' "$(run_script adb <(echo 'id -u') 2>/dev/null || echo '?')"
+        ;;
+    esac
+    return 0
+  fi
+  printf '  transport   %s\n' "${c_red}none${c_off}"
+  printf '  hint        %s\n' "run 'bridge setup' with the phone plugged into USB"
+  return 1
+}
+
+cmd_exec() {
+  local t; t="$(detect)" || { cmd_status >&2; die "no transport"; }
+  printf '%s\n' "$*" > "${TMPDIR:-/tmp}/pd_bridge_cmd.$$"
+  run_script "$t" "${TMPDIR:-/tmp}/pd_bridge_cmd.$$"
+  local rc=$?
+  rm -f "${TMPDIR:-/tmp}/pd_bridge_cmd.$$"
+  return $rc
+}
+
+cmd_run() {
+  [[ $# -ge 1 && -f "$1" ]] || die "usage: bridge run <script.sh>"
+  local t; t="$(detect)" || { cmd_status >&2; die "no transport"; }
+  run_script "$t" "$1"
+}
+
+cmd_push() {
+  local src="${1:-}" dest="${2:-}"
+  [[ -n "$src" && -n "$dest" ]] || die "usage: bridge push <local> <remote>"
+  [[ -e "$src" ]] || die "no such path: $src"
+  local t; t="$(detect)" || { cmd_status >&2; die "no transport"; }
+
+  case "$t" in
+    adb)
+      local s; s="$(adb_serial)"
+      local stage="/sdcard/bridge-push.$$"
+      adb -s "$s" shell "mkdir -p $stage" || die "mkdir failed"
+      adb -s "$s" push "$src" "$stage/" >/dev/null || { adb -s "$s" shell "rm -rf $stage"; die "push failed"; }
+      run_script adb <<EOF || die "copy failed"
+mkdir -p "$(dirname "$dest")"
+cp -r "$stage"/* "$(basename "$dest")" 2>/dev/null || cp -r "$stage" "$dest"
+rm -rf "$stage"
+EOF
+      ;;
+    ssh)
+      build_scp_opts
+      scp "${SCP_OPTS[@]}" -r "$src" "$PHONE_SSH_USER@$PHONE_SSH_HOST:$dest" \
+        || die "scp failed (did you mkdir the destination?)"
+      ;;
+  esac
+  printf '%s\n' "pushed $src -> $dest over $t"
+}
+
+cmd_pull() {
+  local remote="${1:-}" dest="${2:-}"
+  [[ -n "$remote" && -n "$dest" ]] || die "usage: bridge pull <remote> <local>"
+  local t; t="$(detect)" || { cmd_status >&2; die "no transport"; }
+
+  case "$t" in
+    adb)
+      local s; s="$(adb_serial)"
+      local stage="/sdcard/bridge-pull.$$"
+      run_script adb <<EOF || die "stage copy failed"
+mkdir -p "$stage"
+cp -r "$remote" "$stage/"
+EOF
+      mkdir -p "$(dirname "$dest")"
+      adb -s "$s" pull "$stage/$(basename "$remote")" "$dest" >/dev/null || { run_script adb <<< "rm -rf '$stage'"; die "pull failed"; }
+      run_script adb <<< "rm -rf '$stage'"
+      ;;
+    ssh)
+      build_scp_opts
+      mkdir -p "$(dirname "$dest")"
+      scp "${SCP_OPTS[@]}" -r "$PHONE_SSH_USER@$PHONE_SSH_HOST:$remote" "$dest" \
+        || die "scp pull failed"
+      ;;
+  esac
+  printf '%s\n' "pulled $remote -> $dest over $t"
+}
+
+cmd_setup() {
+  local s; s="$(adb_serial)"
+  [[ -n "$s" ]] || die "setup needs the phone on USB. Plug it in and accept the debugging prompt."
+  note "this is the one step that must be done with a cable. after this, never again."
+
+  [[ -f ~/.ssh/id_ed25519 ]] || {
+    note "generating an ed25519 key"
+    ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519 -C "mac-to-phone"
+  }
+
+  note "installing openssh inside Termux"
+  adb -s "$s" shell "run-as com.termux $TERMUX_BASH -lc 'pkg install -y openssh termux-services >/dev/null 2>&1'" \
+    || die "pkg install openssh failed"
+
+  adb -s "$s" shell "run-as com.termux mkdir -p \$HOME/.ssh"
+  adb -s "$s" shell "run-as com.termux sh -c 'cat > \$HOME/.ssh/authorized_keys'" < ~/.ssh/id_ed25519.pub
+  adb -s "$s" shell "run-as com.termux chmod 700 \$HOME/.ssh"
+  adb -s "$s" shell "run-as com.termux chmod 600 \$HOME/.ssh/authorized_keys"
+
+  note "writing sshd_config on port $PHONE_SSH_PORT, keys only"
+  adb -s "$s" shell "run-as com.termux $TERMUX_BASH -lc 'mkdir -p \$PREFIX/etc/ssh && ssh-keygen -A >/dev/null 2>&1; printf \"%s\n\" \
+    \"Port $PHONE_SSH_PORT\" \
+    \"PermitRootLogin no\" \
+    \"PasswordAuthentication no\" \
+    \"ChallengeResponseAuthentication no\" \
+    \"PubkeyAuthentication yes\" \
+    \"AllowUsers $PHONE_SSH_USER\" \
+    \"Subsystem sftp \$PREFIX/libexec/sftp-server\" \
+    > \$PREFIX/etc/ssh/sshd_config'"
+
+  note "starting sshd and registering it with termux-services so it survives a reboot"
+  adb -s "$s" shell "run-as com.termux $TERMUX_BASH -lc 'pkill -f sshd 2>/dev/null; \$PREFIX/bin/sshd; mkdir -p \$PREFIX/var/service/sshd; printf \"#!/data/data/com.termux/files/usr/bin/bash\nexec %s/usr/bin/sshd -D -e\n\" \$PREFIX > \$PREFIX/var/service/sshd/run; chmod 700 \$PREFIX/var/service/sshd/run; sv-enable \$PREFIX/var/service/sshd 2>/dev/null; true'"
+
+  local ip
+  ip="$(adb -s "$s" shell "ip -4 addr show wlan0 | grep -o 'inet [0-9.]*'" | tr -d '\r' | awk '{print $2}' | head -1)"
+  ip="${ip:-}"
+
+  {
+    echo "# Written by 'bridge setup'. Local machine, not the phone's state."
+    echo "PHONE_SSH_HOST=${ip}"
+    echo "PHONE_SSH_PORT=${PHONE_SSH_PORT}"
+    echo "PHONE_SSH_USER=${PHONE_SSH_USER}"
+    echo "PHONE_SSH_KEY=\$HOME/.ssh/id_ed25519"
+  } > "$CONF"
+
+  cat <<EOF
+
+  ${c_b}setup done${c_off}
+  ssh port   $PHONE_SSH_PORT
+  mac key    ~/.ssh/id_ed25519
+  phone addr ${ip:-<unknown, edit $CONF>}
+
+  ${c_b}Remaining, by hand${c_off}
+    1. Phone Settings -> Battery -> unrestricted for Termux, or the daemon
+       will be killed and the link will die mid-session.
+    2. For use away from this Wi-Fi, install Tailscale from
+       apps/t3-server-android/tailscale.apk, sign in, then put its 100.x
+       address in $CONF as PHONE_SSH_HOST.
+
+  Test it with:  $(basename "$0") status
+EOF
+}
+
+case "${1:-}" in
+  status) cmd_status ;;
+  exec)   shift; cmd_exec "$@" ;;
+  run)    shift; cmd_run "$@" ;;
+  push)   shift; cmd_push "$@" ;;
+  pull)   shift; cmd_pull "$@" ;;
+  setup)  cmd_setup ;;
+  *) printf 'usage: %s {status|exec|run|push|pull|setup}\n' "$(basename "$0")" >&2; exit 2 ;;
+esac

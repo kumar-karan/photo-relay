@@ -1,0 +1,579 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Photo Drop: B+C combined, implementation plan</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#000; --bg2:#0a0a0b; --line:#22252a; --line2:#16181b;
+    --tx:#fff; --tx2:#9aa0a6; --tx3:#6b7178; --ok:#5fd08a;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  html{color-scheme:dark}
+  body{background:var(--bg);color:var(--tx);font:15px/1.6 var(--sans);-webkit-font-smoothing:antialiased;padding:32px 20px 80px}
+  .wrap{max-width:1180px;margin:0 auto}
+
+  header{border-bottom:1px solid var(--line);padding-bottom:20px;margin-bottom:36px}
+  h1{font-size:25px;line-height:1.2;font-weight:650;letter-spacing:-.02em;margin-bottom:10px}
+  .sub{color:var(--tx2);font-size:14px;max-width:74ch}
+  .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);margin-top:22px}
+  .facts div{background:var(--bg2);padding:11px 13px}
+  .facts dt{font:600 10px/1.4 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);margin-bottom:3px}
+  .facts dd{font-size:12.5px;color:var(--tx2);line-height:1.5}
+  .facts dd b{color:var(--tx);font-weight:600}
+
+  h2{font-size:13px;font-weight:650;letter-spacing:.1em;text-transform:uppercase;color:var(--ok);
+     margin:0 0 12px;display:flex;align-items:center;gap:10px}
+  h2 .tag{font:700 11px/1 var(--mono);background:#0d1a12;border:1px solid #1e3a2a;color:var(--ok);padding:4px 7px;border-radius:4px;letter-spacing:.06em}
+  h3{font-size:14px;font-weight:650;color:var(--tx);margin:22px 0 8px}
+  p{color:var(--tx2);font-size:13.5px;line-height:1.65;max-width:92ch;margin-bottom:12px}
+  p b,li b{color:var(--tx);font-weight:600}
+  code{font:400 12px var(--mono);background:var(--bg2);border:1px solid var(--line2);padding:1px 5px;border-radius:4px;color:#c9ced4}
+  section{margin-bottom:60px;padding-bottom:44px;border-bottom:1px solid var(--line2)}
+  section:last-of-type{border-bottom:0}
+  a{color:var(--ok)}
+
+  pre.diagram{font:400 11.5px/1.5 var(--mono);color:#c9ced4;background:var(--bg2);border:1px solid var(--line);
+    border-radius:8px;padding:16px;overflow-x:auto;margin-bottom:16px}
+  pre.diagram b{color:var(--tx)}
+
+  .tblwrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
+  table{border-collapse:collapse;width:100%;min-width:640px;font-size:12.5px}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line2);vertical-align:top}
+  th{font:600 10px/1.4 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);background:var(--bg2)}
+  td{color:var(--tx2);line-height:1.55}
+  td:first-child{color:var(--tx);font-weight:600;white-space:nowrap}
+  td .sw{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:-1px;border:1px solid rgba(255,255,255,.2)}
+  tr:last-child td{border-bottom:0}
+
+  ul,ol{color:var(--tx2);font-size:13.5px;line-height:1.7;padding-left:20px;margin-bottom:12px}
+  li{margin-bottom:6px}
+
+  .frames{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:22px}
+  .unit{display:flex;flex-direction:column;gap:9px;min-width:0}
+  .screen{position:relative;width:100%;max-width:302px;aspect-ratio:302/646;container-type:inline-size;
+          background:#f8f9fa;color:#111315;border-radius:26px;overflow:hidden;
+          box-shadow:0 0 0 1px #2a2e34,0 18px 40px -18px rgba(0,0,0,.9)}
+  .cap{font-size:12px;color:var(--tx3);line-height:1.5}
+  .cap b{display:block;color:var(--tx2);font:600 10px/1.4 var(--mono);letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px}
+  .cap.warn b{color:#e0906f}
+
+  /* app palette, light, as the real app */
+  .s{--page:#f8f9fa;--sf:#fff;--low:#f1f3f5;--ink:#111315;--ink2:#494e54;--ink3:#6c737b;
+     --g:#167a38;--gd:#0e5224;--gt:#eaf5ec;--am:#b26a00;--amt:#fdf2e3;
+     --rd:#b3261e;--rdt:#fcedec;--nl:#eceef0;--st:#e2e5e8;--ss:#edf0f2;--hr:#b7bdc3}
+  .sbar{height:8cqw;display:flex;align-items:center;justify-content:space-between;padding:0 5.3cqw;
+        font:600 3.2cqw/1 var(--sans);color:var(--ink2);flex:none}
+
+  /* combined direction */
+  .bc{height:100%;display:flex;flex-direction:column;background:var(--page)}
+  .bc.green{background:var(--gt)}
+  .band{flex:none;display:flex;align-items:center;gap:3cqw;padding:3.4cqw 5.6cqw 3.6cqw}
+  .band .d{width:3cqw;height:3cqw;border-radius:50%;flex:none}
+  .band .tx{flex:1;min-width:0}
+  .band .t{font:650 4cqw/1.2 var(--sans)}
+  .band .u{font-size:3.3cqw;margin-top:.3cqw;opacity:.85}
+  .band p{margin-left:auto;font:700 3cqw/1 var(--sans);padding:1.2cqw 2.6cqw;border-radius:6cqw;letter-spacing:.03em;white-space:nowrap}
+  .band.off{background:var(--nl)}.band.off .d{background:#8b9199}.band.off .t{color:#3a4046}.band.off .u{color:#5e656d}.band.off p{background:#e2e5e8;color:#3a4046}
+  .band.wait{background:var(--amt)}.band.wait .d{background:var(--am);animation:blip 1.1s ease-in-out infinite}.band.wait .t{color:#854d0e}.band.wait .u{color:#8a5a18}.band.wait p{background:#f6e3c4;color:#854d0e}
+  .band.tint{background:var(--gt)}.band.tint .d{background:var(--g)}.band.tint .t{color:#0e5224}.band.tint .u{color:#1c6b39}.band.tint p{background:#d7ebdc;color:#0e5224}
+  .band.live{background:var(--g)}.band.live .d{background:#7be3a6;animation:blip 2.6s ease-in-out infinite}.band.live .t{color:#fff}.band.live .u{color:#dcf5e8}.band.live p{background:#fff;color:#0e5224}
+  .band.low{background:var(--rdt)}.band.low .d{background:var(--rd)}.band.low .t{color:#8c1d18}.band.low .u{color:#9a4038}.band.low p{background:#f3d6d3;color:#8c1d18}
+  .band.dev{background:#212529}.band.dev .d{background:#ff8a80}.band.dev .t{color:#fff}.band.dev .u{color:#c7ccd1}.band.dev p{background:#fff;color:#212529}
+
+  .stage{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 5cqw}
+
+  .orb{width:54cqw;height:54cqw;border-radius:50%;position:relative;display:flex;flex-direction:column;
+       align-items:center;justify-content:center;background:var(--sf);border:.7cqw solid var(--st)}
+  .orb .halo{position:absolute;inset:-5cqw;border-radius:50%;border:.35cqw solid var(--ss)}
+  .orb .ic{width:6cqw;height:6cqw;border-radius:50%;background:var(--hr);margin-bottom:2.6cqw}
+  .orb .t{font:700 4cqw/1 var(--sans);color:var(--ink)}
+  .orb .u{font-size:3.2cqw;color:var(--ink3);margin-top:1.2cqw}
+  .orb.wait{background:var(--amt);border-color:#efd3a6}
+  .orb.wait .ic{background:var(--am);animation:blip 1.1s ease-in-out infinite}
+  .orb.wait .t{color:#854d0e}
+  .orb.wait .u{color:#8a5a18}
+  .cap2{font-size:3.6cqw;line-height:1.55;text-align:center;color:var(--ink3);max-width:80%;margin-top:6cqw}
+
+  .hcard{width:100%;background:var(--sf);border:1px solid var(--st);border-radius:6.4cqw;padding:6cqw 5cqw 4.6cqw;text-align:center;position:relative}
+  .hcard .badge{position:absolute;top:-3.2cqw;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:1.6cqw;
+     background:var(--g);color:#fff;font:700 2.9cqw/1 var(--sans);padding:1.7cqw 3.4cqw;border-radius:6cqw;letter-spacing:.05em}
+  .hcard .badge i{width:2cqw;height:2cqw;border-radius:50%;background:#7be3a6;display:block}
+  .hcard .k{font:700 3cqw/1 var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--ink3)}
+  .hcard .hdom{font:700 5.4cqw/1.15 var(--sans);letter-spacing:-.02em;color:var(--ink);margin-top:2.2cqw}
+  .hcard .hurl{font:400 3cqw/1.5 var(--mono);color:#5a6169;margin-top:1.4cqw;word-break:break-all}
+  .hcard .hqr{width:58cqw;height:58cqw;margin:4.4cqw auto 0;display:block;color:#111315;background:#fff;
+     padding:2.6cqw;border:1px solid var(--st);border-radius:4.2cqw}
+  .hcard .hint{font-size:3.3cqw;line-height:1.5;color:var(--ink3);margin-top:3.4cqw}
+
+  .warncard{width:100%;background:var(--sf);border:1px solid var(--st);border-radius:4.6cqw;padding:4cqw;
+     font-size:3.5cqw;line-height:1.55;color:var(--ink2);text-align:left}
+  .warncard b{color:var(--ink)}
+  .warncard.rd{border-color:#f2c0bc;background:var(--rdt);color:#8c1d18}
+  .warncard.rd b{color:#8c1d18}
+  .warncard .btn{margin-top:3cqw;width:100%}
+
+  .sheet{flex:none;background:var(--sf);border-radius:7.4cqw 7.4cqw 0 0;padding:3cqw 5.6cqw 4.6cqw;
+     box-shadow:0 -.5cqw 2.4cqw rgba(17,19,21,.07)}
+  .sheet .grab{width:11cqw;height:1.4cqw;border-radius:2cqw;background:var(--st);margin:0 auto 3.4cqw}
+  .mini{display:flex;align-items:center;gap:2.8cqw;font-size:3.4cqw;color:var(--ink2)}
+  .mini b{font-weight:650;white-space:nowrap}
+  .mini .bar{height:1.6cqw;border-radius:2cqw;background:#e6e9ec;flex:1;position:relative;overflow:hidden}
+  .mini .bar u{position:absolute;inset:0 auto 0 0;width:30%;background:var(--g);border-radius:2cqw}
+  .mini .bar u.rd{background:var(--rd);width:5%}
+  .mini s{font:700 2.9cqw/1 var(--sans);color:var(--gd);background:var(--gt);padding:1cqw 2.2cqw;border-radius:6cqw;text-decoration:none;white-space:nowrap}
+  .crow{display:flex;align-items:center;gap:2.6cqw;margin-bottom:3cqw}
+  .crow .u{flex:1;font:400 3.1cqw/1 var(--mono);background:var(--low);border-radius:2.8cqw;padding:3cqw 3.4cqw;color:#3d4348;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .crow .ib{width:11.4cqw;height:11.4cqw;border-radius:3.6cqw;background:var(--low);color:var(--ink);display:flex;align-items:center;justify-content:center;font-size:4.4cqw;flex:none}
+  .btn{height:12.8cqw;border-radius:3.8cqw;display:flex;align-items:center;justify-content:center;gap:2cqw;font:650 4.2cqw/1 var(--sans);flex:none}
+  .btn.f{background:var(--g);color:#fff}
+  .btn.n{background:var(--sf);color:var(--ink);border:1px solid var(--st)}
+  .btn.d{background:var(--low);color:#5f666d;border:1px solid var(--st)}
+  .btn.r{background:var(--sf);color:var(--rd);border:1px solid #f2c0bc}
+  .srow{display:flex;gap:2.6cqw;margin-top:3cqw}
+  .srow .btn{flex:1}
+  .confirm{margin-top:2.8cqw;background:var(--rdt);border:1px solid #f2c0bc;border-radius:3.4cqw;padding:3.2cqw;
+     font-size:3.3cqw;line-height:1.5;color:#8c1d18}
+  .confirm b{color:#8c1d18}
+  .divider{height:1px;background:var(--ss);margin:3cqw 0}
+
+  .pill{display:inline-block;font:700 11px/1 var(--mono);letter-spacing:.04em;padding:4px 8px;border-radius:5px;background:#0d1a12;border:1px solid #1e3a2a;color:var(--ok)}
+  .pill.no{background:#1a0d0d;border-color:#3a1e1e;color:#e0906f}
+  .kv{display:grid;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:16px}
+  .kv div{background:var(--bg2);padding:10px 13px;display:grid;grid-template-columns:150px 1fr;gap:12px}
+  .kv dt{font:600 10px/1.5 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--tx3)}
+  .kv dd{font-size:12.5px;color:var(--tx2);line-height:1.55}
+  .kv dd b{color:var(--tx)}
+  footer{border-top:1px solid var(--line);margin-top:8px;padding-top:18px;color:var(--tx3);font-size:12px;line-height:1.6}
+
+  @keyframes blip{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.74)}}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+  @media (max-width:560px){body{padding:20px 14px 60px}h1{font-size:21px}.screen{max-width:none}.kv div{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="qr" viewBox="0 0 21 21">
+    <g fill="currentColor">
+      <path fill-rule="evenodd" d="M0 0h7v7H0zM1 1h5v5H1zM2 2h3v3H2z"/>
+      <path fill-rule="evenodd" d="M14 0h7v7h-7zM15 1h5v5h-5zM16 2h3v3h-3z"/>
+      <path fill-rule="evenodd" d="M0 14h7v7H0zM1 15h5v5H1zM2 16h3v3H2z"/>
+      <path d="M8 0h1v1H8zM8 2h1v2H8zM10 1h2v1h-2zM9 3h1v1H9zM11 3h1v2h-1zM8 5h2v1H8zM10 4h1v1h-1zM12 5h1v1h-1zM8 6h1v1H8zM11 6h2v1h-2zM18 1h1v2h-1zM20 2h1v1h-1zM18 3h2v1h-2zM19 4h1v1h-1zM17 5h1v2h-1zM19 6h2v1h-2zM18 8h1v1h-1zM20 8h1v2h-1zM18 9h2v1h-2zM19 10h1v1h-1zM18 11h2v2h-2zM20 12h1v1h-1zM18 13h1v1h-1zM8 8h1v1H8zM9 8h2v1H9zM12 8h1v1h-1zM13 8h1v1h-1zM16 8h2v1h-2zM8 9h1v1H8zM11 9h1v1h-1zM12 9h2v1h-2zM14 9h1v1h-1zM18 9h1v1h-1zM9 10h1v1H9zM10 10h1v1h-1zM13 10h2v1h-2zM15 10h1v1h-1zM16 10h1v1h-1zM20 10h1v1h-1zM8 11h1v1H8zM10 11h1v1h-1zM12 11h2v1h-2zM14 11h1v1h-1zM17 11h1v1h-1zM18 11h1v1h-1zM11 12h1v1h-1zM12 12h1v1h-1zM15 12h1v1h-1zM16 12h1v1h-1zM19 12h1v1h-1zM8 13h1v1H8zM9 13h1v1H9zM12 13h1v1h-1zM14 13h1v1h-1zM17 13h1v1h-1zM18 13h1v1h-1zM20 13h1v1h-1zM8 15h1v1H8zM10 15h1v1h-1zM11 15h1v1h-1zM13 15h1v1h-1zM16 15h1v1h-1zM19 15h1v1h-1zM20 15h1v1h-1zM9 16h1v1H9zM12 16h1v1h-1zM14 16h2v1h-2zM18 16h1v1h-1zM8 17h1v1H8zM10 17h1v1h-1zM13 17h1v1h-1zM14 17h1v1h-1zM17 17h1v1h-1zM19 17h1v1h-1zM11 18h1v1h-1zM12 18h1v1h-1zM15 18h2v1h-2zM20 18h1v1h-1zM8 19h2v1H8zM12 19h1v1h-1zM15 19h1v1h-1zM18 19h1v1h-1zM19 19h1v1h-1zM10 20h2v1h-2zM13 20h2v1h-2zM16 20h2v1h-2z"/>
+    </g>
+  </symbol>
+</defs></svg>
+
+<header>
+  <h1>Photo Drop: combining B and C into one screen</h1>
+  <p class="sub">B's spine and C's switch, in a direction that fixes the two flaws the originals carried.
+  This is the implementation plan only, nothing is built yet. The complete spec lives in
+  <code>design/photo-drop-v4/PLAN-BC.md</code>, and it reuses the token set, motion family, wire format
+  and accessibility rules already fixed in <code>PLAN.md</code>.</p>
+  <dl class="facts">
+    <div><dt>Direction</dt><dd><b>B + C</b>, the Handoff screen. One screen, two jobs: flip the switch, then be the card you hand over.</dd></div>
+    <div><dt>From B</dt><dd>Thin status band, share card as hero, QR <b>permanently at arm's-length size</b>.</dd></div>
+    <div><dt>From C</dt><dd>One large orb is the primary control, state change is <b>felt</b>, link rises from a bottom sheet.</dd></div>
+    <div><dt>Target</dt><dd><code>apps/photo-drop/android</code><br>dev.photodrop.app</dd></div>
+    <div><dt>Stack</dt><dd>Single Activity. <b>No AndroidX, no Compose.</b> aapt2 + javac + d8, offline.</dd></div>
+    <div><dt>Work vs A</dt><dd><b>More.</b> Orb morph plus sheet animation. Order to cut in section 8.</dd></div>
+  </dl>
+</header>
+
+<!-- ============ 1. ANATOMY ============ -->
+<section>
+  <h2><span class="tag">01</span> Layout anatomy</h2>
+  <p>Four zones in one pinned <code>LinearLayout</code>. <b>No ScrollView</b>, because B's whole argument is
+  that the card is the screen and nothing needs scrolling to be seen. Band and sheet are pinned, only the
+  stage flexes.</p>
+<pre class="diagram">┌──────────────────────────────────────────┐
+│ <b>[•] Online anywhere              [LIVE]</b> │  band   pinned, 64dp     carries the state colour
+│     Tunnel up · 3 sessions today         │
+├──────────────────────────────────────────┤
+│            ┌──────────────┐              │
+│            │   ▓▓▒░ QR ░▒▓ │             │  stage  flex:1, min 300
+│            │   ░▒▓ (184dp) │             │         orb when off,
+│            └──────────────┘              │         Handoff card when live
+│         Hold this up to your friend      │
+├──────────────────────────────────────────┤
+│                 ─────                    │  sheet  pinned, rounded top
+│  …/d/A7xKp2mQ…                    ⇅      │         peek 72dp → 208dp
+│  [   Copy link   ]                       │
+│  38.4 GB free  ▓▓▓▓▓▓░░░░  ·  3 SESSIONS │
+│  [ Stop server ]                         │
+└──────────────────────────────────────────┘</pre>
+  <div class="kv">
+    <div><dt>Band</dt><dd><b>statusStrip</b>, 64dp min. State dot, title, sub-line, state pill.</dd></div>
+    <div><dt>Stage</dt><dd><b>stage</b>, weight 1, min 300dp. The switch when off, the Handoff card when live.</dd></div>
+    <div><dt>Sheet</dt><dd><b>sheet</b>, peek 72dp, full 208dp. Storage always, link and Stop once live.</dd></div>
+    <div><dt>Nav</dt><dd>One Owner dashboard row (48dp) inside the sheet. The duplicate scan row is deleted.</dd></div>
+  </div>
+</section>
+
+<!-- ============ 2. MOCKS ============ -->
+<section>
+  <h2><span class="tag">02</span> The combined screen, five states</h2>
+  <p>Rendered at device scale. Note what carries over from each half: B's band and permanent QR, C's orb and
+  rising sheet. Note also the one thing neither original got right, the <b>Stop</b> placement in the live state.</p>
+  <div class="frames">
+
+    <!-- STOPPED -->
+    <div class="unit">
+      <div class="screen s"><div class="bc">
+        <div class="sbar"><span>9:41</span><span>&#9650; &#9642;&#9642;</span></div>
+        <div class="band off"><div class="d"></div>
+          <div class="tx"><div class="t">Server is offline</div><div class="u">Nothing can upload right now</div></div>
+          <p>STOPPED</p></div>
+        <div class="stage">
+          <div class="orb"><div class="halo"></div><div class="ic"></div>
+            <div class="t">Tap to start</div><div class="u">server is off</div></div>
+          <p class="cap2">One tap and this becomes a link you can hand to a friend.</p>
+        </div>
+        <div class="sheet"><div class="grab"></div>
+          <div class="mini"><b>38.4 GB free</b><span class="bar"><u></u></span></div>
+        </div>
+      </div></div>
+      <p class="cap"><b>Stopped</b> The orb is the only large object. Nothing is a greyed-out box.</p>
+    </div>
+
+    <!-- STARTING -->
+    <div class="unit">
+      <div class="screen s"><div class="bc">
+        <div class="sbar"><span>9:41</span><span>&#9650; &#9642;&#9642;</span></div>
+        <div class="band wait"><div class="d"></div>
+          <div class="tx"><div class="t">Starting</div><div class="u">Bringing up Termux and the tunnel</div></div>
+          <p>WAIT</p></div>
+        <div class="stage">
+          <div class="orb wait"><div class="halo"></div><div class="ic"></div>
+            <div class="t">Starting</div><div class="u">about four seconds</div></div>
+          <p class="cap2">The orb stays put and changes colour. No dead button, no toast and hope.</p>
+        </div>
+        <div class="sheet"><div class="grab"></div>
+          <div class="mini"><b>38.4 GB free</b><span class="bar"><u></u></span></div>
+        </div>
+      </div></div>
+      <p class="cap"><b>Starting</b> Amber band, amber orb, pulsing. Sheet is still a bare peek.</p>
+    </div>
+
+    <!-- LIVE TUNNEL -->
+    <div class="unit">
+      <div class="screen s"><div class="bc green">
+        <div class="sbar" style="color:#0e5224"><span>9:41</span><span>&#9650; &#9642;&#9642;</span></div>
+        <div class="band live"><div class="d"></div>
+          <div class="tx"><div class="t">Online anywhere</div><div class="u">Tunnel up, 3 sessions today</div></div>
+          <p>LIVE</p></div>
+        <div class="stage">
+          <div class="hcard">
+            <div class="badge"><i></i>LIVE</div>
+            <div class="k">Hold this up to your friend</div>
+            <div class="hdom">trycloudflare.com</div>
+            <div class="hurl">https://moss-lark-fibre-9k2.trycloudflare.com/d/A7xKp2mQ</div>
+            <svg class="hqr" viewBox="0 0 21 21"><use href="#qr"/></svg>
+            <div class="hint">They scan, pick photos, watch them upload. Nothing is installed on their phone.</div>
+          </div>
+        </div>
+        <div class="sheet"><div class="grab"></div>
+          <div class="crow"><div class="u">&#8230;/d/A7xKp2mQx&#8230;</div><div class="ib">&#8645;</div></div>
+          <div class="btn f" style="width:100%">Copy link</div>
+          <div class="divider"></div>
+          <div class="mini"><b>38.4 GB free</b><span class="bar"><u></u></span><s>3 SESSIONS</s></div>
+          <div class="srow"><div class="btn r">Stop server</div></div>
+        </div>
+      </div></div>
+      <p class="cap warn"><b>Live, via tunnel</b> Band solid green, page green around a <b>white</b> card. The orb has docked into the LIVE badge. Stop is a labelled button in the sheet.</p>
+    </div>
+
+    <!-- STOP CONFIRM -->
+    <div class="unit">
+      <div class="screen s"><div class="bc green">
+        <div class="sbar" style="color:#0e5224"><span>9:41</span><span>&#9650; &#9642;&#9642;</span></div>
+        <div class="band live"><div class="d"></div>
+          <div class="tx"><div class="t">Online anywhere</div><div class="u">Tunnel up, 1 session today</div></div>
+          <p>LIVE</p></div>
+        <div class="stage">
+          <div class="hcard" style="opacity:.55">
+            <div class="badge"><i></i>LIVE</div>
+            <div class="k">Hold this up to your friend</div>
+            <div class="hdom">trycloudflare.com</div>
+            <svg class="hqr" viewBox="0 0 21 21"><use href="#qr"/></svg>
+          </div>
+        </div>
+        <div class="sheet"><div class="grab"></div>
+          <div class="btn f" style="width:100%">Copy link</div>
+          <div class="confirm"><b>A friend may be uploading right now.</b> Stopping will end their upload part way through.
+            <div class="srow"><div class="btn n" style="height:10.4cqw;font-size:3.8cqw">Keep running</div>
+            <div class="btn r" style="height:10.4cqw;font-size:3.8cqw">Stop anyway</div></div>
+          </div>
+        </div>
+      </div></div>
+      <p class="cap warn"><b>The guard</b> When <code>sessions &gt; 0</code>, Stop asks first, inline in the sheet. Not a dialog, not a toast, not a long-press.</p>
+    </div>
+
+    <!-- STORAGE LOW -->
+    <div class="unit">
+      <div class="screen s"><div class="bc">
+        <div class="sbar"><span>9:41</span><span>&#9650; &#9642;&#9642;</span></div>
+        <div class="band low"><div class="d"></div>
+          <div class="tx"><div class="t">Storage low</div><div class="u">Uploads are paused at 1.6 GB free</div></div>
+          <p>PAUSED</p></div>
+        <div class="stage">
+          <div class="warncard rd"><b>Free some space first.</b> Photos will not land until you are above 2 GB free. Uploads are refused, not queued.
+            <div class="btn n">Open storage settings</div></div>
+        </div>
+        <div class="sheet"><div class="grab"></div>
+          <div class="mini"><b style="color:var(--rd)">1.6 GB free</b><span class="bar"><u class="rd"></u></span></div>
+        </div>
+      </div></div>
+      <p class="cap"><b>Storage low</b> The QR is withdrawn, not just greyed. A scannable code that does nothing is worse than none.</p>
+    </div>
+
+    <!-- PERMISSION -->
+    <div class="unit">
+      <div class="screen s"><div class="bc">
+        <div class="sbar"><span>9:41</span><span>&#9650; &#9642;&#9642;</span></div>
+        <div class="band dev"><div class="d"></div>
+          <div class="tx"><div class="t">Can't reach Termux</div><div class="u">Grant permission to run commands</div></div>
+          <p>BLOCKED</p></div>
+        <div class="stage">
+          <div class="warncard"><b>Photo Drop needs permission to run commands in Termux.</b> Grant it in Settings, Apps, Photo Drop, Permissions. This card stays until it is done.
+            <div class="btn n">Grant permission</div></div>
+        </div>
+        <div class="sheet"><div class="grab"></div>
+          <div class="mini"><b>38.4 GB free</b><span class="bar"><u></u></span></div>
+        </div>
+      </div></div>
+      <p class="cap"><b>Permission</b> The only inverted state, because the fault is the app's environment rather than the server. Inline and persistent.</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============ 3. MATRIX ============ -->
+<section>
+  <h2><span class="tag">03</span> State to screen matrix</h2>
+  <p>Six semantic states, same source as <code>PLAN.md</code> section 4, mapped across three zones. The colour
+  decision that decides scannability: <b>green fills the band and the page, never the space behind the QR.</b>
+  The Handoff card stays pure white so the code keeps black-on-white contrast and survives daylight. The
+  large green field delivers C's felt state change; the white card protects B's reason for existing.</p>
+  <div class="tblwrap">
+  <table>
+    <thead><tr><th>State</th><th>Band</th><th>Stage</th><th>Sheet</th><th>Orb</th></tr></thead>
+    <tbody>
+      <tr><td>Stopped</td>
+        <td><span class="sw" style="background:#eceef0"></span>grey dot, "Server is offline", pill STOPPED</td>
+        <td>orb, neutral, "Tap to start"</td><td>peek, storage only</td><td>switch, primary</td></tr>
+      <tr><td>Starting</td>
+        <td><span class="sw" style="background:#b26a00"></span>amber, pulsing, pill WAIT</td>
+        <td>orb, amber, "About four seconds"</td><td>peek, storage</td><td>switch, inert</td></tr>
+      <tr><td>Online, local only</td>
+        <td><span class="sw" style="background:#eaf5ec"></span>green tint, "On this Wi-Fi", pill ON THIS WI-FI</td>
+        <td>Handoff card: domain, mono URL, 184dp QR</td><td>full: URL, Copy, sessions, storage</td><td>docks to tint badge</td></tr>
+      <tr><td>Online, via tunnel</td>
+        <td><span class="sw" style="background:#167a38"></span><b>solid green</b>, mint dot pulsing, pill LIVE</td>
+        <td>Handoff card, as above</td><td>full, plus <b>Stop server</b></td><td>docks to white badge</td></tr>
+      <tr><td>Storage low</td>
+        <td><span class="sw" style="background:#b3261e"></span>red, "Uploads are paused at 1.6 GB free"</td>
+        <td>alert card replaces the QR</td><td>full, red storage</td><td>hidden</td></tr>
+      <tr><td>Termux unreachable</td>
+        <td><span class="sw" style="background:#212529"></span><b>inverted dark</b>, "Grant permission to run commands"</td>
+        <td>permission card replaces orb and card</td><td>peek, storage</td><td>hidden</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <h3>Beat from C: the orb docks, it does not vanish</h3>
+  <p>When the server comes up, the 200dp orb scales to 0.2 and slides into a small <b>LIVE</b> badge at the top
+  of the card, in one <code>ViewPropertyAnimator</code> pass. No layout swap, no second view. That single
+  movement is what makes the state change felt rather than read, and it is the piece of C that survives
+  intact.</p>
+</section>
+
+<!-- ============ 4. FLAWS ============ -->
+<section>
+  <h2><span class="tag">04</span> The two flaws, and how they die</h2>
+
+  <h3>B's flaw: Stop in an overflow</h3>
+  <p>An overflow is the one place you cannot put a destructive action, because it is the one place users do not
+  look before their thumb has already moved. Here <b>Stop server is a labelled button inside the sheet</b>, in
+  the bottom third of the screen where the thumb already rests. It is always present when live. It is the same
+  action the foreground notification already exposes, so the app and the shade agree about how to stop.</p>
+
+  <h3>C's flaw: hold-to-stop, which nobody discovers</h3>
+  <p>C made the biggest target on the phone the destructive one, which forced a long-press guard, which users
+  never find. The fix is to <b>split the two meanings of the orb</b>:</p>
+  <ul>
+    <li><b>When live, tapping the orb copies the link.</b> Copying is idempotent and harmless, so a stray
+      pocket tap on a 200dp target does the safe thing and says so.</li>
+    <li><b>Stopping is a deliberate, labelled, small-target tap</b> in the sheet, not the orb.</li>
+  </ul>
+  <p>And it confirms only when it matters, using the one honest signal <code>/healthz</code> gives us:</p>
+<pre class="diagram">void onStopTapped() {
+    if (last.sessions &gt; 0) showStopConfirm();   // inline strip in the sheet
+    else                    stopServer();        // nothing in flight, act at once
+}</pre>
+  <p>The confirm is an inline strip, <b>not</b> an <code>AlertDialog</code> and <b>not</b> a <code>Snackbar</code>.
+  A snackbar is transient, and the user has already put the phone down and walked away, which is exactly why
+  B's overflow argument and C's long-press argument both lose. The result is a destructive action that is
+  <b>discoverable</b> (unlike C) and <b>guarded</b> (unlike a bare tap). That is the combination neither
+  original had, and it is the reason to combine them at all.</p>
+  <p><span class="pill no">Do not cut this</span> A big tap target that kills an in-flight upload is worse than
+  any visual compromise in this document.</p>
+</section>
+
+<!-- ============ 5. INVENTORY ============ -->
+<section>
+  <h2><span class="tag">05</span> Component inventory, and the sheet decision</h2>
+  <p>Lean, because there is no AndroidX. <code>BottomSheetBehavior</code>, <code>ViewDragHelper</code> and
+  <code>SpringAnimation</code> are all unavailable, and none is needed.</p>
+  <div class="tblwrap">
+  <table>
+    <thead><tr><th>File</th><th>New</th><th>Why it is a View, not a LinearLayout</th></tr></thead>
+    <tbody>
+      <tr><td>Health.java</td><td>new</td><td>Value class from PLAN.md section 7. Removes the -1 sentinels from render().</td></tr>
+      <tr><td>StatusStripView.java</td><td>new</td><td>Owns the state dot and the shimmer loop, which must cancel on state change and on background. <code>View.animate()</code> cannot hold that.</td></tr>
+      <tr><td>OrbView.java</td><td>new</td><td>Circle, halo and dot, plus the pulse loop, the press morph, and its two modes (switch, docked badge).</td></tr>
+      <tr><td>StorageBarView.java</td><td>reuse</td><td>Already correct. Untouched.</td></tr>
+      <tr><td>Sheet</td><td>layout only</td><td>A LinearLayout with a rounded-top background and an animated height.</td></tr>
+      <tr><td>Nav row</td><td>layout only</td><td>Keep the existing text-only row. A T3-style flat row is optional polish, deferred.</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <h3>The sheet is content-driven, not draggable</h3>
+  <p>The sheet has exactly two heights, and which one applies is a function of state rather than of user intent,
+  so there is nothing for a drag gesture to do that state does not already do:</p>
+  <ul>
+    <li><b>peek, 72dp:</b> handle and storage row. Stopped, starting, error.</li>
+    <li><b>full, 208dp:</b> handle, URL row, Copy, flip, sessions row, Stop server. Live.</li>
+  </ul>
+  <p>Animate between them with an <code>ObjectAnimator</code> on height plus a translationY on the content,
+  around 220ms. That keeps C's "it rises from the bottom when there is something worth showing" and drops the
+  entire drag-gesture problem, which was the single largest cost in C. A draggable handle is an explicit v2,
+  not a v1 requirement.</p>
+</section>
+
+<!-- ============ 6. WIRING ============ -->
+<section>
+  <h2><span class="tag">06</span> State wiring in MainActivity</h2>
+  <p><code>render(String)</code> becomes <code>render(Health)</code>. <code>pill(String,int,int)</code> becomes
+  <code>applyState(AppState)</code>. The three booleans collapse into one enum, and the three button listeners
+  collapse into one dispatcher.</p>
+<pre class="diagram">enum AppState { STOPPED, STARTING, ONLINE_LOCAL, ONLINE_TUNNEL, STORAGE_LOW, TERMUX_ERROR }
+
+<b>/** Replaces the btnStart, btnStop and btnQrToggle listeners. */</b>
+void onOrbTapped() {
+    switch (state) {
+        case STOPPED:                          startServer(); break;
+        case STARTING:                         break;          // inert, not a dead button
+        case ONLINE_LOCAL: case ONLINE_TUNNEL:
+        case STORAGE_LOW:                      copyLink(); break;   // safe for pocket taps
+        case TERMUX_ERROR:                     showPermissionCard(); break;
+    }
+}
+
+AppState classify(Health h, boolean permitted) {
+    if (!permitted) return AppState.TERMUX_ERROR;
+    if (!h.up)      return starting ? AppState.STARTING : AppState.STOPPED;
+    starting = false;
+    if (h.known() &amp;&amp; h.reserve &gt; 0 &amp;&amp; h.free &lt;= h.reserve) return AppState.STORAGE_LOW;
+    return publicUrl.isEmpty() ? AppState.ONLINE_LOCAL : AppState.ONLINE_TUNNEL;
+}
+
+void render(Health h) {
+    AppState next = classify(h, Termux.permitted(this));
+    if (next == state &amp;&amp; !somethingChanged(h)) return;  // no redraw on a no-op poll
+    state = next;
+    applyState(next);       // band colour and text, orb mode, sheet height, QR
+    last = h;
+}</pre>
+  <div class="kv">
+    <div><dt>Remove</dt><dd>pill(), render(String), the pick/parseLong fields (into Health), the three flags, the two button listeners, toggleQr(), qrVisible.</dd></div>
+    <div><dt>Keep as-is</dt><dd>mintToken, loadTokens, bootstrap, the 7s poll in onResume/onPause, pressFeedback (extended to corner radius), domainOf, copy, human, httpGet, readPublicUrl, and the PhotoDropService sync in render().</dd></div>
+    <div><dt>Never break</dt><dd>The service sync. If the server is up, the notification must be too, or the shade lies about the state.</dd></div>
+  </div>
+</section>
+
+<!-- ============ 7. CHANGE PLAN ============ -->
+<section>
+  <h2><span class="tag">07</span> Ordered change plan</h2>
+  <p>Each step builds and runs on its own. Nothing here is a big-bang rewrite; steps 2 and 3 keep the app
+  shippable while the new layout lands underneath it.</p>
+  <ol>
+    <li><b>Health.java</b>, add the value class. Build. Nothing consumes it yet.</li>
+    <li><b>MainActivity.java</b>, swap <code>render(String)</code> for <code>render(Health)</code>, add
+      <code>enum AppState</code> and <code>classify()</code>. Keep the old layout, drive the existing pill from
+      <code>applyState</code>. Build, deploy, confirm zero regression.</li>
+    <li><b>StatusStripView.java</b> plus <b>activity_main.xml</b>, replace the header with the band and collapse
+      the ScrollView into the pinned four-zone layout. Stage still holds the old link card, sheet is a stub.
+      Build, deploy, walk all six states.</li>
+    <li><b>OrbView.java</b>, both modes and the morph. Wire <code>onOrbTapped()</code>, remove btnStart and
+      btnStop. Build, deploy, confirm start-from-orb and copy-when-live.</li>
+    <li><b>Handoff card</b>, domain, mono URL, permanent QR, flip. Delete btnQrToggle and qrBox. Build, deploy,
+      then <b>scan the QR with a real phone at arm's length.</b></li>
+    <li><b>Sheet content</b>, storage row, URL row, Copy, sessions, Stop, inline confirm. Build, deploy, confirm
+      the session guard fires.</li>
+    <li><b>First-run checklist and permission card</b> (PLAN.md section 8) inside the stage. Build, deploy.</li>
+    <li><b>Accessibility and contrast sweep</b> (PLAN.md section 9) over the built layout.</li>
+    <li><b>Cleanup</b>, delete the dead btnUpload/btnScan/tvScan wiring and the unreferenced
+      surface_press/row_press/track_bg colours.</li>
+  </ol>
+  <h3>What this plan deliberately deletes</h3>
+  <ul>
+    <li><b>btnScan</b>, which points at the identical URL as btnOwner. One Owner dashboard row.</li>
+    <li>The hardcoded "No uploads in this session yet" literal, replaced by the real sessions count.</li>
+    <li>The QR toggle. The QR is permanent when live, which was B's whole argument.</li>
+    <li>The ScrollView. Nothing should need scrolling to be seen.</li>
+  </ul>
+</section>
+
+<!-- ============ 8. VERIFY + RISK ============ -->
+<section>
+  <h2><span class="tag">08</span> Verification, and the cut order</h2>
+<pre class="diagram">bash apps/photo-drop/android/build.sh      # must print BUILD_OK
+bash apps/photo-drop/deploy.sh             # adb install and push to the Samsung</pre>
+  <ol>
+    <li><b>Cold start, stopped.</b> Band grey "Server is offline", the orb is the only large object, sheet is a bare storage peek.</li>
+    <li><b>Tap the orb.</b> Band amber, orb amber, no Toast.</li>
+    <li><b>healthz answers.</b> Band solid green, the orb <b>shrinks and docks</b> to the LIVE badge, the card fades in with the QR, the sheet grows to full.</li>
+    <li><b>Stand back and scan.</b> A second phone scans from about 40cm, in daylight. Real hardware, not a screenshot. This is the test B exists for.</li>
+    <li><b>Pocket-tap safety.</b> Tap the orb repeatedly while live. It copies. The server does not stop.</li>
+    <li><b>Stop with sessions in flight.</b> The confirm strip appears, not a dialog. With zero sessions the first tap stops at once.</li>
+    <li><b>Storage low.</b> Band red, QR withdrawn, alert card in its place.</li>
+    <li><b>Revoke the Termux permission.</b> The permission card replaces the orb and persists.</li>
+    <li><b>Reduced motion.</b> <code>adb shell settings put global animator_duration_scale 0</code>, confirm the shimmer is stopped rather than spinning, then reset to 1.</li>
+    <li><b>Contrast sweep</b> over the built layout. Body text at 4.5:1 or better, QR stays black on white.</li>
+  </ol>
+  <h3>Risks, and what to cut first</h3>
+  <p>This is <b>more work than direction A</b>, and it should be said plainly. The orb morph and the sheet
+  both need real animation code, and verification step 4 depends on hardware. Cut in this order if it runs long:</p>
+  <ol>
+    <li><b>Sheet transition.</b> Show and hide instead of animating height. Keeps both contents.</li>
+    <li><b>Orb morph.</b> Swap VISIBLE and GONE between orb and badge, no scale pass. Loses the felt change, keeps the layout.</li>
+    <li><b>Pull Stop up beside the card</b> as a labelled button and drop the sheet. This degrades toward B with
+      a permanent QR, which is still a good app.</li>
+  </ol>
+  <p><span class="pill no">Never cut</span> The section 4 guard. Everything else is negotiable.</p>
+</section>
+
+<!-- ============ 9. OPEN ============ -->
+<section>
+  <h2><span class="tag">09</span> Open questions</h2>
+  <ol>
+    <li><b>Live orb.</b> Dock it as a small badge in the card header, as drawn, or fade it out and let the band's LIVE pill carry the state alone?</li>
+    <li><b>Does sessions &gt; 0 justify a confirm?</b> It is a proxy for "an upload is in flight", not a guarantee. The alternative is to confirm only below the reserve and stop immediately otherwise.</li>
+    <li><b>Drag to expand the sheet.</b> Worth a v2, or is the content-driven two-position sheet enough indefinitely?</li>
+    <li><b>The flip.</b> Is a URL-large and QR-large flip wanted, or is the QR always large with the URL as its second line, as drawn?</li>
+  </ol>
+</section>
+
+<footer>
+  Direction and full spec: <b>design/photo-drop-v4/PLAN-BC.md</b>. Token set, motion family, wire format,
+  first-run flow and accessibility rules: <b>design/photo-drop-v4/PLAN.md</b>. Original three directions and the
+  comparison that led here: the earlier postplan for this app.
+</footer>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,540 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Photo Drop UI overhaul: three directions</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#000; --bg2:#0a0a0b; --card:#101012; --line:#22252a; --line2:#16181b;
+    --tx:#fff; --tx2:#9aa0a6; --tx3:#6b7178; --ok:#5fd08a;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  html{color-scheme:dark}
+  body{background:var(--bg);color:var(--tx);font:15px/1.6 var(--sans);-webkit-font-smoothing:antialiased;padding:32px 20px 80px}
+  .wrap{max-width:1280px;margin:0 auto}
+
+  /* ---- document chrome ---- */
+  header{border-bottom:1px solid var(--line);padding-bottom:20px;margin-bottom:40px}
+  h1{font-size:26px;line-height:1.2;font-weight:650;letter-spacing:-.02em;margin-bottom:10px}
+  .sub{color:var(--tx2);font-size:14px;max-width:72ch}
+  .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);margin-top:22px}
+  .facts div{background:var(--bg2);padding:11px 13px}
+  .facts dt{font:600 10px/1.4 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);margin-bottom:3px}
+  .facts dd{font-size:12.5px;color:var(--tx2);line-height:1.5}
+  .facts dd b{color:var(--tx);font-weight:600}
+
+  h2{font-size:13px;font-weight:650;letter-spacing:.1em;text-transform:uppercase;color:var(--ok);
+     margin:0 0 8px;display:flex;align-items:center;gap:10px}
+  h2 .tag{font:700 11px/1 var(--mono);background:#0d1a12;border:1px solid #1e3a2a;color:var(--ok);
+          padding:4px 7px;border-radius:4px;letter-spacing:.06em}
+  .why{color:var(--tx2);font-size:13.5px;max-width:88ch;margin-bottom:22px}
+  .why b{color:var(--tx);font-weight:600}
+  section{margin-bottom:64px;padding-bottom:48px;border-bottom:1px solid var(--line2)}
+  section:last-of-type{border-bottom:0}
+
+  .frames{display:grid;grid-template-columns:repeat(auto-fill,minmax(236px,1fr));gap:22px}
+
+  /* ---- device frame ---- */
+  .unit{display:flex;flex-direction:column;gap:9px;min-width:0}
+  .screen{position:relative;width:100%;max-width:302px;aspect-ratio:302/646;container-type:inline-size;
+          background:#f8f9fa;color:#111315;border-radius:26px;overflow:hidden;
+          box-shadow:0 0 0 1px #2a2e34,0 18px 40px -18px rgba(0,0,0,.9)}
+  .cap{font-size:12px;color:var(--tx3);line-height:1.5}
+  .cap b{display:block;color:var(--tx2);font:600 10px/1.4 var(--mono);letter-spacing:.08em;
+         text-transform:uppercase;margin-bottom:3px}
+  .cap .warn b{color:#e0906f}
+
+  /* ---- app palette (light, as the real app) ---- */
+  .s{--page:#f8f9fa;--sf:#fff;--low:#f1f3f5;--ink:#111315;--ink2:#494e54;--ink3:#6c737b;
+     --g:#167a38;--gd:#0e5224;--gt:#eaf5ec;--am:#b26a00;--amt:#fdf2e3;
+     --rd:#b3261e;--rdt:#fcedec;--nl:#eceef0;--st:#e2e5e8;--ss:#edf0f2;--hr:#b7bdc3}
+  .sbar{height:8.4cqw;display:flex;align-items:center;justify-content:space-between;padding:0 5.3cqw;
+        font:600 3.3cqw/1 var(--sans);color:var(--ink2);flex:none}
+  .sbar.on{background:transparent}
+  .sbar .r{letter-spacing:.15em;opacity:.85}
+
+  /* A */
+  .a{height:100%;display:flex;flex-direction:column;background:var(--page)}
+  .ah{flex:none;padding:0 5.6cqw 4.4cqw}
+  .ah h4{font:700 6.4cqw/1.15 var(--sans);letter-spacing:-.02em}
+  .ah p{font-size:3.9cqw;color:var(--ink3);margin-top:.6cqw}
+  .strip{flex:none;display:flex;align-items:center;gap:3.4cqw;padding:3.6cqw 5.6cqw}
+  .strip .d{width:2.8cqw;height:2.8cqw;border-radius:50%;flex:none}
+  .strip .t{font:650 4cqw/1.25 var(--sans);letter-spacing:-.005em}
+  .strip .u{font-size:3.3cqw;margin-top:.2cqw;opacity:.85}
+  .strip.off{background:var(--nl)}.strip.off .d{background:#8b9199}
+  .strip.off .t{color:#3a4046}.strip.off .u{color:#5e656d}
+  .strip.wait{background:var(--amt)}.strip.wait .d{background:var(--am);animation:blip 1.1s ease-in-out infinite}
+  .strip.wait .t{color:#854d0e}.strip.wait .u{color:#8a5a18}
+  .strip.live{background:var(--g)}.strip.live .d{background:#7be3a6;animation:blip 2.6s ease-in-out infinite}
+  .strip.live .t{color:#fff}.strip.live .u{color:#dcf5e8}
+  .strip.low{background:var(--rdt)}.strip.low .d{background:var(--rd)}
+  .strip.low .t{color:#8c1d18}.strip.low .u{color:#9a4038}
+  .body{flex:1;padding:0 5.6cqw;overflow:hidden;display:flex;flex-direction:column}
+  .card{background:var(--sf);border:1px solid var(--st);border-radius:4.6cqw;padding:4.2cqw}
+  .k{font:700 3.1cqw/1 var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--ink3)}
+  .dom{font:700 5.6cqw/1.15 var(--sans);letter-spacing:-.02em;color:var(--ink);margin-top:2cqw}
+  .url{font:400 3.3cqw/1.4 var(--mono);color:#3d4348;margin-top:1.2cqw;
+       overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .note{font-size:3.5cqw;line-height:1.5;color:#5f666d;margin-top:2.4cqw}
+  .qrrow{margin-top:3.4cqw;border-top:1px solid var(--ss);padding-top:3.4cqw;display:flex;gap:3.4cqw;align-items:center}
+  .qr{width:23cqw;height:23cqw;flex:none;color:#111315;background:#fff;
+      border:1px solid var(--st);border-radius:3cqw;padding:1.6cqw}
+  .qr.sk{color:transparent;background:var(--low);border-style:dashed}
+  .qrtx{font-size:3.4cqw;line-height:1.5;color:var(--ink2)}
+  .qrtx b{display:block;color:var(--ink);font-size:3.6cqw;margin-bottom:.4cqw}
+  .btn{height:14.2cqw;border-radius:3.8cqw;display:flex;align-items:center;justify-content:center;gap:2cqw;
+       font:650 4.6cqw/1 var(--sans);flex:none}
+  .btn.f{background:var(--g);color:#fff}
+  .btn.n{background:var(--sf);color:var(--ink);border:1px solid var(--st)}
+  .btn.d{background:var(--low);color:#5f666d;border:1px solid var(--st)}
+  .btn.sm{height:12.4cqw;font-size:4.1cqw;font-weight:600}
+  .foot{flex:none;background:var(--sf);border-top:1px solid var(--st);padding:3.6cqw 5.6cqw 4.6cqw}
+  .foot.two{display:flex;gap:2.8cqw}
+  .lbl{font:700 3.1cqw/1 var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);margin:5cqw 0 2.4cqw}
+  .mh{display:flex;justify-content:space-between;align-items:baseline}
+  .mh b{font:700 4.3cqw/1 var(--sans);letter-spacing:-.01em}
+  .mh i{font:650 3.4cqw/1 var(--sans);font-style:normal;color:var(--g)}
+  .mh i.d{color:#5f666d}
+  .meter{height:2.2cqw;border-radius:2cqw;background:#e6e9ec;margin:3.2cqw 0 2.4cqw;position:relative;overflow:hidden}
+  .meter u{position:absolute;inset:0 auto 0 0;background:var(--g);border-radius:2cqw;text-decoration:none}
+  .meter u.d{background:var(--rd)}
+  .meter s{position:absolute;top:.4cqw;bottom:.4cqw;width:.45cqw;background:var(--hr);text-decoration:none}
+  .steps .st{display:flex;gap:3.4cqw;padding:3.2cqw 0;border-bottom:1px solid var(--ss)}
+  .steps .st:last-child{border-bottom:0;padding-bottom:0}
+  .steps .n{width:6.4cqw;height:6.4cqw;border-radius:50%;background:var(--low);color:var(--ink2);
+            font:700 3.4cqw/6.4cqw var(--sans);text-align:center;flex:none;margin-top:.4cqw}
+  .steps .n.ok{background:var(--g);color:#fff}
+  .steps b{display:block;font:650 3.9cqw/1.3 var(--sans);color:var(--ink);margin-bottom:.6cqw}
+  .steps span{font-size:3.4cqw;line-height:1.5;color:var(--ink3);display:block}
+  .steps code{font:400 3.1cqw/1 var(--mono);background:var(--low);color:var(--ink2);
+              padding:.6cqw 1.2cqw;border-radius:1cqw;display:inline-block;margin-top:.8cqw}
+  .act{display:flex;align-items:center;gap:3cqw;margin-top:3.4cqw;padding-top:3.4cqw;border-top:1px solid var(--ss)}
+  .act .av{width:9.4cqw;height:9.4cqw;border-radius:2.6cqw;background:var(--gt);color:var(--gd);
+           display:flex;align-items:center;justify-content:center;font-size:4cqw;flex:none}
+  .act .av.m{background:var(--low);color:#5f666d}
+  .act b{display:block;font:600 3.9cqw/1.3 var(--sans);color:var(--ink)}
+  .act em{font:400 3.4cqw/1.4 var(--sans);font-style:normal;color:var(--ink3)}
+  .act p{margin-left:auto;font:700 3cqw/1 var(--sans);color:var(--gd);background:var(--gt);
+         padding:1cqw 2.4cqw;border-radius:6cqw;letter-spacing:.03em}
+
+  /* B */
+  .b{height:100%;display:flex;flex-direction:column;background:var(--page)}
+  .bt{flex:none;display:flex;align-items:center;gap:2.8cqw;padding:0 5.6cqw 4cqw}
+  .bt .d{width:2.8cqw;height:2.8cqw;border-radius:50%;flex:none}
+  .bt .t{font:650 3.9cqw/1.2 var(--sans);color:var(--ink2)}
+  .bt .u{font-size:3.3cqw;color:var(--ink3)}
+  .bt p{margin-left:auto;font:700 3cqw/1 var(--sans);padding:1.2cqw 2.6cqw;border-radius:6cqw;letter-spacing:.03em}
+  .bm{flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 5.6cqw;min-height:0}
+  .hero{flex:none;background:var(--sf);border:1px solid var(--st);border-radius:6.4cqw;padding:5.4cqw;text-align:center}
+  .hero .dom{font-size:7cqw;margin:2.6cqw 0 .8cqw}
+  .hero .url{font-size:3.1cqw;color:#5a6169;word-break:break-all;white-space:normal;line-height:1.5}
+  .hero .qr{width:47cqw;height:47cqw;margin:4.6cqw auto 0;padding:3.4cqw;border-radius:4.2cqw}
+  .hero .hint{font-size:3.4cqw;color:var(--ink3);line-height:1.5;margin-top:3.4cqw}
+  .empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4cqw;text-align:center;padding:0 4cqw}
+  .ring{width:42cqw;height:42cqw;border-radius:50%;border:.7cqw dashed var(--st);background:var(--sf);position:relative}
+  .ring::before,.ring::after{content:"";position:absolute;background:var(--hr)}
+  .ring::before{width:11cqw;height:.7cqw;top:50%;left:50%;transform:translate(-50%,-50%);border-radius:1cqw}
+  .ring::after{width:.7cqw;height:11cqw;top:50%;left:50%;transform:translate(-50%,-50%);border-radius:1cqw}
+  .empty h5{font:700 5cqw/1.2 var(--sans);letter-spacing:-.015em}
+  .empty p{font-size:3.7cqw;color:var(--ink3);line-height:1.55;max-width:60%}
+  .mini{display:flex;align-items:center;gap:2.8cqw;font-size:3.4cqw;color:var(--ink2)}
+  .mini b{font-weight:650;white-space:nowrap}
+  .mini .bar{height:1.6cqw;border-radius:2cqw;background:#e6e9ec;flex:1;position:relative;overflow:hidden}
+  .mini .bar u{position:absolute;inset:0 auto 0 0;width:30%;background:var(--g);border-radius:2cqw}
+  .mini s{font:700 3cqw/1 var(--sans);color:var(--gd);background:var(--gt);padding:1cqw 2.2cqw;
+          border-radius:6cqw;text-decoration:none;white-space:nowrap}
+
+  /* C */
+  .c{height:100%;display:flex;flex-direction:column;background:var(--page)}
+  .c.live{background:var(--g)}
+  .stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 6cqw;gap:0}
+  .orb{width:56cqw;height:56cqw;border-radius:50%;position:relative;display:flex;flex-direction:column;
+       align-items:center;justify-content:center}
+  .c:not(.live) .orb{background:var(--sf);border:.7cqw solid var(--st)}
+  .c.live .orb{background:rgba(255,255,255,.13);border:.5cqw solid rgba(255,255,255,.32)}
+  .orb .halo{position:absolute;inset:-5cqw;border-radius:50%;border:.35cqw solid rgba(255,255,255,.16)}
+  .c:not(.live) .orb .halo{border-color:var(--ss)}
+  .orb .ic{width:6cqw;height:6cqw;border-radius:50%;background:currentColor;margin-bottom:2.4cqw}
+  .c:not(.live) .orb .ic{background:var(--hr)}
+  .c.live .orb .ic{background:#fff}
+  .orb .t{font:700 3.8cqw/1 var(--sans);color:var(--ink)}
+  .c.live .orb .t{color:#fff}
+  .orb .u{font-size:3.2cqw;color:var(--ink3);margin-top:1cqw}
+  .c.live .orb .u{color:#dcf5e8}
+  .cap2{font-size:3.6cqw;line-height:1.55;text-align:center;color:var(--ink3);max-width:74%;margin-top:7cqw}
+  .c.live .cap2{color:rgba(255,255,255,.86)}
+  .panel{flex:none;background:var(--sf);border-radius:7.4cqw 7.4cqw 0 0;padding:5.4cqw 5.6cqw 4.6cqw;
+         box-shadow:0 -0.35cqw 0 var(--st)}
+  .c:not(.live) .panel{background:var(--page)}
+  .crow{display:flex;align-items:center;gap:2.8cqw;margin-bottom:3.4cqw}
+  .crow .u{flex:1;font:400 3.3cqw/1 var(--mono);background:var(--low);border-radius:2.8cqw;
+           padding:3cqw 3.4cqw;color:#3d4348;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .crow .ib{width:13cqw;height:13cqw;border-radius:3.8cqw;background:var(--low);color:var(--ink);
+            display:flex;align-items:center;justify-content:center;font-size:4.4cqw}
+  .warncard{background:var(--sf);border:1px solid var(--st);border-radius:4.6cqw;padding:3.6cqw;
+            font-size:3.5cqw;line-height:1.55;color:var(--ink2);text-align:left}
+  .warncard b{color:var(--ink)}
+
+  /* ---- comparison ---- */
+  .tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:8px}
+  table{border-collapse:collapse;width:100%;min-width:660px;font-size:13px}
+  th,td{text-align:left;padding:10px 13px;border-bottom:1px solid var(--line2);vertical-align:top}
+  th{font:600 10px/1.4 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--tx3);
+     background:var(--bg2);position:sticky;top:0}
+  td:first-child{color:var(--tx);font-weight:600;white-space:nowrap}
+  td{color:var(--tx2);line-height:1.55}
+  tr:last-child td{border-bottom:0}
+  .pick{color:var(--ok);font-weight:600}
+
+  ol.qs{margin:0;padding-left:20px;display:grid;gap:10px}
+  ol.qs li{color:var(--tx2);font-size:13.5px;line-height:1.6}
+  ol.qs b{color:var(--tx);font-weight:600}
+  footer{border-top:1px solid var(--line);margin-top:8px;padding-top:18px;color:var(--tx3);font-size:12px;line-height:1.6}
+
+  @keyframes blip{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.72)}}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+  @media (max-width:520px){body{padding:20px 14px 60px}h1{font-size:21px}.screen{max-width:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="qr" viewBox="0 0 21 21">
+    <g fill="currentColor">
+      <path fill-rule="evenodd" d="M0 0h7v7H0zM1 1h5v5H1zM2 2h3v3H2z"/>
+      <path fill-rule="evenodd" d="M14 0h7v7h-7zM15 1h5v5h-5zM16 2h3v3h-3z"/>
+      <path fill-rule="evenodd" d="M0 14h7v7H0zM1 15h5v5H1zM2 16h3v3H2z"/>
+      <path d="M8 0h1v1H8zM8 2h1v2H8zM10 1h2v1h-2zM9 3h1v1H9zM11 3h1v2h-1zM8 5h2v1H8zM10 4h1v1h-1zM12 5h1v1h-1zM8 6h1v1H8zM11 6h2v1h-2zM10 6h1v0h-1zM18 1h1v2h-1zM20 2h1v1h-1zM18 3h2v1h-2zM19 4h1v1h-1zM17 5h1v2h-1zM19 6h2v1h-2zM18 8h1v1h-1zM20 8h1v2h-1zM18 9h2v1h-2zM19 10h1v1h-1zM18 11h2v2h-2zM20 12h1v1h-1zM18 13h1v1h-1zM8 8h1v1H8zM9 8h2v1H9zM12 8h1v1h-1zM13 8h1v1h-1zM16 8h2v1h-2zM19 8h0v0zM8 9h1v1H8zM11 9h1v1h-1zM12 9h2v1h-2zM14 9h1v1h-1zM18 9h1v1h-1zM9 10h1v1H9zM10 10h1v1h-1zM13 10h2v1h-2zM15 10h1v1h-1zM16 10h1v1h-1zM20 10h1v1h-1zM8 11h1v1H8zM10 11h1v1h-1zM12 11h2v1h-2zM14 11h1v1h-1zM17 11h1v1h-1zM18 11h1v1h-1zM11 12h1v1h-1zM12 12h1v1h-1zM15 12h1v1h-1zM16 12h1v1h-1zM19 12h1v1h-1zM8 13h1v1H8zM9 13h1v1H9zM12 13h1v1h-1zM14 13h1v1h-1zM17 13h1v1h-1zM18 13h1v1h-1zM20 13h1v1h-1zM8 15h1v1H8zM10 15h1v1h-1zM11 15h1v1h-1zM13 15h1v1h-1zM16 15h1v1h-1zM19 15h1v1h-1zM20 15h1v1h-1zM9 16h1v1H9zM12 16h1v1h-1zM14 16h2v1h-2zM18 16h1v1h-1zM8 17h1v1H8zM10 17h1v1h-1zM13 17h1v1h-1zM14 17h1v1h-1zM17 17h1v1h-1zM19 17h1v1h-1zM11 18h1v1h-1zM12 18h1v1h-1zM15 18h2v1h-2zM20 18h1v1h-1zM8 19h2v1H8zM12 19h1v1h-1zM15 19h1v1h-1zM18 19h1v1h-1zM19 19h1v1h-1zM10 20h2v1h-2zM13 20h2v1h-2zM16 20h2v1h-2z"/>
+    </g>
+  </symbol>
+</defs></svg>
+
+<header>
+  <h1>Photo Drop: three directions for the launcher UI</h1>
+  <p class="sub">The app is a remote control for a Python server running inside Termux on the owner's
+  Samsung. Four real actions: start it, get the link, send it to one person, know there is room on the
+  phone. Usually five seconds, one-handed. Every decision below is judged against that.</p>
+  <dl class="facts">
+    <div><dt>Target</dt><dd><b>apps/photo-drop/android</b><br>dev.photodrop.app</dd></div>
+    <div><dt>Stack</dt><dd>Single <b>Activity</b>. No AndroidX, no Compose, no Material library.<br>aapt2 + javac + d8, offline</dd></div>
+    <div><dt>SDK</dt><dd>minSdk <b>26</b> / targetSdk <b>34</b></dd></div>
+    <div><dt>Theme</dt><dd><b>Light only</b>, deliberately. Daylight use.</dd></div>
+    <div><dt>Accent</dt><dd><b>#167A38</b> forest green, kept: deep enough to carry white text</dd></div>
+    <div><dt>Polling</dt><dd>7s loopback <b>/healthz</b> with <b>X-PD-Token</b></dd></div>
+  </dl>
+</header>
+
+<!-- ===================== A ===================== -->
+<section>
+  <h2><span class="tag">A</span> Live Header</h2>
+  <p class="why">Status strip <b>owns the top of the screen</b> and takes a distinct colour per state, so
+  "is it on?" resolves before a word is read. One control that <b>changes identity</b> with state, replacing
+  the Start/Stop pair where one is always disabled. Everything below is one scroll of progressively less
+  important detail. Smallest diff, best legibility in sun.</p>
+  <div class="frames">
+
+    <div class="unit">
+      <div class="screen s"><div class="a">
+        <div class="sbar"><span>9:41</span><span class="r">&#9650; &#9642;&#9642;</span></div>
+        <div class="ah"><h4>Photo Drop</h4><p>Two things to do once</p></div>
+        <div class="strip off"><div class="d"></div><div><div class="t">Setup needed</div></div></div>
+        <div class="body">
+          <div class="card" style="padding:1.6cqw 4.2cqw">
+            <div class="steps">
+              <div class="st"><div class="n ok">&#10003;</div><div><b>Termux is installed</b><span>Found on this phone.</span></div></div>
+              <div class="st"><div class="n">2</div><div><b>Copy the server into Termux</b><span>Run this once:</span><code>bash ~/photo-drop/install.sh</code></div></div>
+              <div class="st"><div class="n">3</div><div><b>Allow Photo Drop to run commands</b><span>Settings, Apps, Photo Drop, Permissions.</span></div></div>
+            </div>
+          </div>
+          <div class="note" style="background:var(--low);border-radius:2.8cqw;padding:2.8cqw 3.2cqw;margin-top:3.4cqw">Disappears once the server answers. You will not see it again.</div>
+        </div>
+        <div class="foot"><div class="btn f">Check again</div></div>
+      </div></div>
+      <p class="cap"><b>First run</b> Explains the two one-time chores instead of dead-ending into App Info.</p>
+    </div>
+
+    <div class="unit">
+      <div class="screen s"><div class="a">
+        <div class="sbar"><span>9:41</span><span class="r">&#9650; &#9642;&#9642;</span></div>
+        <div class="ah"><h4>Photo Drop</h4><p>Start the server to accept uploads</p></div>
+        <div class="strip off"><div class="d"></div><div><div class="t">Server is offline</div><div class="u">Nothing can upload right now</div></div></div>
+        <div class="body">
+          <div class="card" style="opacity:.55">
+            <div class="k">Send to your friend</div>
+            <div class="dom" style="color:var(--ink3)">No link yet</div>
+            <div class="url">&mdash;</div>
+            <div class="note">Start the server and a shareable link appears here.</div>
+          </div>
+          <div class="lbl">Phone storage</div>
+          <div class="card">
+            <div class="mh"><b>38.4 GB free</b><i class="d">of 128 GB</i></div>
+            <div class="meter"><u style="width:30%"></u><s style="left:1.7%"></s></div>
+            <div class="note" style="margin-top:0">Uploads pause below 2.0 GB free, so the phone never fills.</div>
+            <div class="act"><div class="av m">&#9200;</div><div><b>No uploads yet</b><em>Waiting for your first friend</em></div></div>
+          </div>
+        </div>
+        <div class="foot"><div class="btn f">Start server</div></div>
+      </div></div>
+      <p class="cap"><b>Stopped</b> One live button, no dead twin. Link card is honest rather than dashed.</p>
+    </div>
+
+    <div class="unit">
+      <div class="screen s"><div class="a">
+        <div class="sbar on"><span>9:41</span><span class="r">&#9650; &#9642;&#9642;</span></div>
+        <div class="strip live"><div class="d"></div><div><div class="t">Online anywhere</div><div class="u">Tunnel up, 3 upload sessions today</div></div></div>
+        <div class="ah" style="padding-top:3.6cqw;padding-bottom:2.4cqw"><h4 style="font-size:5.6cqw">Photo Drop</h4></div>
+        <div class="body" style="padding-top:0">
+          <div class="card">
+            <div class="k">Send to your friend</div>
+            <div class="dom">trycloudflare.com</div>
+            <div class="url">https://moss-lark-fibre-9k2.trycloudflare.com/d/A7x&#8230;</div>
+            <div class="note">It is the password. Send it only to the person you trust.</div>
+            <div class="qrrow">
+              <svg class="qr" viewBox="0 0 21 21"><use href="#qr"/></svg>
+              <div class="qrtx"><b>Show them the phone</b>They scan it and upload. Nothing is installed on their side.</div>
+            </div>
+          </div>
+          <div class="foot two" style="background:none;border:0;padding:3.4cqw 0 0">
+            <div class="btn f" style="flex:1">Copy link</div>
+            <div class="btn n" style="width:15cqw;font-size:5cqw">&#8645;</div>
+          </div>
+          <div class="card" style="margin-top:3.4cqw">
+            <div class="mh"><b>38.4 GB free</b><i>of 128 GB</i></div>
+            <div class="meter"><u style="width:30%"></u><s style="left:1.7%"></s></div>
+            <div class="act"><div class="av">&#8595;</div><div><b>3 upload sessions today</b><em>Most recent finished at 14:02</em></div><p>LIVE</p></div>
+          </div>
+        </div>
+        <div class="foot two"><div class="btn n sm" style="flex:1">Stop</div><div class="btn n sm" style="flex:1">Dashboard</div></div>
+      </div></div>
+      <p class="cap warn"><b>Online</b> QR is permanent, not a toggle. Live session activity is the reassuring signal.</p>
+    </div>
+
+    <div class="unit">
+      <div class="screen s"><div class="a">
+        <div class="sbar on"><span>9:41</span><span class="r">&#9650; &#9642;&#9642;</span></div>
+        <div class="strip low"><div class="d"></div><div><div class="t">Storage low</div><div class="u">Uploads are paused at 1.6 GB free</div></div></div>
+        <div class="ah" style="padding-top:3.6cqw;padding-bottom:2.4cqw"><h4 style="font-size:5.6cqw">Photo Drop</h4></div>
+        <div class="body" style="padding-top:0">
+          <div class="card">
+            <div class="k">Send to your friend</div>
+            <div class="dom">trycloudflare.com</div>
+            <div class="url">https://moss-lark-fibre-9k2.trycloudflare.com/d/A7x&#8230;</div>
+            <div class="note">Link is live, but new uploads are refused until you free space.</div>
+            <div class="qrrow">
+              <svg class="qr sk" viewBox="0 0 21 21"><use href="#qr"/></svg>
+              <div class="qrtx"><b>Free some space first</b>Photos will not land until you are above 2 GB free.</div>
+            </div>
+          </div>
+          <div class="card" style="border-color:#f2c0bc;margin-top:3.4cqw">
+            <div class="mh"><b style="color:var(--rd)">1.6 GB free</b><i style="color:var(--rd)">of 128 GB</i></div>
+            <div class="meter"><u class="d" style="width:2.5%"></u><s style="left:4%"></s></div>
+            <div class="note" style="margin-top:0;color:#9a4038">Below the 2.0 GB reserve. Uploads are refused, not queued.</div>
+          </div>
+        </div>
+        <div class="foot"><div class="btn f">Copy link</div></div>
+      </div></div>
+      <p class="cap warn"><b>Storage low</b> Its own state and colour, not a footnote. The reserve tick has been passed.</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ===================== B ===================== -->
+<section>
+  <h2><span class="tag">B</span> Share Card</h2>
+  <p class="why">Treats the app as <b>one object you hand to someone</b>. The link card is the whole screen
+  and the QR is permanently visible at reading distance, because the phone gets held up at arm's length.
+  Server state collapses into a thin top bar. Strongest answer to "what do I do with this app", and the
+  worst fit for Stop, which ends up in an overflow.</p>
+  <div class="frames">
+
+    <div class="unit">
+      <div class="screen s"><div class="b">
+        <div class="sbar"><span>9:41</span><span class="r">&#9650; &#9642;&#9642;</span></div>
+        <div class="bt"><div class="d" style="background:#8b9199"></div>
+          <div><div class="t">Offline</div><div class="u">Server not running</div></div>
+          <p style="background:#eceef0;color:#3a4046">STOPPED</p></div>
+        <div class="bm">
+          <div class="empty">
+            <div class="ring"></div>
+            <h5>No link to share yet</h5>
+            <p>Start the server and this screen becomes a scannable card you can hold up to your friend.</p>
+            <div class="btn f" style="width:100%">Start server</div>
+          </div>
+        </div>
+      </div></div>
+      <p class="cap"><b>Stopped</b> The empty state teaches the flow instead of showing dashes.</p>
+    </div>
+
+    <div class="unit">
+      <div class="screen s"><div class="b">
+        <div class="sbar"><span>9:41</span><span class="r">&#9650; &#9642;&#9642;</span></div>
+        <div class="bt"><div class="d" style="background:var(--g)"></div>
+          <div><div class="t">Online anywhere</div><div class="u">Tunnel up, 3 sessions today</div></div>
+          <p style="background:var(--gt);color:var(--gd)">LIVE</p></div>
+        <div class="bm">
+          <div class="hero">
+            <div class="k">Hold this up to your friend</div>
+            <div class="dom">trycloudflare.com</div>
+            <div class="url">https://moss-lark-fibre-9k2.trycloudflare.com/d/A7xKp2mQ&#8230;</div>
+            <svg class="qr" viewBox="0 0 21 21"><use href="#qr"/></svg>
+            <div class="hint">They scan, pick photos, watch them upload. Nothing is installed on their phone.</div>
+          </div>
+          <div style="display:flex;gap:2.8cqw;margin-top:3.4cqw">
+            <div class="btn f" style="flex:1">Copy link</div>
+            <div class="btn n" style="width:15cqw;font-size:5cqw">&#8943;</div>
+          </div>
+        </div>
+        <div class="foot" style="background:var(--page);padding:0 5.6cqw 4.6cqw">
+          <div class="card" style="padding:3.2cqw 3.8cqw">
+            <div class="mini"><b>38.4 GB free</b><span class="bar"><u></u></span><s>3 SESSIONS</s></div>
+          </div>
+        </div>
+      </div></div>
+      <p class="cap warn"><b>Online</b> One card, one gesture. Storage and activity demoted to a single strip.</p>
+    </div>
+
+    <div class="unit">
+      <div class="screen s"><div class="b">
+        <div class="sbar"><span>9:41</span><span class="r">&#9650; &#9642;&#9642;</span></div>
+        <div class="bt"><div class="d" style="background:var(--am)"></div>
+          <div><div class="t">Starting</div><div class="u">Tunnel is coming up</div></div>
+          <p style="background:var(--amt);color:#854d0e">WAIT</p></div>
+        <div class="bm">
+          <div class="hero" style="opacity:.5">
+            <div class="k">Generating your link</div>
+            <div class="dom" style="color:var(--ink3)">connecting&#8230;</div>
+            <svg class="qr sk" viewBox="0 0 21 21"><use href="#qr"/></svg>
+            <div class="hint">This takes about four seconds.</div>
+          </div>
+          <div style="margin-top:3.4cqw"><div class="btn d" style="width:100%">Starting&#8230;</div></div>
+        </div>
+        <div class="foot" style="background:var(--page);padding:0 5.6cqw 4.6cqw">
+          <div class="card" style="padding:3.2cqw 3.8cqw">
+            <div class="mini"><b>38.4 GB free</b><span class="bar"><u></u></span></div>
+          </div>
+        </div>
+      </div></div>
+      <p class="cap"><b>Starting</b> The card fills in place. No dead button, no toast and hope.</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ===================== C ===================== -->
+<section>
+  <h2><span class="tag">C</span> Tap to Toggle</h2>
+  <p class="why">The server <b>is</b> the interface. A large orb is the switch, the whole screen goes green
+  when live, and the link slides up from a bottom sheet only once there is something to show. The state
+  change is felt rather than read. Most work of the three: it needs a real sheet transition and a
+  <b>hold-to-stop</b> guard, which is not optional, so a pocket tap cannot kill an upload mid flight.</p>
+  <div class="frames">
+
+    <div class="unit">
+      <div class="screen s"><div class="c">
+        <div class="sbar"><span>9:41</span><span class="r">&#9650; &#9642;&#9642;</span></div>
+        <div class="stage">
+          <div class="orb"><div class="halo"></div><div class="ic"></div><div class="t">Tap to start</div><div class="u">server is off</div></div>
+          <p class="cap2">Photo Drop is asleep. Tap once and it brings up a link you can share.</p>
+        </div>
+        <div class="panel"><div class="mini"><b>38.4 GB free</b><span class="bar"><u></u></span></div></div>
+      </div></div>
+      <p class="cap"><b>Stopped</b> The switch is the app. Nothing else competes for the tap.</p>
+    </div>
+
+    <div class="unit">
+      <div class="screen s"><div class="c live">
+        <div class="sbar on" style="color:#fff"><span>9:41</span><span class="r">&#9650; &#9642;&#9642;</span></div>
+        <div class="stage">
+          <div class="orb"><div class="halo"></div><div class="ic"></div><div class="t">Live</div><div class="u">tap to copy the link</div></div>
+          <p class="cap2">Anyone with the link can upload. Hold to stop the server.</p>
+        </div>
+        <div class="panel">
+          <div class="crow">
+            <div class="u">&#8230;/d/A7xKp2mQx&#8230;</div>
+            <div class="btn f" style="height:13cqw;padding:0 4cqw;font-size:4cqw">Copy</div>
+            <div class="ib">&#8645;</div>
+          </div>
+          <div class="mini"><s>3 SESSIONS</s><b>38.4 GB free</b><span class="bar"><u></u></span></div>
+        </div>
+      </div></div>
+      <p class="cap warn"><b>Online</b> Full bleed green. The state change is felt, not read.</p>
+    </div>
+
+    <div class="unit">
+      <div class="screen s"><div class="c">
+        <div class="sbar"><span>9:41</span><span class="r">&#9650; &#9642;&#9642;</span></div>
+        <div class="stage" style="justify-content:flex-start;padding-top:9cqw">
+          <div class="orb" style="width:38cqw;height:38cqw;background:var(--amt);border:1px solid #efd3a6">
+            <div class="ic" style="background:var(--am)"></div><div class="t" style="color:#854d0e">Starting</div>
+          </div>
+          <p class="cap2">Bringing up Termux and the tunnel. About four seconds.</p>
+          <div class="warncard" style="margin-top:7cqw">
+            <b>First run.</b> Photo Drop needs permission to run commands in Termux.
+            <div class="btn n sm" style="margin-top:3cqw;width:100%">Grant permission</div>
+          </div>
+        </div>
+        <div class="panel"><div class="mini"><b>38.4 GB free</b><span class="bar"><u></u></span></div></div>
+      </div></div>
+      <p class="cap warn"><b>Permission</b> The dead end into App Info becomes an inline, explained action.</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ===================== COMPARISON ===================== -->
+<section>
+  <h2>Comparison</h2>
+  <p class="why" style="margin-bottom:14px">Green marks the best option <b>in that row</b>, not the overall recommendation. The recommendation is A.</p>
+  <div class="tblwrap">
+  <table>
+    <thead><tr><th>Criterion</th><th>A. Live Header</th><th>B. Share Card</th><th>C. Tap to Toggle</th></tr></thead>
+    <tbody>
+      <tr><td>Answers "is it on?" without scrolling</td><td class="pick">Yes, pinned strip</td><td>Thin top bar, yes</td><td>Yes, full bleed</td></tr>
+      <tr><td>Diff size vs current code</td><td class="pick">Smallest</td><td>Medium</td><td>Largest</td></tr>
+      <tr><td>Legibility in direct sun</td><td class="pick">Best, tinted strips</td><td>Good, more white</td><td>Weakest, large fills</td></tr>
+      <tr><td>Face to face QR scanning</td><td>Good, 74dp QR inline</td><td class="pick">Best, 150dp permanent</td><td>Weak, no QR at all</td></tr>
+      <tr><td>Risk of a destructive tap</td><td class="pick">None, Stop is labelled</td><td>Stop in overflow</td><td>Needs hold to stop</td></tr>
+      <tr><td>Distinct six state handling</td><td class="pick">Six, all tinted</td><td>Four</td><td>Three, colour only</td></tr>
+      <tr><td>First run / permission dead end</td><td class="pick">Dedicated step list</td><td>Empty state only</td><td>Inline alert card</td></tr>
+      <tr><td>Motion work required</td><td>Medium</td><td>Low</td><td class="pick">High, real sheet transition</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="why" style="margin-top:20px"><b>Recommendation: A.</b> It fixes the twelve defects in the plan for roughly
+  the diff size of the current app, it is the only one that survives being read in a bright room, and it does not
+  put Stop behind an overflow or an undiscoverable long press. <b>Borrow from B:</b> permanent QR, which is worth
+  more than the rest of B because it matches how the app is really used. <b>Borrow from C:</b> one live indicator
+  so the 7 second poll has a visible heartbeat. Nothing else from C.</p>
+</section>
+
+<!-- ===================== QUESTIONS ===================== -->
+<section>
+  <h2>Open questions</h2>
+  <ol class="qs">
+    <li><b>A only, or spec B and C too?</b> The plan specs A in full detail. Mocks show all three.</li>
+    <li><b>Keep the green, or move toward T3 Code's palette?</b> The plan warms the neutrals to capture the T3
+    character without abandoning the brand. The literal brand palette is <b>#db2777</b> primary with
+    <b>#501854</b> foreground, and swapping costs nothing.</li>
+    <li><b>Bundle DM Sans?</b> Three static weights, what T3 Code uses. Currently the system font.</li>
+    <li><b>Per session upload detail?</b> <code style="font:400 12px var(--mono);color:#9aa0a6">/healthz</code>
+    only returns a count of <code style="font:400 12px var(--mono);color:#9aa0a6">sessions</code>. Names, file
+    counts and sizes live only on the owner page. A richer feed needs a new authenticated endpoint in
+    <code style="font:400 12px var(--mono);color:#9aa0a6">server.py</code>. Separate task, or is
+    "3 upload sessions today" enough?</li>
+  </ol>
+</section>
+
+<footer>
+  Full implementation spec, motion table, custom view inventory, wire format and verification steps:
+  <b>design/photo-drop-v4/PLAN.md</b> in the repo.
+</footer>
+
+</div>
+</body>
+</html>

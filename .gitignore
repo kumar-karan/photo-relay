@@ -64,3 +64,6 @@ apps/desktop/branding/*.tar.gz
 apps/desktop/branding/*.tgz
 design/**/*.png
 ember-sheet-test.png
+# Phone bridge machine-specific config & known hosts
+phone_bridge/config.env
+phone_bridge/known_hosts

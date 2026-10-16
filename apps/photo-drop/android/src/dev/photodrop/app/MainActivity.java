@@ -1,13 +1,13 @@
 package dev.photodrop.app;
 
 import android.app.Activity;
-import android.graphics.Bitmap;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.graphics.Insets;
 import android.net.Uri;
 import android.os.Build;
@@ -35,188 +35,217 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.net.HttpURLConnection;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.URL;
 import java.security.SecureRandom;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * Launcher for the Photo Drop server.
+ * Main activity implementing the B+C "Handoff" architecture.
  *
- * The server is the Python service running in Termux. This app does not
- * reimplement it: it drives Termux over RUN_COMMAND and reads status back over
- * loopback HTTP, the same pattern as the T3 server app.
- *
- * The app owns the tokens. It mints them once, persists them, and pushes them
- * into Termux on every resume, so the link it shows is always the link the
- * server actually serves. An earlier version had Termux as the owner and the
- * two silently drifted apart, which left the app displaying a link that 404'd.
+ * One screen, two jobs at two moments:
+ * 1. Flip the switch (OrbView in the Stage)
+ * 2. Become the card you hand over (184dp QR Handoff Card + Bottom Sheet controls)
  */
 public class MainActivity extends Activity {
     static final int PORT = 8080;
-
     static final String PREFS = "photodrop";
     static final String K_DROP = "drop_token";
     static final String K_OWNER = "owner_token";
 
-    /** Material standard easing, used for the press scale. */
     static final PathInterpolator EASE = new PathInterpolator(0.2f, 0f, 0f, 1f);
+
+    public enum AppState {
+        STOPPED,
+        STARTING,
+        ONLINE_LOCAL,
+        ONLINE_TUNNEL,
+        STORAGE_LOW,
+        TERMUX_ERROR
+    }
 
     final ExecutorService exec = Executors.newSingleThreadExecutor();
     final Handler handler = new Handler(Looper.getMainLooper());
     Runnable poller;
+    Runnable copyReset;
 
-    TextView tvStatus, tvSubtitle, tvFree, tvCapacity, tvUploads, tvScan;
-    TextView tvDropDomain, tvDropUrl, tvDropHint, tvFooter, btnRefresh;
-    StorageBarView storageBar;
-    Button btnStart, btnStop, btnCopy;
-    TextView btnQrToggle;
+    // UI Views
+    StatusStripView statusStrip;
+    View orbStage;
+    OrbView orbView;
+    TextView tvOrbCaption;
+
+    View handoffCard;
+    TextView tvDockedBadge;
+    TextView tvDropDomain;
+    TextView tvDropUrl;
     ImageView imgQr;
-    LinearLayout qrBox;
-    String qrForUrl = "";
-    boolean qrVisible = false;
+    TextView tvDropHint;
 
+    View alertCard;
+    TextView tvAlertDesc;
+
+    View permCard;
+    Button btnFixPerm;
+
+    View sheet;
+    View liveControls;
+    TextView tvSheetUrl;
+    Button btnFlipHost;
+    Button btnCopy;
+
+    TextView tvFree;
+    StorageBarView storageBar;
+    TextView tvSessions;
+
+    View liveStopSection;
+    Button btnStop;
+    View stopConfirmStrip;
+    Button btnKeepRunning;
+    Button btnConfirmStop;
+    Button btnOwner;
+
+    // State variables
     String dropToken = "";
     String ownerToken = "";
     String publicUrl = "";
+    String lanIp = "";
+    boolean preferTunnel = true;
 
+    AppState state = AppState.STOPPED;
+    Health lastHealth = Health.down();
     boolean starting = false;
-    boolean up = false;
-    int stop = 0;
-    Runnable copyReset;
+    String qrForUrl = "";
 
     @Override
-    protected void onCreate(Bundle b) {
-        super.onCreate(b);
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        tvStatus = findViewById(R.id.tvStatus);
-        tvSubtitle = findViewById(R.id.tvSubtitle);
-        tvFree = findViewById(R.id.tvFree);
-        tvCapacity = findViewById(R.id.tvCapacity);
-        tvUploads = findViewById(R.id.tvUploads);
-        tvScan = findViewById(R.id.tvScan);
+        statusStrip = findViewById(R.id.statusStrip);
+        orbStage = findViewById(R.id.orbStage);
+        orbView = findViewById(R.id.orbView);
+        tvOrbCaption = findViewById(R.id.tvOrbCaption);
+
+        handoffCard = findViewById(R.id.handoffCard);
+        tvDockedBadge = findViewById(R.id.tvDockedBadge);
         tvDropDomain = findViewById(R.id.tvDropDomain);
         tvDropUrl = findViewById(R.id.tvDropUrl);
-        tvDropHint = findViewById(R.id.tvDropHint);
-        tvFooter = findViewById(R.id.tvFooter);
-        btnRefresh = findViewById(R.id.btnRefresh);
-        storageBar = findViewById(R.id.storageBar);
-        btnStart = findViewById(R.id.btnStart);
-        btnStop = findViewById(R.id.btnStop);
-        btnCopy = findViewById(R.id.btnCopy);
-        btnQrToggle = findViewById(R.id.btnQrToggle);
         imgQr = findViewById(R.id.imgQr);
-        qrBox = findViewById(R.id.qrBox);
+        tvDropHint = findViewById(R.id.tvDropHint);
+
+        alertCard = findViewById(R.id.alertCard);
+        tvAlertDesc = findViewById(R.id.tvAlertDesc);
+
+        permCard = findViewById(R.id.permCard);
+        btnFixPerm = findViewById(R.id.btnFixPerm);
+
+        sheet = findViewById(R.id.sheet);
+        liveControls = findViewById(R.id.liveControls);
+        tvSheetUrl = findViewById(R.id.tvSheetUrl);
+        btnFlipHost = findViewById(R.id.btnFlipHost);
+        btnCopy = findViewById(R.id.btnCopy);
+
+        tvFree = findViewById(R.id.tvFree);
+        storageBar = findViewById(R.id.storageBar);
+        tvSessions = findViewById(R.id.tvSessions);
+
+        liveStopSection = findViewById(R.id.liveStopSection);
+        btnStop = findViewById(R.id.btnStop);
+        stopConfirmStrip = findViewById(R.id.stopConfirmStrip);
+        btnKeepRunning = findViewById(R.id.btnKeepRunning);
+        btnConfirmStop = findViewById(R.id.btnConfirmStop);
+        btnOwner = findViewById(R.id.btnOwner);
 
         applyInsets();
-
-        tvFooter.setText("The server runs inside Termux. Set Termux battery to "
-                + "\"Unrestricted\", or Android will pause an upload part way through.");
-
         loadTokens();
         ensureExternalDir();
-        renderLink();
 
-        btnStart.setOnClickListener(v -> {
-            starting = true;
-            btnStart.setEnabled(false);
-            tvStatus.setText("STARTING");
-            tvStatus.setBackgroundResource(R.drawable.pill_warning);
-            tvStatus.setTextColor(getColor(R.color.warning));
-            sendCmd(new String[]{"start"}, "Starting Photo Drop");
-            handler.postDelayed(this::refresh, 8000);
+        // Orb tap dispatcher: starting when stopped
+        orbView.setOnClickListener(v -> {
+            if (state == AppState.STOPPED) {
+                startServer();
+            }
+        });
+
+        // Stage Handoff card tap: safe for pocket taps, copies link
+        handoffCard.setOnClickListener(v -> copyLink());
+
+        btnCopy.setOnClickListener(v -> copyLink());
+
+        btnFlipHost.setOnClickListener(v -> {
+            preferTunnel = !preferTunnel;
+            render(lastHealth);
+            toast(preferTunnel ? "Using Cloudflare tunnel link" : "Using local Wi-Fi link");
         });
 
         btnStop.setOnClickListener(v -> {
-            PhotoDropService.stop(this);
-            sendCmd(new String[]{"stop"}, "Stopping Photo Drop");
-            handler.postDelayed(this::refresh, 3500);
-        });
-
-        btnRefresh.setOnClickListener(v -> { refresh(); toast("Refreshed"); });
-
-        btnCopy.setOnClickListener(v -> { copyLink(); });
-        findViewById(R.id.cardLink).setOnClickListener(v -> { copyLink(); });
-
-        btnQrToggle.setOnClickListener(v -> toggleQr());
-        pressFeedback(btnQrToggle);
-
-        findViewById(R.id.btnUpload).setOnClickListener(v ->
-            openWeb(base() + "/d/" + dropToken + "/"));
-        findViewById(R.id.btnOwner).setOnClickListener(v ->
-            openWeb(base() + "/owner/" + ownerToken));
-        findViewById(R.id.btnScan).setOnClickListener(v ->
-            openWeb(base() + "/owner/" + ownerToken));
-
-        pressFeedback(btnStart);
-        pressFeedback(btnStop);
-        pressFeedback(btnCopy);
-        pressFeedback(findViewById(R.id.btnUpload));
-        pressFeedback(findViewById(R.id.btnOwner));
-        pressFeedback(findViewById(R.id.btnScan));
-        pressFeedback(btnRefresh);
-    }
-
-    /**
-     * targetSdk 34 on Android 16 lets us opt out of edge-to-edge, but the
-     * deprecated SYSTEM_UI_FLAG_* path is gone from API 30. Use the modern
-     * setter and pad the root ourselves.
-     */
-    void applyInsets() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            getWindow().setDecorFitsSystemWindows(false);
-        }
-        final LinearLayout root = findViewById(R.id.root);
-        root.setOnApplyWindowInsetsListener((v, insets) -> {
-            int top = dp(24), bottom = dp(32);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                Insets bars = insets.getInsets(
-                        WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
-                top += bars.top;
-                bottom += bars.bottom;
+            if (lastHealth.sessions > 0) {
+                stopConfirmStrip.setVisibility(View.VISIBLE);
+                stopConfirmStrip.setAlpha(0f);
+                stopConfirmStrip.animate().alpha(1f).setDuration(160).start();
             } else {
-                top += insets.getSystemWindowInsetTop();
-                bottom += insets.getSystemWindowInsetBottom();
+                stopServer();
             }
-            root.setPadding(dp(16), top, dp(16), bottom);
-            return insets;
         });
-        root.requestApplyInsets();
-    }
 
-    void pressFeedback(View v) {
-        v.setOnTouchListener((view, e) -> {
-            int a = e.getActionMasked();
-            if (a == MotionEvent.ACTION_DOWN) {
-                view.animate().cancel();
-                view.animate().scaleX(0.97f).scaleY(0.97f).setDuration(120).setInterpolator(EASE).start();
-            } else if (a == MotionEvent.ACTION_UP || a == MotionEvent.ACTION_CANCEL) {
-                view.animate().scaleX(1f).scaleY(1f).setDuration(120).setInterpolator(EASE).start();
-            }
-            return false;
+        btnKeepRunning.setOnClickListener(v -> {
+            stopConfirmStrip.setVisibility(View.GONE);
         });
+
+        btnConfirmStop.setOnClickListener(v -> {
+            stopConfirmStrip.setVisibility(View.GONE);
+            stopServer();
+        });
+
+        btnOwner.setOnClickListener(v -> {
+            String target = (preferTunnel && !publicUrl.isEmpty())
+                    ? publicUrl
+                    : (!lanIp.isEmpty() ? "http://" + lanIp + ":" + PORT : "http://127.0.0.1:" + PORT);
+            String url = target + "/owner?k=" + ownerToken;
+            try {
+                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+            } catch (Exception e) {
+                toast("Could not open browser");
+            }
+        });
+
+        btnFixPerm.setOnClickListener(v -> {
+            try {
+                Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                intent.setData(Uri.parse("package:" + getPackageName()));
+                startActivity(intent);
+            } catch (Exception e) {
+                toast("Open Settings to grant Termux permission");
+            }
+        });
+
+        pressFeedback(btnCopy);
+        pressFeedback(btnStop);
+        pressFeedback(btnFlipHost);
+        pressFeedback(btnKeepRunning);
+        pressFeedback(btnConfirmStop);
+
+        applyState(AppState.STOPPED, Health.down());
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        stop = 0;
-        // Without this the foreground service runs but its notification is
-        // invisible, which defeats the point: a running server you cannot see.
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
-                && checkSelfPermission("android.permission.POST_NOTIFICATIONS")
-                != PackageManager.PERMISSION_GRANTED) {
-            try { requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"}, 1); }
-            catch (Exception ignored) {}
+        if (Termux.permitted(this)) {
+            bootstrap();
         }
-        bootstrap();
         refresh();
         poller = new Runnable() {
-            @Override public void run() {
-                if (stop != 0) return;
+            @Override
+            public void run() {
                 refresh();
-                handler.postDelayed(poller, 7000);
+                handler.postDelayed(this, 7000);
             }
         };
         handler.postDelayed(poller, 7000);
@@ -225,30 +254,94 @@ public class MainActivity extends Activity {
     @Override
     protected void onPause() {
         super.onPause();
-        stop = 1;
-        if (poller != null) handler.removeCallbacks(poller);
+        if (poller != null) {
+            handler.removeCallbacks(poller);
+            poller = null;
+        }
     }
 
-    // ---- tokens -----------------------------------------------------------
-
-    static String mintToken() {
-        final String alphabet =
-                "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
-        SecureRandom r = new SecureRandom();
-        StringBuilder sb = new StringBuilder(24);
-        for (int i = 0; i < 24; i++) sb.append(alphabet.charAt(r.nextInt(alphabet.length())));
-        return sb.toString();
+    private void applyInsets() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            findViewById(R.id.rootLayout).setOnApplyWindowInsetsListener((v, insets) -> {
+                Insets sys = insets.getInsets(WindowInsets.Type.systemBars());
+                statusStrip.setPadding(dp(20), sys.top + dp(10), dp(20), dp(12));
+                sheet.setPadding(dp(20), dp(10), dp(20), sys.bottom + dp(14));
+                return WindowInsets.CONSUMED;
+            });
+        }
     }
+
+    private void pressFeedback(View v) {
+        v.setOnTouchListener((view, event) -> {
+            switch (event.getAction()) {
+                case MotionEvent.ACTION_DOWN:
+                    view.animate().scaleX(0.97f).scaleY(0.97f).setDuration(120).setInterpolator(EASE).start();
+                    break;
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    view.animate().scaleX(1.0f).scaleY(1.0f).setDuration(120).setInterpolator(EASE).start();
+                    break;
+            }
+            return false;
+        });
+    }
+
+    // ---- Server Commands ---------------------------------------------------
+
+    void startServer() {
+        if (!Termux.permitted(this)) {
+            render(lastHealth);
+            return;
+        }
+        starting = true;
+        render(lastHealth);
+        sendCmd(new String[]{"start"}, "Starting Photo Drop");
+        handler.postDelayed(this::refresh, 4000);
+        handler.postDelayed(this::refresh, 8000);
+    }
+
+    void stopServer() {
+        PhotoDropService.stop(this);
+        starting = false;
+        sendCmd(new String[]{"stop"}, "Stopping Photo Drop");
+        handler.postDelayed(this::refresh, 2000);
+        handler.postDelayed(this::refresh, 4000);
+    }
+
+    void sendCmd(String[] args, String label) {
+        if (!Termux.permitted(this)) {
+            toast("Termux permission missing");
+            return;
+        }
+        exec.execute(() -> {
+            boolean ok = Termux.run(this, args);
+            if (!ok) {
+                handler.post(() -> toast("Failed to send command to Termux"));
+            }
+        });
+    }
+
+    void bootstrap() {
+        exec.execute(() -> Termux.bootstrap(this, dropToken, ownerToken));
+    }
+
+    // ---- Tokens & Storage --------------------------------------------------
 
     void loadTokens() {
         SharedPreferences p = getSharedPreferences(PREFS, MODE_PRIVATE);
         dropToken = p.getString(K_DROP, "");
         ownerToken = p.getString(K_OWNER, "");
         if (dropToken.isEmpty() || ownerToken.isEmpty()) {
-            if (dropToken.isEmpty()) dropToken = mintToken();
-            if (ownerToken.isEmpty()) ownerToken = mintToken();
+            dropToken = mintToken();
+            ownerToken = mintToken();
             p.edit().putString(K_DROP, dropToken).putString(K_OWNER, ownerToken).apply();
         }
+    }
+
+    static String mintToken() {
+        byte[] b = new byte[18];
+        new SecureRandom().nextBytes(b);
+        return java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(b);
     }
 
     void ensureExternalDir() {
@@ -258,233 +351,192 @@ public class MainActivity extends Activity {
         } catch (Exception ignored) {}
     }
 
-    void bootstrap() {
-        sendCmdQuietly(new String[]{"bootstrap", dropToken, ownerToken});
-    }
-
-    // ---- status -----------------------------------------------------------
+    // ---- Polling & Status --------------------------------------------------
 
     void refresh() {
         exec.execute(() -> {
-            String health = httpGet("http://127.0.0.1:" + PORT + "/healthz", dropToken);
+            String rawHealth = httpGet("http://127.0.0.1:" + PORT + "/healthz", dropToken);
+            Health h = Health.parse(rawHealth);
             String url = readPublicUrl();
+            if (url.isEmpty() && !h.publicUrl.isEmpty()) {
+                url = h.publicUrl;
+            }
+            String lan = h.lanIp;
+            if (lan.isEmpty()) {
+                lan = detectDeviceIp();
+            }
+
+            final String finalUrl = url;
+            final String finalLan = lan;
             handler.post(() -> {
-                if (stop != 0) return;
-                publicUrl = url;
-                renderLink();
-                render(health);
+                publicUrl = finalUrl;
+                lanIp = finalLan;
+                render(h);
             });
         });
     }
 
-    void render(String health) {
-        boolean wasUp = up;
-        up = health != null && health.contains("\"ok\"");
+    AppState classify(Health h, boolean permitted) {
+        if (!permitted) return AppState.TERMUX_ERROR;
+        if (!h.up) return starting ? AppState.STARTING : AppState.STOPPED;
+        starting = false;
+        if (h.isLow()) return AppState.STORAGE_LOW;
+        if (preferTunnel && !publicUrl.isEmpty()) return AppState.ONLINE_TUNNEL;
+        return AppState.ONLINE_LOCAL;
+    }
 
-        long free = parseLong(pick(health, "\"free\":", ",", "}"));
-        long reserve = parseLong(pick(health, "\"reserve\":", ",", "}"));
-        long total = parseLong(pick(health, "\"dest_size\":", ",", "}"));
+    void render(Health h) {
+        boolean permitted = Termux.permitted(this);
+        AppState next = classify(h, permitted);
+        this.lastHealth = h;
+        this.state = next;
+        applyState(next, h);
 
-        if (up && starting) {
-            pill("STARTING", R.drawable.pill_warning, R.color.warning);
-            btnStart.setEnabled(false);
-        } else if (up) {
-            starting = false;
-            btnStart.setEnabled(false);
-            btnStop.setAlpha(1f);
-            if (free > 0 && reserve > 0 && free <= reserve) {
-                pill("STORAGE LOW", R.drawable.pill_danger, R.color.danger);
-            } else if (publicUrl.isEmpty()) {
-                pill("ON LOCALLY", R.drawable.pill_neutral, R.color.text_muted);
-            } else {
-                pill("ONLINE", R.drawable.pill_success, R.color.success);
-            }
+        // Keep foreground service notification in step
+        if (h.up) {
+            String share = currentShareUrl();
+            PhotoDropService.start(this, share, domainOf(share),
+                    h.known() ? human(h.free) : "");
         } else {
-            starting = false;
-            btnStart.setEnabled(true);
-            btnStop.setAlpha(0.45f);
-            // No server, so no claim to show. This also clears the notification
-            // if something stopped the server behind the app's back.
             PhotoDropService.stop(this);
-            pill("STOPPED", R.drawable.pill_neutral, R.color.text_muted);
         }
+    }
 
-        // Keep the notification in step with reality. If the server is up the
-        // service must be too, otherwise the shade lies about the state.
-        if (up) {
-            PhotoDropService.start(this, currentShareUrl(), domainOf(currentShareUrl()),
-                    free > 0 ? human(free) + " free" : "");
-        }
-
-        tvSubtitle.setText(up
-                ? "Photos go straight to this phone"
-                : "Start the server to accept uploads");
-
-        if (free < 0) {
-            tvFree.setText("Storage unknown");
-            tvCapacity.setText("Start the server to read storage from the phone.");
-            storageBar.setState(0f, 0f);
+    void applyState(AppState s, Health h) {
+        // Storage readout (common to all states)
+        if (h.known()) {
+            boolean low = h.isLow();
+            tvFree.setText(human(h.free) + " free");
+            tvFree.setTextColor(low ? 0xFF8C1D18 : getColor(R.color.text_main));
+            storageBar.setState(h.freeRatio(), h.reserveRatio());
         } else {
-            boolean low = reserve > 0 && free <= reserve;
-            tvFree.setText(human(free) + " free of " + human(total));
-            tvFree.setTextColor(low ? getColor(R.color.danger) : getColor(R.color.text_main));
-            tvCapacity.setText(low
-                    ? "Uploads are paused until there is more than "
-                      + human(reserve) + " free."
-                    : "Uploads pause at " + human(reserve) + " free, so the phone "
-                      + "never fills up.");
-            storageBar.setState(
-                    total > 0 ? (float) free / (float) total : 0f,
-                    total > 0 ? (float) reserve / (float) total : 0f);
+            tvFree.setText("-- free");
+            tvFree.setTextColor(getColor(R.color.text_muted));
+            storageBar.setState(0f, 0f);
         }
+        tvSessions.setText(h.sessions + (h.sessions == 1 ? " SESSION" : " SESSIONS"));
+        tvSessions.setBackgroundResource(h.sessions > 0 ? R.drawable.pill_success : R.drawable.pill_neutral);
+        tvSessions.setTextColor(h.sessions > 0 ? getColor(R.color.success) : getColor(R.color.text_muted));
 
-        if (!wasUp && up) toast("Server is online");
+        // State layout switching
+        switch (s) {
+            case STOPPED:
+                statusStrip.setState(StatusStripView.State.STOPPED, "Server is offline", "Nothing can upload right now");
+                orbStage.setVisibility(View.VISIBLE);
+                orbView.setMode(OrbView.Mode.STOPPED);
+                tvOrbCaption.setText("One tap and this becomes a link you can hand to a friend.");
+                handoffCard.setVisibility(View.GONE);
+                alertCard.setVisibility(View.GONE);
+                permCard.setVisibility(View.GONE);
+                liveControls.setVisibility(View.GONE);
+                liveStopSection.setVisibility(View.GONE);
+                stopConfirmStrip.setVisibility(View.GONE);
+                break;
 
-        tvUploads.setText("No uploads in this session yet");
-        tvScan.setText(publicUrl.isEmpty()
-                ? "Media scan: open the report to see which method works"
-                : "Media scan: see the report");
-    }
+            case STARTING:
+                statusStrip.setState(StatusStripView.State.STARTING, "Starting", "Bringing up Termux and tunnel...");
+                orbStage.setVisibility(View.VISIBLE);
+                orbView.setMode(OrbView.Mode.STARTING);
+                tvOrbCaption.setText("Bringing up the server and negotiating the upload link.");
+                handoffCard.setVisibility(View.GONE);
+                alertCard.setVisibility(View.GONE);
+                permCard.setVisibility(View.GONE);
+                liveControls.setVisibility(View.GONE);
+                liveStopSection.setVisibility(View.GONE);
+                stopConfirmStrip.setVisibility(View.GONE);
+                break;
 
-    void pill(String text, int bg, int fg) {
-        tvStatus.setText(text);
-        tvStatus.setBackgroundResource(bg);
-        tvStatus.setTextColor(getColor(fg));
-    }
+            case ONLINE_LOCAL:
+            case ONLINE_TUNNEL:
+                orbStage.setVisibility(View.GONE);
+                alertCard.setVisibility(View.GONE);
+                permCard.setVisibility(View.GONE);
+                handoffCard.setVisibility(View.VISIBLE);
+                liveControls.setVisibility(View.VISIBLE);
+                liveStopSection.setVisibility(View.VISIBLE);
+                stopConfirmStrip.setVisibility(View.GONE);
 
-    /**
-     * The link is the whole point of the app, so it gets a readable anchor plus
-     * the full string. The domain carries the glance; the URL carries the copy.
-     */
-    void renderLink() {
-        if (!up) {
-            tvDropDomain.setText("Server not started");
-            tvDropUrl.setText("--");
-            tvDropHint.setText("Start the server to get a link you can send.");
-            btnCopy.setEnabled(false);
-            btnCopy.setAlpha(0.4f);
-            btnQrToggle.setEnabled(false);
-            btnQrToggle.setAlpha(0.4f);
-            // A stale QR would encode a link that no longer works.
-            if (qrVisible) {
-                qrVisible = false;
-                qrBox.setVisibility(View.GONE);
-                btnQrToggle.setText("Show QR code");
-            }
-            qrForUrl = "";
-            return;
+                String shareUrl = currentShareUrl();
+                String domain = domainOf(shareUrl);
+                tvDropDomain.setText(domain);
+                tvDropUrl.setText(shareUrl);
+                tvSheetUrl.setText(shareUrl);
+
+                if (s == AppState.ONLINE_TUNNEL) {
+                    statusStrip.setState(StatusStripView.State.ONLINE_TUNNEL,
+                            "Online anywhere",
+                            (h.sessions > 0 ? h.sessions + (h.sessions == 1 ? " session · " : " sessions · ") : "") + "Works for anyone with the link");
+                    tvDockedBadge.setText("● LIVE");
+                    tvDockedBadge.setBackgroundResource(R.drawable.badge_live);
+                    tvDropHint.setText("They scan, pick photos, watch them upload. Nothing is installed on their phone.");
+                } else {
+                    statusStrip.setState(StatusStripView.State.ONLINE_LOCAL,
+                            "On this Wi-Fi",
+                            (h.sessions > 0 ? h.sessions + (h.sessions == 1 ? " session · " : " sessions · ") : "") + "Works for devices on this network");
+                    tvDockedBadge.setText("● ON WI-FI");
+                    tvDockedBadge.setBackgroundResource(R.drawable.badge_live);
+                    tvDropHint.setText("Reachable on this Wi-Fi network. Scan to open the upload page.");
+                }
+
+                // Render or update QR Code if URL changed
+                if (!shareUrl.equals(qrForUrl) && !shareUrl.isEmpty()) {
+                    Bitmap bmp = qrBitmap(shareUrl, dp(184));
+                    if (bmp != null) {
+                        imgQr.setImageBitmap(bmp);
+                        qrForUrl = shareUrl;
+                    }
+                }
+                break;
+
+            case STORAGE_LOW:
+                statusStrip.setState(StatusStripView.State.STORAGE_LOW, "Storage low", "Uploads are paused to protect device");
+                orbStage.setVisibility(View.GONE);
+                handoffCard.setVisibility(View.GONE);
+                alertCard.setVisibility(View.VISIBLE);
+                permCard.setVisibility(View.GONE);
+                liveControls.setVisibility(View.VISIBLE);
+                liveStopSection.setVisibility(View.VISIBLE);
+                tvAlertDesc.setText("Uploads are paused at " + human(h.reserve) + " free to keep your phone healthy. Free up space to resume.");
+                break;
+
+            case TERMUX_ERROR:
+                statusStrip.setState(StatusStripView.State.TERMUX_ERROR, "Can't reach Termux", "Grant permission to run commands");
+                orbStage.setVisibility(View.GONE);
+                handoffCard.setVisibility(View.GONE);
+                alertCard.setVisibility(View.GONE);
+                permCard.setVisibility(View.VISIBLE);
+                liveControls.setVisibility(View.GONE);
+                liveStopSection.setVisibility(View.GONE);
+                stopConfirmStrip.setVisibility(View.GONE);
+                break;
         }
-        btnCopy.setEnabled(true);
-        btnCopy.setAlpha(1f);
-        btnQrToggle.setEnabled(true);
-        btnQrToggle.setAlpha(1f);
-        String full = currentShareUrl();
-        tvDropDomain.setText(domainOf(full));
-        tvDropUrl.setText(full);
-        tvDropHint.setText(publicUrl.isEmpty()
-                ? "Reachable on this Wi-Fi only. Start the tunnel for a link that works anywhere."
-                : "Works anywhere. It is the password, so send it only to your friend.");
-    }
-
-    /**
-     * A 60 character URL is unreadable as a headline. Show the readable part of
-     * the host and keep the full string underneath for the copy.
-     * "releases-martin-termination-obviously.trycloudflare.com" -> "trycloudflare.com"
-     * "127.0.0.1:8080" -> "this phone"
-     */
-    static String domainOf(String url) {
-        String rest = url;
-        int i = rest.indexOf("://");
-        if (i >= 0) rest = rest.substring(i + 3);
-        int slash = rest.indexOf('/');
-        String host = slash >= 0 ? rest.substring(0, slash) : rest;
-        // Drop the port. Not IPv6 safe, but nothing here serves on a literal v6 host.
-        int colon = host.lastIndexOf(':');
-        if (colon > 0 && host.indexOf(':') == colon) host = host.substring(0, colon);
-        if (host.isEmpty() || host.equals("127.0.0.1") || host.equals("localhost")
-                || host.equals("0.0.0.0")) {
-            return "this phone";
-        }
-        // A bare IPv4 literal has no readable registrable part.
-        if (host.matches("\\d{1,3}(\\.\\d{1,3}){3}")) return host;
-        String[] parts = host.split("\\.");
-        if (parts.length >= 2) return parts[parts.length - 2] + "." + parts[parts.length - 1];
-        return host;
     }
 
     void copyLink() {
-        if (!up) { toast("Start the server first"); return; }
+        if (!lastHealth.up) {
+            toast("Start the server first");
+            return;
+        }
         String url = currentShareUrl();
         copy(url);
-        btnCopy.setText("Copied to clipboard");
+        btnCopy.setText("Copied to clipboard!");
         if (copyReset != null) handler.removeCallbacks(copyReset);
         copyReset = () -> btnCopy.setText("Copy link to send");
-        handler.postDelayed(copyReset, 2000);
-    }
-
-    /**
-     * The QR is a second route to the same link, not the main one, so it is
-     * hidden until asked for. Useful when the phone is being shown to someone
-     * across a table rather than messaged to them.
-     */
-    void toggleQr() {
-        if (!up) { toast("Start the server first"); return; }
-        String url = currentShareUrl();
-
-        if (!url.equals(qrForUrl)) {
-            Bitmap bmp = qrBitmap(url, dp(148));
-            if (bmp == null) { toast("Could not build a QR code"); return; }
-            imgQr.setImageBitmap(bmp);
-            qrForUrl = url;
-        }
-
-        qrVisible = !qrVisible;
-        btnQrToggle.setText(qrVisible ? "Hide QR code" : "Show QR code");
-
-        if (qrVisible) {
-            qrBox.setVisibility(View.VISIBLE);
-            qrBox.setAlpha(0f);
-            qrBox.setTranslationY(dp(8));
-            qrBox.animate().alpha(1f).translationY(0f).setDuration(180)
-                   .setInterpolator(EASE).start();
-            imgQr.setScaleX(0.92f);
-            imgQr.setScaleY(0.92f);
-            imgQr.animate().scaleX(1f).scaleY(1f).setDuration(200)
-                   .setInterpolator(EASE).start();
-        } else {
-            qrBox.animate().alpha(0f).setDuration(140).withEndAction(() -> {
-                qrBox.setVisibility(View.GONE);
-                qrBox.setTranslationY(0f);
-            }).start();
-        }
-    }
-
-    /** Dark modules on white, with the quiet zone ZXing already builds in. */
-    Bitmap qrBitmap(String content, int size) {
-        try {
-            BitMatrix m = new QRCodeWriter().encode(
-                    content, BarcodeFormat.QR_CODE, size, size);
-            int w = m.getWidth(), h = m.getHeight();
-            int[] px = new int[w * h];
-            for (int y = 0; y < h; y++) {
-                int row = y * w;
-                for (int x = 0; x < w; x++) {
-                    px[row + x] = m.get(x, y) ? 0xFF111315 : 0xFFFFFFFF;
-                }
-            }
-            return Bitmap.createBitmap(px, w, h, Bitmap.Config.ARGB_8888);
-        } catch (WriterException e) {
-            Log.w("PhotoDrop", "qr encode failed", e);
-            return null;
-        }
-    }
-
-    String base() {
-        return publicUrl.isEmpty() ? "http://127.0.0.1:" + PORT : publicUrl;
+        handler.postDelayed(copyReset, 2200);
     }
 
     String currentShareUrl() {
-        return base() + "/d/" + dropToken + "/";
+        String base;
+        if (preferTunnel && !publicUrl.isEmpty()) {
+            base = publicUrl;
+        } else if (!lanIp.isEmpty()) {
+            base = "http://" + lanIp + ":" + PORT;
+        } else if (!publicUrl.isEmpty()) {
+            base = publicUrl;
+        } else {
+            base = "http://" + detectDeviceIp() + ":" + PORT;
+        }
+        return base + "/d/" + dropToken + "/";
     }
 
     String readPublicUrl() {
@@ -504,7 +556,58 @@ public class MainActivity extends Activity {
         return "";
     }
 
-    // ---- plumbing ---------------------------------------------------------
+    String detectDeviceIp() {
+        try {
+            List<NetworkInterface> interfaces = Collections.list(NetworkInterface.getNetworkInterfaces());
+            for (NetworkInterface intf : interfaces) {
+                if (intf.isLoopback() || !intf.isUp()) continue;
+                List<InetAddress> addrs = Collections.list(intf.getInetAddresses());
+                for (InetAddress addr : addrs) {
+                    if (!addr.isLoopbackAddress() && addr instanceof Inet4Address) {
+                        return addr.getHostAddress();
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+        return "127.0.0.1";
+    }
+
+    Bitmap qrBitmap(String content, int size) {
+        try {
+            BitMatrix m = new QRCodeWriter().encode(
+                    content, BarcodeFormat.QR_CODE, size, size);
+            int w = m.getWidth(), h = m.getHeight();
+            int[] px = new int[w * h];
+            for (int y = 0; y < h; y++) {
+                int row = y * w;
+                for (int x = 0; x < w; x++) {
+                    px[row + x] = m.get(x, y) ? 0xFF111315 : 0xFFFFFFFF;
+                }
+            }
+            return Bitmap.createBitmap(px, w, h, Bitmap.Config.ARGB_8888);
+        } catch (WriterException e) {
+            Log.w("PhotoDrop", "qr encode failed", e);
+            return null;
+        }
+    }
+
+    static String domainOf(String url) {
+        if (url == null || url.isEmpty()) return "this phone";
+        String rest = url;
+        int i = rest.indexOf("://");
+        if (i >= 0) rest = rest.substring(i + 3);
+        int slash = rest.indexOf('/');
+        String host = slash >= 0 ? rest.substring(0, slash) : rest;
+        int colon = host.lastIndexOf(':');
+        if (colon > 0 && host.indexOf(':') == colon) host = host.substring(0, colon);
+        if (host.isEmpty() || host.equals("127.0.0.1") || host.equals("localhost") || host.equals("0.0.0.0")) {
+            return "this phone";
+        }
+        if (host.matches("\\d{1,3}(\\.\\d{1,3}){3}")) return host;
+        String[] parts = host.split("\\.");
+        if (parts.length >= 2) return parts[parts.length - 2] + "." + parts[parts.length - 1];
+        return host;
+    }
 
     String httpGet(String url, String token) {
         HttpURLConnection c = null;
@@ -529,68 +632,27 @@ public class MainActivity extends Activity {
         }
     }
 
-    static String pick(String json, String key, String stopA, String stopB) {
-        if (json == null) return null;
-        int i = json.indexOf(key);
-        if (i < 0) return null;
-        int from = i + key.length();
-        int to = json.indexOf(stopA, from);
-        if (to < 0) to = json.indexOf(stopB, from);
-        return to < 0 ? null : json.substring(from, to);
-    }
-
-    static long parseLong(String s) {
-        try { return s == null ? -1 : Long.parseLong(s.trim()); }
-        catch (Exception e) { return -1; }
-    }
-
-    static String human(long n) {
-        if (n < 0) return "--";
+    static String human(long bytes) {
+        if (bytes < 0) return "--";
+        double b = bytes;
         String[] u = {"B", "KB", "MB", "GB", "TB"};
-        double v = n;
         int i = 0;
-        while (v >= 1024 && i < u.length - 1) { v /= 1024; i++; }
-        return (i == 0 ? String.valueOf((long) v) : String.format("%.1f", v)) + " " + u[i];
+        while (b >= 1024 && i < u.length - 1) { b /= 1024; i++; }
+        return String.format(java.util.Locale.US, "%.1f %s", b, u[i]);
     }
 
-    void sendCmd(String[] args, String msg) {
-        if (!Termux.permitted(this)) {
-            toast("Grant \"Run commands in Termux\" for Photo Drop");
-            openAppInfo();
-            return;
-        }
-        if (Termux.run(this, args)) toast(msg);
-        else toast("Could not reach Termux. Open it once and run: bash ~/pd-control.sh bootstrap");
-    }
-
-    void sendCmdQuietly(String[] args) {
-        if (!Termux.permitted(this)) return;
-        Termux.run(this, args);
-    }
-
-    void openWeb(String url) {
-        try {
-            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
-        } catch (Exception e) {
-            toast("Nothing on this phone can open that link");
-        }
-    }
-
-    void copy(String s) {
+    void copy(String text) {
         ClipboardManager cm = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
-        cm.setPrimaryClip(ClipData.newPlainText("photo-drop-link", s));
+        if (cm != null) {
+            cm.setPrimaryClip(ClipData.newPlainText("Photo Drop", text));
+        }
     }
 
-    void openAppInfo() {
-        try {
-            startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                    Uri.parse("package:" + getPackageName())));
-        } catch (Exception ignored) {}
+    void toast(String msg) {
+        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
     }
 
-    int dp(int v) {
-        return (int) (v * getResources().getDisplayMetrics().density + 0.5f);
+    int dp(float v) {
+        return Math.round(v * getResources().getDisplayMetrics().density);
     }
-
-    void toast(String s) { Toast.makeText(this, s, Toast.LENGTH_SHORT).show(); }
 }

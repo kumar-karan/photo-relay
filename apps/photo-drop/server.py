@@ -31,6 +31,7 @@ import os
 import re
 import secrets
 import shutil
+import socket
 import subprocess
 import threading
 import time
@@ -71,7 +72,7 @@ DEST = Path(os.environ.get("PHOTO_DROP_DIR", "/storage/emulated/0/DCIM/PhotoDrop
 # all, and it fails silently. One folder is one toggle with no way to half
 # configure it, so there is no dated option to switch on by mistake.
 
-HOST = os.environ.get("PHOTO_DROP_HOST", "127.0.0.1")
+HOST = os.environ.get("PHOTO_DROP_HOST", "0.0.0.0")
 PORT = int(os.environ.get("PHOTO_DROP_PORT", "8080"))
 
 # Free space we refuse to go below. Uploads stop cleanly rather than filling
@@ -102,7 +103,7 @@ app = Flask(__name__)
 
 
 # --------------------------------------------------------------------------
-# storage helpers
+# storage & network helpers
 # --------------------------------------------------------------------------
 
 
@@ -143,6 +144,39 @@ def disk_free_home() -> int:
 
 def enough_space(needed: int) -> bool:
     return disk_free() - needed >= RESERVE_BYTES
+
+
+def get_lan_ip() -> str:
+    """Returns the primary LAN IPv4 address (e.g. 10.71.107.27)."""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return "127.0.0.1"
+
+
+def get_public_url() -> str:
+    """Reads the current public tunnel URL if active."""
+    url_file = HOME / ".photo-drop" / "url"
+    if url_file.exists():
+        try:
+            val = url_file.read_text().strip()
+            if val.startswith("http"):
+                return val
+        except OSError:
+            pass
+    alt_file = Path("/sdcard/Android/data/dev.photodrop.app/files/public-url.txt")
+    if alt_file.exists():
+        try:
+            val = alt_file.read_text().strip()
+            if val.startswith("http"):
+                return val
+        except OSError:
+            pass
+    return ""
 
 
 def unique_name(raw: str, folder: Path) -> str:
@@ -219,7 +253,7 @@ if not TOKEN_OK:
     print(
         "\n  PHOTO_DROP_TOKEN is missing or shorter than 12 characters.\n"
         "  Refusing to start. Generate one with:\n"
-        "      python -c \"import secrets;print(secrets.token_urlsafe(16))\"\n",
+        '      python -c "import secrets;print(secrets.token_urlsafe(16))"\n',
         file=__import__("sys").stderr,
     )
     raise SystemExit(1)
@@ -248,52 +282,67 @@ MAX_SESSIONS = 200
 
 
 def _load_sessions() -> dict:
+    if not SESSIONS.exists():
+        return {}
     try:
         return json.loads(SESSIONS.read_text())
-    except (OSError, json.JSONDecodeError):
+    except (json.JSONDecodeError, OSError):
         return {}
 
 
 def _save_sessions(data: dict):
-    SESSIONS.parent.mkdir(parents=True, exist_ok=True)
-    SESSIONS.write_text(json.dumps(data))
+    # Atomic write so an ungraceful shutdown cannot leave a half-written JSON.
+    tmp = SESSIONS.with_suffix(".tmp")
+    tmp.write_text(json.dumps(data))
+    tmp.replace(SESSIONS)
+
+
+def session_valid(sid: str) -> bool:
+    if not sid or len(sid) < 16:
+        return False
+    with SESSION_LOCK:
+        s = _load_sessions()
+        created = s.get(sid)
+        if not created:
+            return False
+        if time.time() - created > SESSION_TTL:
+            s.pop(sid, None)
+            _save_sessions(s)
+            return False
+        return True
 
 
 def register_session(sid: str):
     with SESSION_LOCK:
-        data = _load_sessions()
-        now = time.time()
-        # Drop anything expired, oldest-first, so the store cannot grow forever.
-        data = {k: v for k, v in data.items() if v > now}
-        while len(data) >= MAX_SESSIONS:
-            data.pop(min(data, key=lambda k: data[k]), None)
-        data[sid] = now + SESSION_TTL
-        _save_sessions(data)
-
-
-def valid_session(sid: str) -> bool:
-    if not sid:
-        return False
-    with SESSION_LOCK:
-        expiry = _load_sessions().get(sid)
-    return bool(expiry) and expiry > time.time()
+        s = _load_sessions()
+        # Evict expired ones while we have the lock, so the store stays small.
+        cutoff = time.time() - SESSION_TTL
+        s = {k: v for k, v in s.items() if v > cutoff}
+        if len(s) >= MAX_SESSIONS:
+            oldest = min(s, key=s.get)
+            s.pop(oldest, None)
+        s[sid] = int(time.time())
+        _save_sessions(s)
 
 
 def require_drop_token() -> tuple[str, bool]:
-    """Authorise a request to the drop endpoint.
+    """Authorize a request to a drop endpoint.
 
-    Returns (session_id, is_new). A new session is minted only when a valid
-    token is presented — which is the first visit to a shared link.
+    Returns (session_id, is_new). Raises 404 on failure.
+
+    A valid session cookie is accepted even without the token in the URL, which
+    is what lets the upload form work without passing the secret on every POST.
+    An un-cookied request must present the secret token in the URL or the
+    X-PD-Token header; that mints a session cookie and writes it back.
     """
     sid = session_id()
-    if valid_session(sid):
+    if session_valid(sid):
         return sid, False
 
-    supplied = (
-        request.view_args.get("token", "")
-        or request.headers.get("X-PD-Token", "")
-    )
-    if check_token(supplied, TOKEN):
+    candidate = request.view_args.get("token", "") if request.view_args else ""
+    if not candidate:
+        candidate = request.headers.get("X-PD-Token", "")
+    if candidate and check_token(candidate, TOKEN):
         sid = new_session()
         register_session(sid)
         return sid, True
@@ -443,14 +492,13 @@ def healthz():
     """Liveness probe.
 
     start.sh polls this over loopback, but the same endpoint is reachable from
-    the tunnel. Unauthenticated callers get a bare liveness answer — the
-    filesystem path, exact free bytes and session counts are device
-    fingerprinting and are only for someone who already holds a token.
+    the tunnel. Authenticated or loopback callers get full diagnostics.
     """
     drop = request.headers.get("X-PD-Token", "")
     owner = request.args.get("k", "") or request.args.get("owner", "")
+    is_local = request.remote_addr in {"127.0.0.1", "::1"}
 
-    if check_token(drop, TOKEN) or (OWNER_OK and check_token(owner, OWNER_TOKEN)):
+    if is_local or check_token(drop, TOKEN) or (OWNER_OK and check_token(owner, OWNER_TOKEN)):
         free = disk_free()
         total = disk_total()
         return jsonify(
@@ -461,6 +509,8 @@ def healthz():
             used=max(0, total - free),
             reserve=RESERVE_BYTES,
             sessions=len(batch_ids_recent()),
+            public_url=get_public_url(),
+            lan_ip=get_lan_ip(),
         )
     return jsonify(ok=True)
 
@@ -478,15 +528,12 @@ def drop_page(token: str):
     free = disk_free()
     if free - RESERVE_BYTES <= 0:
         return PAGE_FULL, 200, {"Content-Type": "text/html; charset=utf-8"}
-
-    resp = make_response(
-        PAGE_UPLOAD.format(
-            base=f"/d/{TOKEN}",
-            reserve=human(RESERVE_BYTES),
-            max_mb=MAX_FILE_BYTES // (1024 * 1024),
-            max_files=MAX_FILES_PER_SESSION,
-        )
-    )
+    resp = make_response(PAGE_UPLOAD.format(
+        reserve=human(RESERVE_BYTES),
+        max_mb=MAX_FILE_BYTES // (1024 * 1024),
+        base=f"/d/{TOKEN}",
+    ))
+    resp.headers["Content-Type"] = "text/html; charset=utf-8"
     if is_new:
         set_session_cookie(resp, sid)
     return resp
@@ -495,8 +542,8 @@ def drop_page(token: str):
 @app.get("/d/<token>/status")
 def drop_status(token: str):
     sid, _ = require_drop_token()
-    bid = request.args.get("batch", "")
     free = disk_free()
+    bid = request.args.get("batch") or ""
     mine = bool(re.fullmatch(r"[a-f0-9]{6,32}", bid or "")) and batch_owned_by(bid, sid)
     return jsonify(
         free=free,
@@ -634,6 +681,7 @@ def done(token: str, batch: str):
             if unscanned
             else ""
         ),
+        token=TOKEN,
     ))
     resp.headers["Content-Type"] = "text/html; charset=utf-8"
     if is_new:
@@ -741,175 +789,769 @@ h1{font-size:20px}p{color:#8a8a92;max-width:36ch}</style>
 <h1>Phone storage is full</h1>
 <p>The phone has run out of room, so uploads are paused. Nothing was lost. Try again shortly.</p>"""
 
-THUMBS = '<div class=grid>{items}</div>'
+THUMBS = '<div class="grid">{items}</div>'
 
-PAGE_UPLOAD = """<!doctype html><meta charset=utf-8>
-<meta name=viewport content="width=device-width,initial-scale=1">
-<title>Send photos</title>
+PAGE_UPLOAD = """<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Send Photos &amp; Videos — Photo Drop</title>
 <style>
- :root{{--bg:#0b0b0d;--card:#151519;--line:#26262c;--fg:#e8e8ea;--dim:#8a8a92;--ok:#4ade80}}
- *{{box-sizing:border-box}}
- body{{background:var(--bg);color:var(--fg);margin:0;padding:20px 16px 90px;
-   font:16px/1.5 -apple-system,system-ui,sans-serif}}
- h1{{font-size:19px;margin:0 0 4px}} .sub{{color:var(--dim);font-size:13px;margin:0 0 20px}}
- .space{{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:16px}}
- .space b{{font-size:14px}} .bar{{height:6px;background:var(--line);border-radius:99px;overflow:hidden;margin-top:8px}}
- .fill{{background:var(--ok);height:100%;width:100%}}
- .drop{{border:1.5px dashed var(--line);border-radius:16px;padding:34px 18px;text-align:center;cursor:pointer}}
- .drop:active{{background:var(--card)}}
- .drop svg{{opacity:.4}} .drop p{{margin:10px 0 0;color:var(--dim);font-size:14px}}
- .items{{margin-top:18px;display:flex;flex-direction:column;gap:8px}}
- .item{{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13px}}
- .item .nm{{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
- .item .track{{height:4px;background:var(--line);border-radius:99px;overflow:hidden;margin-top:7px}}
- .item .fill{{width:0;transition:width .12s linear}}
- .item.done .fill{{background:var(--ok)}} .item.err{{border-color:#7f1d1d}}
- .st{{float:right;color:var(--dim);font-variant-numeric:tabular-nums}}
- .go{{position:fixed;left:0;right:0;bottom:0;padding:14px;background:rgba(11,11,13,.92);
-   backdrop-filter:blur(10px);border-top:1px solid var(--line)}}
- button{{width:100%;padding:15px;border:0;border-radius:12px;background:var(--fg);color:#0b0b0d;
-   font:600 16px/1 -apple-system,system-ui,sans-serif}}
- button:disabled{{opacity:.35}}
- .quiet{{text-align:center;color:var(--dim);font-size:12px;margin-top:14px}}
+  :root {{
+    --bg: #090a0f;
+    --card: rgba(22, 24, 32, 0.85);
+    --card-border: rgba(255, 255, 255, 0.08);
+    --fg: #f3f4f6;
+    --fg-muted: #9ca3af;
+    --fg-subtle: #6b7280;
+    --accent: #22c55e;
+    --accent-glow: rgba(34, 197, 94, 0.25);
+    --accent-dark: #15803d;
+    --danger: #ef4444;
+    --danger-bg: rgba(239, 68, 68, 0.12);
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }}
+  * {{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }}
+  body {{
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font);
+    min-height: 100vh;
+    padding: calc(env(safe-area-inset-top, 20px) + 16px) 16px calc(env(safe-area-inset-bottom, 20px) + 100px);
+    overflow-x: hidden;
+  }}
+  .app-wrap {{
+    max-width: 520px;
+    margin: 0 auto;
+  }}
+  header {{
+    margin-bottom: 20px;
+  }}
+  .brand {{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }}
+  .brand-icon {{
+    width: 28px;
+    height: 28px;
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+    box-shadow: 0 4px 12px var(--accent-glow);
+  }}
+  .brand-title {{
+    font-size: 21px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--fg);
+  }}
+  .sub {{
+    color: var(--fg-muted);
+    font-size: 13.5px;
+    line-height: 1.45;
+  }}
+  .space-card {{
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    backdrop-filter: blur(16px);
+    border-radius: 14px;
+    padding: 12px 16px;
+    margin-bottom: 18px;
+  }}
+  .space-header {{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    color: var(--fg-muted);
+    margin-bottom: 8px;
+  }}
+  .space-header b {{
+    color: var(--fg);
+    font-weight: 600;
+  }}
+  .track {{
+    height: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 99px;
+    overflow: hidden;
+  }}
+  .fill {{
+    height: 100%;
+    background: var(--accent);
+    border-radius: 99px;
+    transition: width 0.3s ease;
+  }}
+  .space-hint {{
+    font-size: 11px;
+    color: var(--fg-subtle);
+    margin-top: 6px;
+  }}
+  .dropzone {{
+    border: 2px dashed rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 20px;
+    padding: 36px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }}
+  .dropzone:active, .dropzone.dragover {{
+    background: rgba(34, 197, 94, 0.06);
+    border-color: var(--accent);
+    transform: scale(0.99);
+  }}
+  .drop-icon {{
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06);
+    display: grid;
+    place-items: center;
+    margin: 0 auto 12px;
+    color: var(--accent);
+  }}
+  .drop-title {{
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: var(--fg);
+  }}
+  .drop-desc {{
+    font-size: 13px;
+    color: var(--fg-muted);
+  }}
+  .items-list {{
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }}
+  .file-item {{
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    backdrop-filter: blur(12px);
+    border-radius: 14px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: relative;
+    overflow: hidden;
+  }}
+  .file-thumb {{
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    object-fit: cover;
+    background: rgba(255, 255, 255, 0.05);
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+  }}
+  .file-thumb img {{
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }}
+  .file-info {{
+    flex: 1;
+    min-width: 0;
+  }}
+  .file-name {{
+    font-size: 13.5px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--fg);
+  }}
+  .file-meta {{
+    font-size: 12px;
+    color: var(--fg-muted);
+    margin-top: 2px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }}
+  .file-progress {{
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    background: var(--accent);
+    width: 0%;
+    transition: width 0.15s linear;
+  }}
+  .file-status {{
+    font-size: 12px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    margin-left: auto;
+    color: var(--fg-muted);
+    flex-shrink: 0;
+  }}
+  .file-status.done {{
+    color: var(--accent);
+  }}
+  .file-status.err {{
+    color: var(--danger);
+  }}
+  .btn-remove {{
+    background: none;
+    border: none;
+    color: var(--fg-subtle);
+    padding: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    display: grid;
+    place-items: center;
+    border-radius: 6px;
+    line-height: 1;
+  }}
+  .btn-remove:active {{
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--fg);
+  }}
+  .btn-retry {{
+    background: var(--danger-bg);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: var(--danger);
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+  }}
+  .bottom-bar {{
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(9, 10, 15, 0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid var(--card-border);
+    padding: 12px 16px calc(env(safe-area-inset-bottom, 16px) + 12px);
+    z-index: 100;
+  }}
+  .bottom-wrap {{
+    max-width: 520px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }}
+  .overall-track {{
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 99px;
+    overflow: hidden;
+    display: none;
+  }}
+  .overall-fill {{
+    height: 100%;
+    background: linear-gradient(90deg, #22c55e, #4ade80);
+    width: 0%;
+    transition: width 0.12s linear;
+  }}
+  .btn-send {{
+    width: 100%;
+    height: 52px;
+    background: var(--fg);
+    color: #090a0f;
+    border: none;
+    border-radius: 14px;
+    font-family: var(--font);
+    font-size: 16px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(255, 255, 255, 0.15);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }}
+  .btn-send:disabled {{
+    opacity: 0.35;
+    cursor: not-allowed;
+    box-shadow: none;
+  }}
+  .btn-send:not(:disabled):active {{
+    transform: scale(0.98);
+  }}
+  .status-hint {{
+    text-align: center;
+    font-size: 12px;
+    color: var(--fg-muted);
+    min-height: 16px;
+  }}
 </style>
-<h1>Send photos</h1>
-<p class=sub>They go straight to the phone and get backed up. Nothing is stored anywhere else.</p>
+</head>
+<body>
+<div class="app-wrap">
+  <header>
+    <div class="brand">
+      <div class="brand-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 16V4m0 0L8 8m4-4 4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>
+        </svg>
+      </div>
+      <h1 class="brand-title">Send Photos &amp; Videos</h1>
+    </div>
+    <p class="sub">Transferred directly to Samsung Galaxy in original quality. Ready for Google Photos backup.</p>
+  </header>
 
-<div class=space><b>Phone has <span id=free>--</span> free</b>
-  <div class=bar><div class=fill id=spacebar></div></div>
-  <div style="color:var(--dim);font-size:11px;margin-top:6px">
-    Uploads pause at {reserve} free to keep the phone healthy. Up to {max_mb} MB per file.</div></div>
+  <div class="space-card">
+    <div class="space-header">
+      <span>Phone Storage</span>
+      <b><span id="free">Checking...</span> free</b>
+    </div>
+    <div class="track"><div class="fill" id="spacebar" style="width: 100%;"></div></div>
+    <p class="space-hint">Uploads pause at {reserve} free to protect phone storage. Up to {max_mb} MB per file.</p>
+  </div>
 
-<div class=drop id=drop>
- <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#e8e8ea" stroke-width="1.6">
-  <path d="M12 16V4m0 0L8 8m4-4 4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
- <p><b>Tap to choose photos and videos</b><br>You can pick as many as you like</p>
- <input type=file id=pick multiple accept="image/*,video/*" hidden>
+  <div class="dropzone" id="drop">
+    <div class="drop-icon">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
+        <circle cx="9" cy="9" r="2"/>
+        <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+      </svg>
+    </div>
+    <div class="drop-title">Tap to Choose Photos &amp; Videos</div>
+    <div class="drop-desc">Select as many as you like · HEIC, JPEG, MP4, MOV</div>
+    <input type="file" id="pick" multiple accept="image/*,video/*" hidden>
+  </div>
+
+  <div class="items-list" id="items"></div>
 </div>
 
-<div class=items id=items></div>
-
-<div class=go><button id=go disabled>Send</button></div>
-<p class=quiet id=status></p>
+<div class="bottom-bar">
+  <div class="bottom-wrap">
+    <div class="overall-track" id="overall-track">
+      <div class="overall-fill" id="overall-fill"></div>
+    </div>
+    <button class="btn-send" id="go" disabled>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+      </svg>
+      <span id="go-text">Choose Photos to Send</span>
+    </button>
+    <div class="status-hint" id="status"></div>
+  </div>
+</div>
 
 <script>
-const BATCH = Math.random().toString(16).slice(2,14);
+const BATCH = Math.random().toString(16).slice(2, 14);
 const BASE = "{base}";
-let queue = [], free = 0;
+let queue = [];
+let usableSpace = 0;
+let isUploading = false;
+let wakeLock = null;
 
-async function poll(){{
-  try{{
-    const r = await fetch(BASE + "/status?batch=" + BATCH, {{credentials:"same-origin"}});
-    const d = await r.json();
-    free = d.usable;
-    document.getElementById("free").textContent = d.free_human;
-    // Reserve comes from the server so the bar stays honest if it is retuned.
-    const pct = d.reserve ? (d.usable / (d.usable + d.reserve)) * 100 : 100;
-    document.getElementById("spacebar").style.width =
-      Math.max(2, Math.min(100, pct)) + "%";
-  }}catch(e){{}}
-}}
-poll(); setInterval(poll, 5000);
-
-const drop = document.getElementById("drop"), pick = document.getElementById("pick");
-drop.onclick = () => pick.click();
-pick.onchange = () => {{ add([...pick.files]); pick.value = ""; }};
-drop.ondragover = e => e.preventDefault();
-drop.ondrop = e => {{ e.preventDefault(); add([...e.dataTransfer.files]); }};
-
-function add(files){{
-  for (const f of files) queue.push({{file:f, el:null, done:false, err:false}});
-  render();
-}}
-
-function render(){{
-  const box = document.getElementById("items"); box.innerHTML = "";
-  queue.forEach((it, i) => {{
-    const d = document.createElement("div");
-    d.className = "item" + (it.done?" done":"") + (it.err?" err":"");
-    d.innerHTML = '<span class=st></span><div class=nm"></div><div class=track"><div class=fill"></div></div>';
-    d.querySelector(".nm").textContent = it.file.name;
-    it.el = d;
-    box.appendChild(d);
-  }});
-  const left = queue.filter(i=>!i.done&&!i.err).length;
-  document.getElementById("go").disabled = left === 0;
-  document.getElementById("go").textContent = left ? `Send ${{left}} file${{left>1?"s":""}}` : "Send";
-}}
-
-document.getElementById("go").onclick = async () => {{
-  const btn = document.getElementById("go"); btn.disabled = true;
-  const pending = queue.filter(i=>!i.done&&!i.err);
-  for (const it of pending) {{
-    if (free <= 0) {{ setStatus("Phone storage is full. Upload paused."); render(); return; }}
+async function requestWakeLock() {{
+  if ("wakeLock" in navigator) {{
     try {{
-      const url = BASE + "/upload?batch=" + BATCH + "&name=" + encodeURIComponent(it.file.name);
-      const xhr = new XMLHttpRequest();
-      const p = xhr.upload;
-      p.onprogress = e => {{
-        if (!e.lengthComputable) return;
-        const pct = e.loaded / e.total * 100;
-        it.el.querySelector(".fill").style.width = pct + "%";
-        it.el.querySelector(".st").textContent = Math.round(pct) + "%";
-      }};
-      await new Promise((res, rej) => {{
-        p.onerror = () => rej(new Error("network dropped"));
-        xhr.onload = () => {{
-          if (xhr.status >= 200 && xhr.status < 300) res();
-          else {{
-            let m = "upload failed";
-            try {{ m = JSON.parse(xhr.responseText || "{{}}").error || m; }} catch (_) {{}}
-            rej(new Error(m));
-          }}
-        }};
-        xhr.open("POST", url);
-        // Raw body, not multipart — this is what makes progress exact and
-        // lets the server know the size before it writes anything.
-        xhr.send(it.file);
-      }});
-      it.done = true;
-      it.el.querySelector(".st").textContent = "safe";
-      it.el.querySelector(".fill").style.width = "100%";
-      setStatus("Saved: " + it.file.name);
-    }} catch (err) {{
-      it.err = true;
-      it.el.querySelector(".st").textContent = "failed";
-      setStatus(String(err.message || err));
-    }}
-    poll(); render();
+      wakeLock = await navigator.wakeLock.request("screen");
+    }} catch (e) {{}}
   }}
-  if (queue.some(i=>i.done)) location.href = BASE + "/done/" + BATCH;
+}}
+
+function releaseWakeLock() {{
+  if (wakeLock) {{
+    try {{ wakeLock.release(); }} catch (e) {{}}
+    wakeLock = null;
+  }}
+}}
+
+async function poll() {{
+  try {{
+    const r = await fetch(BASE + "/status?batch=" + BATCH, {{ credentials: "same-origin" }});
+    const d = await r.json();
+    usableSpace = d.usable;
+    document.getElementById("free").textContent = d.free_human;
+    const pct = d.reserve ? (d.usable / (d.usable + d.reserve)) * 100 : 100;
+    document.getElementById("spacebar").style.width = Math.max(2, Math.min(100, pct)) + "%";
+  }} catch (e) {{}}
+}}
+poll();
+setInterval(poll, 5000);
+
+const drop = document.getElementById("drop");
+const pick = document.getElementById("pick");
+drop.onclick = () => {{ if (!isUploading) pick.click(); }};
+pick.onchange = () => {{ addFiles([...pick.files]); pick.value = ""; }};
+
+drop.ondragover = e => {{ e.preventDefault(); drop.classList.add("dragover"); }};
+drop.ondragleave = () => {{ drop.classList.remove("dragover"); }};
+drop.ondrop = e => {{
+  e.preventDefault();
+  drop.classList.remove("dragover");
+  if (!isUploading && e.dataTransfer.files) {{
+    addFiles([...e.dataTransfer.files]);
+  }}
 }};
 
-function setStatus(s){{ document.getElementById("status").textContent = s; }}
-</script>"""
+function humanSize(bytes) {{
+  if (bytes < 1024) return bytes + " B";
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+  return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+}}
 
-PAGE_DONE = """<!doctype html><meta charset=utf-8>
-<meta name=viewport content="width=device-width,initial-scale=1">
-<title>Photos received</title>
+function addFiles(files) {{
+  for (const f of files) {{
+    const url = f.type.startsWith("image/") ? URL.createObjectURL(f) : "";
+    queue.push({{
+      file: f,
+      previewUrl: url,
+      loaded: 0,
+      total: f.size,
+      done: false,
+      err: false,
+      errMessage: ""
+    }});
+  }}
+  renderQueue();
+}}
+
+function removeFile(index) {{
+  if (isUploading) return;
+  if (queue[index] && queue[index].previewUrl) {{
+    URL.revokeObjectURL(queue[index].previewUrl);
+  }}
+  queue.splice(index, 1);
+  renderQueue();
+}}
+
+function renderQueue() {{
+  const container = document.getElementById("items");
+  container.innerHTML = "";
+
+  queue.forEach((it, idx) => {{
+    const item = document.createElement("div");
+    item.className = "file-item";
+
+    let thumbHtml = "";
+    if (it.previewUrl) {{
+      thumbHtml = `<div class="file-thumb"><img src="${{it.previewUrl}}" alt="" loading="lazy"></div>`;
+    }} else {{
+      thumbHtml = `<div class="file-thumb">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+        </svg>
+      </div>`;
+    }}
+
+    let statusText = "";
+    let statusClass = "file-status";
+    if (it.done) {{
+      statusText = "✓ Safe";
+      statusClass += " done";
+    }} else if (it.err) {{
+      statusText = `<button class="btn-retry" onclick="retryFile(${{idx}})">Retry</button>`;
+      statusClass += " err";
+    }} else if (isUploading && it.loaded > 0) {{
+      statusText = Math.round((it.loaded / it.total) * 100) + "%";
+    }} else {{
+      statusText = !isUploading ? `<button class="btn-remove" onclick="removeFile(${{idx}})">✕</button>` : "Ready";
+    }}
+
+    item.innerHTML = `
+      ${{thumbHtml}}
+      <div class="file-info">
+        <div class="file-name">${{escapeHtml(it.file.name)}}</div>
+        <div class="file-meta">
+          <span>${{humanSize(it.file.size)}}</span>
+          ${{it.err ? `<span style="color:var(--danger);">${{it.errMessage || "Upload failed"}}</span>` : ""}}
+        </div>
+      </div>
+      <div class="${{statusClass}}">${{statusText}}</div>
+      <div class="file-progress" style="width:${{it.done ? 100 : (it.loaded / it.total * 100)}}%;"></div>
+    `;
+    container.appendChild(item);
+  }});
+
+  const pending = queue.filter(i => !i.done);
+  const doneCount = queue.filter(i => i.done).length;
+  const goBtn = document.getElementById("go");
+  const goText = document.getElementById("go-text");
+
+  if (isUploading) {{
+    goBtn.disabled = true;
+    goText.textContent = `Uploading ${{doneCount + 1}} of ${{queue.length}}...`;
+    document.getElementById("overall-track").style.display = "block";
+  }} else if (pending.length > 0) {{
+    goBtn.disabled = false;
+    const totalBytes = pending.reduce((sum, i) => sum + i.file.size, 0);
+    goText.textContent = `Send ${{pending.length}} ${{pending.length === 1 ? "File" : "Files"}} (${{humanSize(totalBytes)}})`;
+    document.getElementById("overall-track").style.display = "none";
+  }} else if (queue.length > 0 && doneCount === queue.length) {{
+    goBtn.disabled = true;
+    goText.textContent = "All Files Transferred!";
+    document.getElementById("overall-track").style.display = "none";
+  }} else {{
+    goBtn.disabled = true;
+    goText.textContent = "Choose Photos to Send";
+    document.getElementById("overall-track").style.display = "none";
+  }}
+}}
+
+function escapeHtml(text) {{
+  const div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
+}}
+
+function updateOverallProgress() {{
+  if (!queue.length) return;
+  const total = queue.reduce((sum, i) => sum + i.total, 0);
+  const loaded = queue.reduce((sum, i) => sum + (i.done ? i.total : i.loaded), 0);
+  const pct = Math.min(100, Math.round((loaded / total) * 100));
+  document.getElementById("overall-fill").style.width = pct + "%";
+}}
+
+async function uploadSingle(it) {{
+  const url = BASE + "/upload?batch=" + BATCH + "&name=" + encodeURIComponent(it.file.name);
+  const xhr = new XMLHttpRequest();
+  const p = xhr.upload;
+
+  p.onprogress = e => {{
+    if (!e.lengthComputable) return;
+    it.loaded = e.loaded;
+    updateOverallProgress();
+    renderQueue();
+  }};
+
+  await new Promise((resolve, reject) => {{
+    p.onerror = () => reject(new Error("Connection dropped. Check Wi-Fi."));
+    xhr.onload = () => {{
+      if (xhr.status >= 200 && xhr.status < 300) {{
+        resolve();
+      }} else {{
+        let msg = "Upload failed (" + xhr.status + ")";
+        try {{
+          const res = JSON.parse(xhr.responseText || "{{}}");
+          if (res.error) msg = res.error;
+        }} catch (_) {{}}
+        reject(new Error(msg));
+      }}
+    }};
+    xhr.open("POST", url);
+    xhr.send(it.file);
+  }});
+
+  it.done = true;
+  it.err = false;
+  it.loaded = it.total;
+}}
+
+async function startUpload() {{
+  if (isUploading) return;
+  const pending = queue.filter(i => !i.done);
+  if (!pending.length) return;
+
+  isUploading = true;
+  await requestWakeLock();
+  document.getElementById("status").textContent = "Uploading... Keep this tab active.";
+  renderQueue();
+
+  for (const it of pending) {{
+    if (usableSpace <= 0) {{
+      document.getElementById("status").textContent = "Phone storage is full. Paused.";
+      isUploading = false;
+      releaseWakeLock();
+      renderQueue();
+      return;
+    }}
+    try {{
+      await uploadSingle(it);
+    }} catch (err) {{
+      it.err = true;
+      it.errMessage = err.message || "Failed";
+    }}
+    poll();
+    renderQueue();
+  }}
+
+  isUploading = false;
+  releaseWakeLock();
+
+  const successCount = queue.filter(i => i.done).length;
+  if (successCount > 0 && queue.every(i => i.done)) {{
+    location.href = BASE + "/done/" + BATCH;
+  }} else if (successCount > 0) {{
+    document.getElementById("status").textContent = `${{successCount}} uploaded, some failed. Tap Retry to continue.`;
+  }}
+}}
+
+function retryFile(idx) {{
+  if (queue[idx]) {{
+    queue[idx].err = false;
+    queue[idx].errMessage = "";
+    queue[idx].loaded = 0;
+    renderQueue();
+    startUpload();
+  }}
+}}
+
+document.getElementById("go").onclick = startUpload;
+</script>
+</body></html>"""
+
+PAGE_DONE = """<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Photos Received — Photo Drop</title>
 <style>
- body{{background:#0b0b0d;color:#e8e8ea;margin:0;padding:28px 18px 60px;
-  font:16px/1.6 -apple-system,system-ui,sans-serif}}
- .tick{{width:56px;height:56px;border-radius:50%;background:#4ade80;color:#0b0b0d;
-  display:grid;place-items:center;font-size:30px;margin:0 auto 18px}}
- h1{{font-size:21px;text-align:center;margin:0 0 6px}}
- .sub{{text-align:center;color:#8a8a92;margin:0 0 26px;font-size:15px}}
- .grid{{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:26px;border-radius:12px;overflow:hidden}}
- .grid img{{width:100%;aspect-ratio:1;object-fit:cover;background:#151519;display:block}}
- ul{{list-style:none;padding:0;margin:0}} li{{display:flex;justify-content:space-between;gap:12px;
-  padding:11px 2px;border-bottom:1px solid #26262c;font-size:14px}}
- li .n{{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}} li .s{{color:#8a8a92;flex:none;font-size:13px}}
- .warn{{background:#3a2a10;border:1px solid #7c5a1a;color:#f0d9a8;padding:12px;border-radius:10px;
-  font-size:13px;margin-top:20px}}
- h2{{font-size:13px;color:#8a8a92;text-transform:uppercase;letter-spacing:.06em;margin:26px 0 10px}}
+  :root {{
+    --bg: #090a0f;
+    --card: rgba(22, 24, 32, 0.85);
+    --card-border: rgba(255, 255, 255, 0.08);
+    --fg: #f3f4f6;
+    --fg-muted: #9ca3af;
+    --accent: #22c55e;
+    --accent-glow: rgba(34, 197, 94, 0.25);
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }}
+  * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+  body {{
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font);
+    min-height: 100vh;
+    padding: calc(env(safe-area-inset-top, 24px) + 24px) 18px calc(env(safe-area-inset-bottom, 24px) + 24px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }}
+  .done-wrap {{
+    max-width: 500px;
+    width: 100%;
+    margin: 0 auto;
+    text-align: center;
+  }}
+  .tick-badge {{
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #090a0f;
+    display: grid;
+    place-items: center;
+    margin: 0 auto 16px;
+    box-shadow: 0 8px 24px var(--accent-glow);
+    animation: pop 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }}
+  @keyframes pop {{
+    0% {{ transform: scale(0.6); opacity: 0; }}
+    100% {{ transform: scale(1); opacity: 1; }}
+  }}
+  h1 {{
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }}
+  .sub {{
+    color: var(--fg-muted);
+    font-size: 14.5px;
+    line-height: 1.5;
+    margin-bottom: 24px;
+  }}
+  .grid {{
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    margin-bottom: 24px;
+    border-radius: 14px;
+    overflow: hidden;
+  }}
+  .grid img {{
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    background: var(--card);
+    display: block;
+  }}
+  .files-card {{
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    backdrop-filter: blur(12px);
+    border-radius: 14px;
+    padding: 6px 14px;
+    margin-bottom: 24px;
+    text-align: left;
+  }}
+  ul {{ list-style: none; }}
+  li {{
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    font-size: 13.5px;
+  }}
+  li:last-child {{ border-bottom: none; }}
+  li .n {{ white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--fg); }}
+  li .s {{ color: var(--fg-muted); flex-shrink: 0; font-variant-numeric: tabular-nums; }}
+  .warn {{
+    background: rgba(234, 179, 8, 0.12);
+    border: 1px solid rgba(234, 179, 8, 0.3);
+    color: #fef08a;
+    padding: 12px;
+    border-radius: 12px;
+    font-size: 13px;
+    margin-bottom: 20px;
+    text-align: left;
+  }}
+  .actions {{
+    display: flex;
+    gap: 10px;
+  }}
+  .btn {{
+    flex: 1;
+    height: 48px;
+    border-radius: 12px;
+    font-family: var(--font);
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+  }}
+  .btn-primary {{
+    background: var(--accent);
+    color: #090a0f;
+    box-shadow: 0 4px 14px var(--accent-glow);
+  }}
 </style>
-<div class=tick>&#10003;</div>
-<h1>Your {count} {noun} {verb} safe</h1>
-<p class=sub>{total} landed on the phone and is now being backed up to Google Photos.
-You can close this page.</p>
-{thumbs}
-<h2>Received</h2><ul>{rows}</ul>
-{warning}"""
+</head>
+<body>
+<div class="done-wrap">
+  <div class="tick-badge">
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="20 6 9 17 4 12"/>
+    </svg>
+  </div>
+  <h1>Your {count} {noun} {verb} safe</h1>
+  <p class="sub">{total} received and stored in original quality on Samsung Galaxy.<br>Google Photos is backing them up now.</p>
+  {thumbs}
+  <div class="files-card">
+    <ul>{rows}</ul>
+  </div>
+  {warning}
+  <div class="actions">
+    <a href="/d/{token}/" class="btn btn-primary">Send More Photos</a>
+  </div>
+</div>
+</body></html>"""
 
 
 # --------------------------------------------------------------------------
