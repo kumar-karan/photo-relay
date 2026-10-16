@@ -9,8 +9,9 @@ SDK="$ROOT/apps/t3-server-android/android-sdk"
 BT="$SDK/build-tools/34.0.0"
 AJAR="$SDK/platforms/android-34/android.jar"
 KS="$ROOT/apps/t3-server-android/debug.keystore"
+ZX="$PWD/lib/zxing-core-3.5.3.jar"
 
-for f in "$BT/aapt2" "$AJAR"; do
+for f in "$BT/aapt2" "$AJAR" "$ZX"; do
   [ -e "$f" ] || { echo "missing $f" >&2; exit 1; }
 done
 
@@ -25,10 +26,14 @@ echo "--- aapt2 compile/link"
 
 echo "--- javac"
 find src out/gen -name '*.java' > out/sources.txt
-javac --release 8 -cp "$AJAR" -d out/classes @out/sources.txt
+javac --release 8 -cp "$AJAR:$ZX" -d out/classes @out/sources.txt
 
 echo "--- d8"
-"$BT/d8" --lib "$AJAR" --min-api 26 --output out/dex $(find out/classes -name '*.class')
+# The ZXing jar goes in as program input, not just --lib, so its classes are
+# actually present in classes.dex. It is pure Java with no Android dependency,
+# which is why it is the one library worth shipping here.
+"$BT/d8" --lib "$AJAR" --min-api 26 --output out/dex \
+  $(find out/classes -name '*.class') "$ZX"
 
 echo "--- zip/align/sign"
 cp out/base.apk out/unsigned.apk

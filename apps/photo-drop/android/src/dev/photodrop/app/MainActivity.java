@@ -1,6 +1,7 @@
 package dev.photodrop.app;
 
 import android.app.Activity;
+import android.graphics.Bitmap;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
@@ -14,14 +15,21 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.Settings;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowInsets;
 import android.view.animation.PathInterpolator;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.WriterException;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -71,6 +79,11 @@ public class MainActivity extends Activity {
     TextView tvDropDomain, tvDropUrl, tvDropHint, tvFooter, btnRefresh;
     StorageBarView storageBar;
     Button btnStart, btnStop, btnCopy;
+    TextView btnQrToggle;
+    ImageView imgQr;
+    LinearLayout qrBox;
+    String qrForUrl = "";
+    boolean qrVisible = false;
 
     String dropToken = "";
     String ownerToken = "";
@@ -101,6 +114,9 @@ public class MainActivity extends Activity {
         btnStart = findViewById(R.id.btnStart);
         btnStop = findViewById(R.id.btnStop);
         btnCopy = findViewById(R.id.btnCopy);
+        btnQrToggle = findViewById(R.id.btnQrToggle);
+        imgQr = findViewById(R.id.imgQr);
+        qrBox = findViewById(R.id.qrBox);
 
         applyInsets();
 
@@ -130,6 +146,9 @@ public class MainActivity extends Activity {
 
         btnCopy.setOnClickListener(v -> { copyLink(); });
         findViewById(R.id.cardLink).setOnClickListener(v -> { copyLink(); });
+
+        btnQrToggle.setOnClickListener(v -> toggleQr());
+        pressFeedback(btnQrToggle);
 
         findViewById(R.id.btnUpload).setOnClickListener(v ->
             openWeb(base() + "/d/" + dropToken + "/"));
@@ -334,10 +353,21 @@ public class MainActivity extends Activity {
             tvDropHint.setText("Start the server to get a link you can send.");
             btnCopy.setEnabled(false);
             btnCopy.setAlpha(0.4f);
+            btnQrToggle.setEnabled(false);
+            btnQrToggle.setAlpha(0.4f);
+            // A stale QR would encode a link that no longer works.
+            if (qrVisible) {
+                qrVisible = false;
+                qrBox.setVisibility(View.GONE);
+                btnQrToggle.setText("Show QR code");
+            }
+            qrForUrl = "";
             return;
         }
         btnCopy.setEnabled(true);
         btnCopy.setAlpha(1f);
+        btnQrToggle.setEnabled(true);
+        btnQrToggle.setAlpha(1f);
         String full = currentShareUrl();
         tvDropDomain.setText(domainOf(full));
         tvDropUrl.setText(full);
@@ -380,6 +410,63 @@ public class MainActivity extends Activity {
         if (copyReset != null) handler.removeCallbacks(copyReset);
         copyReset = () -> btnCopy.setText("Copy link to send");
         handler.postDelayed(copyReset, 2000);
+    }
+
+    /**
+     * The QR is a second route to the same link, not the main one, so it is
+     * hidden until asked for. Useful when the phone is being shown to someone
+     * across a table rather than messaged to them.
+     */
+    void toggleQr() {
+        if (!up) { toast("Start the server first"); return; }
+        String url = currentShareUrl();
+
+        if (!url.equals(qrForUrl)) {
+            Bitmap bmp = qrBitmap(url, dp(148));
+            if (bmp == null) { toast("Could not build a QR code"); return; }
+            imgQr.setImageBitmap(bmp);
+            qrForUrl = url;
+        }
+
+        qrVisible = !qrVisible;
+        btnQrToggle.setText(qrVisible ? "Hide QR code" : "Show QR code");
+
+        if (qrVisible) {
+            qrBox.setVisibility(View.VISIBLE);
+            qrBox.setAlpha(0f);
+            qrBox.setTranslationY(dp(8));
+            qrBox.animate().alpha(1f).translationY(0f).setDuration(180)
+                   .setInterpolator(EASE).start();
+            imgQr.setScaleX(0.92f);
+            imgQr.setScaleY(0.92f);
+            imgQr.animate().scaleX(1f).scaleY(1f).setDuration(200)
+                   .setInterpolator(EASE).start();
+        } else {
+            qrBox.animate().alpha(0f).setDuration(140).withEndAction(() -> {
+                qrBox.setVisibility(View.GONE);
+                qrBox.setTranslationY(0f);
+            }).start();
+        }
+    }
+
+    /** Dark modules on white, with the quiet zone ZXing already builds in. */
+    Bitmap qrBitmap(String content, int size) {
+        try {
+            BitMatrix m = new QRCodeWriter().encode(
+                    content, BarcodeFormat.QR_CODE, size, size);
+            int w = m.getWidth(), h = m.getHeight();
+            int[] px = new int[w * h];
+            for (int y = 0; y < h; y++) {
+                int row = y * w;
+                for (int x = 0; x < w; x++) {
+                    px[row + x] = m.get(x, y) ? 0xFF111315 : 0xFFFFFFFF;
+                }
+            }
+            return Bitmap.createBitmap(px, w, h, Bitmap.Config.ARGB_8888);
+        } catch (WriterException e) {
+            Log.w("PhotoDrop", "qr encode failed", e);
+            return null;
+        }
     }
 
     String base() {

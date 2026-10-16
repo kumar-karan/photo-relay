@@ -130,6 +130,59 @@
                 android:textColor="@color/on_primary"
                 android:textSize="15sp"
                 android:textStyle="bold"/>
+
+            <!-- Secondary path to the same link. Hidden by default: copying is
+                 the normal case, so the code should be available rather than
+                 permanently on screen. -->
+            <TextView
+                android:id="@+id/btnQrToggle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="6dp"
+                android:background="@drawable/btn_text_only"
+                android:paddingLeft="12dp"
+                android:paddingTop="8dp"
+                android:paddingRight="12dp"
+                android:paddingBottom="8dp"
+                android:text="Show QR code"
+                android:textColor="@color/primary"
+                android:textSize="13sp"
+                android:textStyle="bold"/>
+
+            <LinearLayout
+                android:id="@+id/qrBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="14dp"
+                    android:layout_marginBottom="14dp"
+                    android:background="@color/stroke"/>
+
+                <ImageView
+                    android:id="@+id/imgQr"
+                    android:layout_width="148dp"
+                    android:layout_height="148dp"
+                    android:background="@color/surface"
+                    android:contentDescription="QR code for the upload link"
+                    android:padding="8dp"
+                    android:scaleType="fitCenter"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:gravity="center"
+                    android:text="Scan to open the upload page"
+                    android:textColor="@color/text_muted"
+                    android:textSize="12sp"/>
+            </LinearLayout>
         </LinearLayout>
 
         <!-- Server control -->
