@@ -59,8 +59,8 @@ start_watchdog() {
 }
 
 stop_watchdog() {
-  pkill -f 'heartbeat' 2>/dev/null
-  pkill -f 'photo-drop-watchdog' 2>/dev/null
+  pkill -9 -f 'heartbeat' 2>/dev/null
+  pkill -9 -f 'photo-drop-watchdog' 2>/dev/null
 }
 
 case "$cmd" in
@@ -159,11 +159,15 @@ EOF
 
   stop)
     pkill -f 'photo-drop/server.py' 2>/dev/null
-    pkill -f 'cloudflared tunnel'    2>/dev/null
+    sleep 0.3
+    pkill -9 -f 'photo-drop/server.py' 2>/dev/null
+    pkill -f 'cloudflared' 2>/dev/null
+    sleep 0.3
+    pkill -9 -f 'cloudflared' 2>/dev/null
     stop_watchdog
-    sleep 1
+    sleep 0.5
     termux-wake-unlock 2>/dev/null || true
-    rm -f "$EXPORT/public-url.txt" "$STATE/url" 2>/dev/null || true
+    rm -f "$EXPORT/public-url.txt" "$STATE/url" "$EXPORT/heartbeat" 2>/dev/null || true
     echo "stopped"
     ;;
 

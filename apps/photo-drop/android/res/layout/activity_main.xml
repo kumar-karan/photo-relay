@@ -351,58 +351,7 @@
                 android:textSize="14sp"
                 android:textStyle="bold"/>
 
-            <!-- Inline Stop Confirmation Strip (hidden until Stop tapped with sessions > 0) -->
-            <LinearLayout
-                android:id="@+id/stopConfirmStrip"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:background="@drawable/card_alert"
-                android:orientation="vertical"
-                android:padding="12dp"
-                android:visibility="gone">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:lineSpacingExtra="2dp"
-                    android:text="A friend may be uploading right now. Stopping will cancel in-flight uploads."
-                    android:textColor="#8C1D18"
-                    android:textSize="12.5sp"/>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:orientation="horizontal">
-
-                    <Button
-                        android:id="@+id/btnKeepRunning"
-                        android:layout_width="0dp"
-                        android:layout_height="38dp"
-                        android:layout_marginRight="6dp"
-                        android:layout_weight="1"
-                        android:background="@drawable/btn_primary"
-                        android:text="Keep running"
-                        android:textAllCaps="false"
-                        android:textColor="#FFFFFF"
-                        android:textSize="13sp"
-                        android:textStyle="bold"/>
-
-                    <Button
-                        android:id="@+id/btnConfirmStop"
-                        android:layout_width="0dp"
-                        android:layout_height="38dp"
-                        android:layout_marginLeft="6dp"
-                        android:layout_weight="1"
-                        android:background="@drawable/btn_stop"
-                        android:text="Stop anyway"
-                        android:textAllCaps="false"
-                        android:textColor="#B3261E"
-                        android:textSize="13sp"
-                        android:textStyle="bold"/>
-                </LinearLayout>
-            </LinearLayout>
         </LinearLayout>
 
         <!-- ZONE 4: Nav Row (Owner dashboard link) -->

@@ -1,6 +1,7 @@
 package dev.photodrop.app;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
@@ -105,9 +106,6 @@ public class MainActivity extends Activity {
 
     View liveStopSection;
     Button btnStop;
-    View stopConfirmStrip;
-    Button btnKeepRunning;
-    Button btnConfirmStop;
     Button btnOwner;
 
     // State variables
@@ -157,9 +155,6 @@ public class MainActivity extends Activity {
 
         liveStopSection = findViewById(R.id.liveStopSection);
         btnStop = findViewById(R.id.btnStop);
-        stopConfirmStrip = findViewById(R.id.stopConfirmStrip);
-        btnKeepRunning = findViewById(R.id.btnKeepRunning);
-        btnConfirmStop = findViewById(R.id.btnConfirmStop);
         btnOwner = findViewById(R.id.btnOwner);
 
         applyInsets();
@@ -186,21 +181,15 @@ public class MainActivity extends Activity {
 
         btnStop.setOnClickListener(v -> {
             if (lastHealth.sessions > 0) {
-                stopConfirmStrip.setVisibility(View.VISIBLE);
-                stopConfirmStrip.setAlpha(0f);
-                stopConfirmStrip.animate().alpha(1f).setDuration(160).start();
+                new AlertDialog.Builder(this)
+                        .setTitle("Stop Photo Drop?")
+                        .setMessage("An upload may be in progress. Stopping now will cancel active transfers.")
+                        .setPositiveButton("Stop server", (d, which) -> stopServer())
+                        .setNegativeButton("Keep running", null)
+                        .show();
             } else {
                 stopServer();
             }
-        });
-
-        btnKeepRunning.setOnClickListener(v -> {
-            stopConfirmStrip.setVisibility(View.GONE);
-        });
-
-        btnConfirmStop.setOnClickListener(v -> {
-            stopConfirmStrip.setVisibility(View.GONE);
-            stopServer();
         });
 
         btnOwner.setOnClickListener(v -> {
@@ -228,8 +217,6 @@ public class MainActivity extends Activity {
         pressFeedback(btnCopy);
         pressFeedback(btnStop);
         pressFeedback(btnFlipHost);
-        pressFeedback(btnKeepRunning);
-        pressFeedback(btnConfirmStop);
 
         applyState(AppState.STOPPED, Health.down());
     }
@@ -301,11 +288,31 @@ public class MainActivity extends Activity {
     }
 
     void stopServer() {
-        PhotoDropService.stop(this);
         starting = false;
-        sendCmd(new String[]{"stop"}, "Stopping Photo Drop");
-        handler.postDelayed(this::refresh, 2000);
-        handler.postDelayed(this::refresh, 4000);
+        toast("Stopping Photo Drop...");
+        applyState(AppState.STOPPED, Health.down());
+
+        PhotoDropService.stop(this);
+
+        exec.execute(() -> {
+            // 1. Direct HTTP shutdown request to running server on loopback
+            try {
+                URL u = new URL("http://127.0.0.1:" + PORT + "/api/stop?k=" + ownerToken);
+                HttpURLConnection conn = (HttpURLConnection) u.openConnection();
+                conn.setRequestMethod("POST");
+                conn.setConnectTimeout(1500);
+                conn.setReadTimeout(1500);
+                conn.getResponseCode();
+                conn.disconnect();
+            } catch (Exception ignored) {
+            }
+
+            // 2. Termux run command fallback
+            Termux.stop(MainActivity.this);
+        });
+
+        handler.postDelayed(this::refresh, 1200);
+        handler.postDelayed(this::refresh, 3000);
     }
 
     void sendCmd(String[] args, String label) {
@@ -430,7 +437,6 @@ public class MainActivity extends Activity {
                 permCard.setVisibility(View.GONE);
                 liveControls.setVisibility(View.GONE);
                 liveStopSection.setVisibility(View.GONE);
-                stopConfirmStrip.setVisibility(View.GONE);
                 break;
 
             case STARTING:
@@ -443,7 +449,6 @@ public class MainActivity extends Activity {
                 permCard.setVisibility(View.GONE);
                 liveControls.setVisibility(View.GONE);
                 liveStopSection.setVisibility(View.GONE);
-                stopConfirmStrip.setVisibility(View.GONE);
                 break;
 
             case ONLINE_LOCAL:
@@ -454,7 +459,6 @@ public class MainActivity extends Activity {
                 handoffCard.setVisibility(View.VISIBLE);
                 liveControls.setVisibility(View.VISIBLE);
                 liveStopSection.setVisibility(View.VISIBLE);
-                stopConfirmStrip.setVisibility(View.GONE);
 
                 String shareUrl = currentShareUrl();
                 String domain = domainOf(shareUrl);
@@ -507,7 +511,6 @@ public class MainActivity extends Activity {
                 permCard.setVisibility(View.VISIBLE);
                 liveControls.setVisibility(View.GONE);
                 liveStopSection.setVisibility(View.GONE);
-                stopConfirmStrip.setVisibility(View.GONE);
                 break;
         }
     }

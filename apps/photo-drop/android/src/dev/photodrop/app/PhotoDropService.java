@@ -192,10 +192,24 @@ public class PhotoDropService extends Service {
 
     /** Stop the Termux server and drop the notification. */
     void shutdown() {
-        // Stop ticking first, so the watchdog sees a dead owner rather than
-        // racing the deliberate teardown.
         beat.removeCallbacks(ticker);
-        Termux.stop(this);
+        File hb = new File(getExternalFilesDir(null), "heartbeat");
+        if (hb.exists()) hb.delete();
+
+        new Thread(() -> {
+            try {
+                java.net.URL u = new java.net.URL("http://127.0.0.1:8080/api/stop");
+                java.net.HttpURLConnection conn = (java.net.HttpURLConnection) u.openConnection();
+                conn.setRequestMethod("POST");
+                conn.setConnectTimeout(1500);
+                conn.setReadTimeout(1500);
+                conn.getResponseCode();
+                conn.disconnect();
+            } catch (Exception ignored) {
+            }
+            Termux.stop(PhotoDropService.this);
+        }).start();
+
         stopForeground(true);
         stopSelf();
     }
@@ -213,6 +227,8 @@ public class PhotoDropService extends Service {
     @Override
     public void onDestroy() {
         beat.removeCallbacks(ticker);
+        File hb = new File(getExternalFilesDir(null), "heartbeat");
+        if (hb.exists()) hb.delete();
         stopForeground(true);
         super.onDestroy();
     }

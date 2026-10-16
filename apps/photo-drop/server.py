@@ -508,11 +508,20 @@ def healthz():
             dest_size=total,
             used=max(0, total - free),
             reserve=RESERVE_BYTES,
-            sessions=len(batch_ids_recent()),
+            sessions=len(batch_ids_active()),
+            total_sessions=len(batch_ids_recent()),
             public_url=get_public_url(),
             lan_ip=get_lan_ip(),
         )
     return jsonify(ok=True)
+
+
+def batch_ids_active() -> set[str]:
+    """Batches with file modifications within the last 120 seconds."""
+    if not BATCHES.exists():
+        return set()
+    cutoff = time.time() - 120
+    return {p.name for p in BATCHES.iterdir() if p.is_dir() and p.stat().st_mtime > cutoff}
 
 
 def batch_ids_recent() -> set[str]:
@@ -520,6 +529,39 @@ def batch_ids_recent() -> set[str]:
         return set()
     cutoff = time.time() - SESSION_TTL
     return {p.name for p in BATCHES.iterdir() if p.is_dir() and p.stat().st_mtime > cutoff}
+
+
+@app.route("/api/stop", methods=["GET", "POST"])
+@app.route("/stop", methods=["GET", "POST"])
+def stop_endpoint():
+    drop = request.headers.get("X-PD-Token", "") or request.args.get("token", "")
+    owner = request.args.get("k", "") or request.args.get("owner", "")
+    is_local = request.remote_addr in {"127.0.0.1", "::1", "localhost"}
+
+    if not (is_local or check_token(drop, TOKEN) or (OWNER_OK and check_token(owner, OWNER_TOKEN))):
+        abort(403)
+
+    def do_shutdown():
+        time.sleep(0.3)
+        try:
+            subprocess.run(["pkill", "-9", "-f", "cloudflared"], check=False)
+        except Exception:
+            pass
+        try:
+            (EXPORT / "public-url.txt").unlink(missing_ok=True)
+            (STATE / "url").unlink(missing_ok=True)
+            (EXPORT / "heartbeat").unlink(missing_ok=True)
+        except Exception:
+            pass
+        try:
+            subprocess.run(["termux-wake-unlock"], check=False)
+        except Exception:
+            pass
+        os._exit(0)
+
+    import threading
+    threading.Thread(target=do_shutdown, daemon=True).start()
+    return jsonify(ok=True, message="stopping")
 
 
 @app.get("/d/<token>/")
