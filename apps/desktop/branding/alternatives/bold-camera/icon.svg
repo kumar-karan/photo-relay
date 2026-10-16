@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+<defs><linearGradient id="pg" x1="200" y1="180" x2="824" y2="844" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#9d8cff"/><stop offset=".52" stop-color="#7d6cff"/><stop offset="1" stop-color="#40c6dd"/></linearGradient><radialGradient id="pglow" cx=".5" cy=".34" r=".72"><stop offset="0" stop-color="#7d6cff" stop-opacity=".34"/><stop offset=".6" stop-color="#7d6cff" stop-opacity=".06"/><stop offset="1" stop-color="#7d6cff" stop-opacity="0"/></radialGradient></defs>
+<rect width="1024" height="1024" rx="232" fill="#0b0b0d"/>
+<rect width="1024" height="1024" rx="232" fill="url(#pglow)"/>
+<rect x="6" y="6" width="1012" height="1012" rx="228" fill="none" stroke="#ffffff" stroke-opacity=".06" stroke-width="12"/>
+<g transform="translate(176 176) scale(28)" fill="url(#pg)" fill-rule="evenodd"><path fill-rule="evenodd" d="M4 7.4h3.3l1.5-2.3h6.4l1.5 2.3H20a2.3 2.3 0 0 1 2.3 2.3v8.4a2.3 2.3 0 0 1-2.3 2.3H4a2.3 2.3 0 0 1-2.3-2.3V9.7A2.3 2.3 0 0 1 4 7.4Zm8 3.05a3.25 3.25 0 1 0 0 6.5 3.25 3.25 0 1 0 0-6.5Zm0 2.05a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 1 0 0-2.4Z"/></g>
+</svg>

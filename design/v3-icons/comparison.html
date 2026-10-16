@@ -1,0 +1,704 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Photo Relay — icon direction v3</title>
+<style>
+  :root{
+    --i1:#FFC24B; --i2:#F4573E; --glow:#FF8A3D; --core:#FFD98A;
+    --bg:#0b0b0d; --surf:#141418; --surf2:#191921; --line:rgba(255,255,255,.09);
+    --line2:rgba(255,255,255,.17); --ink:#f4f5f7; --dim:#a2a6b0; --faint:#6d7280;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  html{background:var(--bg);color:var(--ink);font-family:var(--sans);
+    -webkit-font-smoothing:antialiased}
+  body{margin:0;padding:44px 40px 72px}
+  .wrap{max-width:1120px;margin:0 auto}
+  h1{font-size:30px;letter-spacing:-.02em;margin:0 0 8px}
+  .lede{color:var(--dim);font-size:15px;line-height:1.55;max-width:74ch;margin:0 0 8px}
+  .lede b{color:var(--ink)}
+  h2{font-size:13px;font-weight:600;letter-spacing:.10em;text-transform:uppercase;
+    color:var(--faint);margin:44px 0 16px}
+  code{font-family:var(--mono);font-size:12px;color:var(--dim)}
+
+  /* palette switcher ---------------------------------------------------- */
+  .pals{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .pcard{display:flex;flex-direction:column;gap:10px;text-align:left;cursor:pointer;
+    background:var(--surf);border:1px solid var(--line);border-radius:14px;padding:14px;
+    color:var(--ink);font:inherit;transition:border-color .15s,background .15s}
+  .pcard:hover{border-color:var(--line2)}
+  .pcard.active{border-color:var(--i1);background:var(--surf2);
+    box-shadow:0 0 0 1px var(--i1) inset}
+  .swatch{height:44px;border-radius:9px;
+    background:linear-gradient(135deg,var(--s1),var(--s2));
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}
+  .pname{font-size:14px;font-weight:600;display:flex;flex-direction:column;gap:2px}
+  .pname em{font-style:normal;font-size:11px;font-weight:500;color:var(--faint)}
+  .hexes{color:var(--dim);font-size:11px}
+
+  /* same mark, four palettes ------------------------------------------- */
+  .four{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .four-cell{display:flex;flex-direction:column;align-items:center;gap:10px;
+    padding:18px 12px;background:var(--surf);border:1px solid var(--line);border-radius:16px}
+  .four-name{font-size:13px;font-weight:600}
+  .four-cell code{font-size:11px;color:var(--faint)}
+
+  /* concept grid -------------------------------------------------------- */
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .tile{background:var(--surf);border:1px solid var(--line);border-radius:18px;
+    padding:18px 18px 20px;display:flex;flex-direction:column;gap:16px}
+  .tile-top{display:flex;gap:12px;align-items:baseline}
+  .idx{font-family:var(--mono);font-size:12px;color:var(--faint)}
+  .tile-meta h3{margin:0 0 4px;font-size:16px;letter-spacing:-.01em}
+  .tile-meta p{margin:0;font-size:12.5px;line-height:1.5;color:var(--dim)}
+  .tile-body{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+  .ic-wrap{flex:1;display:flex;align-items:center;justify-content:center}
+  .ic{width:132px;height:132px;display:block;
+    filter:drop-shadow(0 10px 22px rgba(0,0,0,.5))}
+  .four-cell .ic{width:104px;height:104px}
+  .marks{display:flex;flex-direction:column;gap:12px;padding-bottom:8px}
+  .mk-box{display:grid;place-items:center;width:40px;height:40px;border-radius:10px;
+    background:#0e0e12;border:1px solid var(--line)}
+  .mk{width:24px;height:24px}
+
+  /* palette rationale --------------------------------------------------- */
+  .rationale{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+  .rcard{background:var(--surf);border:1px solid var(--line);border-radius:16px;padding:18px}
+  .rhead{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+  .rdot{width:26px;height:26px;border-radius:8px;
+    background:linear-gradient(135deg,var(--d1),var(--d2))}
+  .rhead b{font-size:14px}
+  .rhead code{margin-left:auto;font-size:11px;color:var(--faint)}
+  .rcard p{margin:0;font-size:12.5px;line-height:1.55;color:var(--dim)}
+
+  .note{font-size:12.5px;color:var(--faint);line-height:1.6;margin-top:28px;
+    border-top:1px solid var(--line);padding-top:20px}
+  .note code{color:var(--dim)}
+  footer{margin-top:34px;font-size:12px;color:var(--faint)}
+  @media(max-width:900px){
+    body{padding:28px 20px 56px}
+    .pals,.four{grid-template-columns:repeat(2,1fr)}
+    .grid{grid-template-columns:1fr}
+    .rationale{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Photo Relay — icon direction v3</h1>
+  <p class="lede">Out with the purple/indigo + cyan AI look. In: <b>four crafted
+  palette directions</b> and <b>nine marks</b>, each shipped as a 24px
+  <code>mark.svg</code>, a 1024px dark-squircle <code>icon.svg</code> and a
+  <code>icon-1024.png</code>. Recolour every concept live with the palette
+  buttons below; the file paths are listed at the end.</p>
+
+  <h2>Palette directions</h2>
+  <div class="pals" id="pals">
+    <button class="pcard active" data-palette="ember" type="button">
+        <span class="swatch" style="--s1:#FFC24B;--s2:#F4573E"></span>
+        <span class="pname">Ember<em>warm · recommended</em></span>
+        <code class="hexes">#FFC24B · #F4573E · #FF8A3D</code>
+      </button>
+<button class="pcard" data-palette="verdant" type="button">
+        <span class="swatch" style="--s1:#93E9AC;--s2:#12B981"></span>
+        <span class="pname">Verdant<em>green · trust</em></span>
+        <code class="hexes">#93E9AC · #12B981 · #23C08A</code>
+      </button>
+<button class="pcard" data-palette="marine" type="button">
+        <span class="swatch" style="--s1:#8FC2FF;--s2:#2E6BE6"></span>
+        <span class="pname">Marine<em>blue · calm</em></span>
+        <code class="hexes">#8FC2FF · #2E6BE6 · #5B9BFF</code>
+      </button>
+<button class="pcard" data-palette="citrine" type="button">
+        <span class="swatch" style="--s1:#E8F87A;--s2:#7BD34E"></span>
+        <span class="pname">Citrine<em>lime · bold</em></span>
+        <code class="hexes">#E8F87A · #7BD34E · #A6E85A</code>
+      </button>
+  </div>
+
+  <h2>The same mark, four ways</h2>
+  <div class="four">
+    <div class="four-cell" style="--i1:#FFC24B;--i2:#F4573E;--glow:#FF8A3D;--core:#FFD98A">
+        <div class="ic-wrap"><svg class="ic" viewBox="0 0 1024 1024" role="img" aria-label="Relay">
+      <defs>
+        <linearGradient id="four-ember-s" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="var(--i1)"/><stop offset="1" stop-color="var(--i2)"/>
+        </linearGradient>
+        <radialGradient id="four-ember-glow" cx="0.5" cy="0.34" r="0.78">
+          <stop offset="0" stop-color="var(--glow)" stop-opacity="0.30"/>
+          <stop offset="0.55" stop-color="var(--glow)" stop-opacity="0.05"/>
+          <stop offset="1" stop-color="var(--glow)" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <rect width="1024" height="1024" rx="232" fill="#0b0b0d"/>
+      <rect width="1024" height="1024" rx="232" fill="url(#four-ember-glow)"/>
+      <rect x="6" y="6" width="1012" height="1012" rx="228" fill="none" stroke="#fff" stroke-opacity="0.07" stroke-width="12"/>
+      <g transform="translate(196 196) scale(26.333)" fill="none" stroke="url(#four-ember-s)"
+         stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 8.5h13.6"/>
+      <path d="M13.4 4.6 17.4 8.5 13.4 12.4"/>
+      <path d="M21 15.5H7.4"/>
+      <path d="M10.6 11.6 6.6 15.5 10.6 19.4"/>
+      </g>
+    </svg></div>
+        <div class="four-name">Ember</div>
+        <code>#FFC24B → #F4573E</code>
+      </div>
+<div class="four-cell" style="--i1:#93E9AC;--i2:#12B981;--glow:#23C08A;--core:#C4F6D2">
+        <div class="ic-wrap"><svg class="ic" viewBox="0 0 1024 1024" role="img" aria-label="Relay">
+      <defs>
+        <linearGradient id="four-verdant-s" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="var(--i1)"/><stop offset="1" stop-color="var(--i2)"/>
+        </linearGradient>
+        <radialGradient id="four-verdant-glow" cx="0.5" cy="0.34" r="0.78">
+          <stop offset="0" stop-color="var(--glow)" stop-opacity="0.30"/>
+          <stop offset="0.55" stop-color="var(--glow)" stop-opacity="0.05"/>
+          <stop offset="1" stop-color="var(--glow)" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <rect width="1024" height="1024" rx="232" fill="#0b0b0d"/>
+      <rect width="1024" height="1024" rx="232" fill="url(#four-verdant-glow)"/>
+      <rect x="6" y="6" width="1012" height="1012" rx="228" fill="none" stroke="#fff" stroke-opacity="0.07" stroke-width="12"/>
+      <g transform="translate(196 196) scale(26.333)" fill="none" stroke="url(#four-verdant-s)"
+         stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 8.5h13.6"/>
+      <path d="M13.4 4.6 17.4 8.5 13.4 12.4"/>
+      <path d="M21 15.5H7.4"/>
+      <path d="M10.6 11.6 6.6 15.5 10.6 19.4"/>
+      </g>
+    </svg></div>
+        <div class="four-name">Verdant</div>
+        <code>#93E9AC → #12B981</code>
+      </div>
+<div class="four-cell" style="--i1:#8FC2FF;--i2:#2E6BE6;--glow:#5B9BFF;--core:#CFE2FF">
+        <div class="ic-wrap"><svg class="ic" viewBox="0 0 1024 1024" role="img" aria-label="Relay">
+      <defs>
+        <linearGradient id="four-marine-s" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="var(--i1)"/><stop offset="1" stop-color="var(--i2)"/>
+        </linearGradient>
+        <radialGradient id="four-marine-glow" cx="0.5" cy="0.34" r="0.78">
+          <stop offset="0" stop-color="var(--glow)" stop-opacity="0.30"/>
+          <stop offset="0.55" stop-color="var(--glow)" stop-opacity="0.05"/>
+          <stop offset="1" stop-color="var(--glow)" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <rect width="1024" height="1024" rx="232" fill="#0b0b0d"/>
+      <rect width="1024" height="1024" rx="232" fill="url(#four-marine-glow)"/>
+      <rect x="6" y="6" width="1012" height="1012" rx="228" fill="none" stroke="#fff" stroke-opacity="0.07" stroke-width="12"/>
+      <g transform="translate(196 196) scale(26.333)" fill="none" stroke="url(#four-marine-s)"
+         stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 8.5h13.6"/>
+      <path d="M13.4 4.6 17.4 8.5 13.4 12.4"/>
+      <path d="M21 15.5H7.4"/>
+      <path d="M10.6 11.6 6.6 15.5 10.6 19.4"/>
+      </g>
+    </svg></div>
+        <div class="four-name">Marine</div>
+        <code>#8FC2FF → #2E6BE6</code>
+      </div>
+<div class="four-cell" style="--i1:#E8F87A;--i2:#7BD34E;--glow:#A6E85A;--core:#F2FBB8">
+        <div class="ic-wrap"><svg class="ic" viewBox="0 0 1024 1024" role="img" aria-label="Relay">
+      <defs>
+        <linearGradient id="four-citrine-s" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="var(--i1)"/><stop offset="1" stop-color="var(--i2)"/>
+        </linearGradient>
+        <radialGradient id="four-citrine-glow" cx="0.5" cy="0.34" r="0.78">
+          <stop offset="0" stop-color="var(--glow)" stop-opacity="0.30"/>
+          <stop offset="0.55" stop-color="var(--glow)" stop-opacity="0.05"/>
+          <stop offset="1" stop-color="var(--glow)" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <rect width="1024" height="1024" rx="232" fill="#0b0b0d"/>
+      <rect width="1024" height="1024" rx="232" fill="url(#four-citrine-glow)"/>
+      <rect x="6" y="6" width="1012" height="1012" rx="228" fill="none" stroke="#fff" stroke-opacity="0.07" stroke-width="12"/>
+      <g transform="translate(196 196) scale(26.333)" fill="none" stroke="url(#four-citrine-s)"
+         stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 8.5h13.6"/>
+      <path d="M13.4 4.6 17.4 8.5 13.4 12.4"/>
+      <path d="M21 15.5H7.4"/>
+      <path d="M10.6 11.6 6.6 15.5 10.6 19.4"/>
+      </g>
+    </svg></div>
+        <div class="four-name">Citrine</div>
+        <code>#E8F87A → #7BD34E</code>
+      </div>
+  </div>
+
+  <h2>Nine marks <span style="color:var(--faint);text-transform:none;letter-spacing:0">— shown in <span id="activeName">Ember</span></span></h2>
+  <div class="grid">
+    <article class="tile">
+      <div class="tile-top">
+        <span class="idx">01</span>
+        <div class="tile-meta"><h3>Relay</h3><p>Two opposed arrows — the literal handoff between iPhone and Samsung.</p></div>
+      </div>
+      <div class="tile-body">
+        <div class="ic-wrap"><svg class="ic" viewBox="0 0 1024 1024" role="img" aria-label="Relay">
+      <defs>
+        <linearGradient id="t1-s" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="var(--i1)"/><stop offset="1" stop-color="var(--i2)"/>
+        </linearGradient>
+        <radialGradient id="t1-glow" cx="0.5" cy="0.34" r="0.78">
+          <stop offset="0" stop-color="var(--glow)" stop-opacity="0.30"/>
+          <stop offset="0.55" stop-color="var(--glow)" stop-opacity="0.05"/>
+          <stop offset="1" stop-color="var(--glow)" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <rect width="1024" height="1024" rx="232" fill="#0b0b0d"/>
+      <rect width="1024" height="1024" rx="232" fill="url(#t1-glow)"/>
+      <rect x="6" y="6" width="1012" height="1012" rx="228" fill="none" stroke="#fff" stroke-opacity="0.07" stroke-width="12"/>
+      <g transform="translate(196 196) scale(26.333)" fill="none" stroke="url(#t1-s)"
+         stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 8.5h13.6"/>
+      <path d="M13.4 4.6 17.4 8.5 13.4 12.4"/>
+      <path d="M21 15.5H7.4"/>
+      <path d="M10.6 11.6 6.6 15.5 10.6 19.4"/>
+      </g>
+    </svg></div>
+        <div class="marks"><span class="mk-box" style="color:var(--i1)"><svg class="mk" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M3 8.5h13.6"/>
+      <path d="M13.4 4.6 17.4 8.5 13.4 12.4"/>
+      <path d="M21 15.5H7.4"/>
+      <path d="M10.6 11.6 6.6 15.5 10.6 19.4"/>
+    </svg></span><span class="mk-box" style="color:var(--i2)"><svg class="mk" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M3 8.5h13.6"/>
+      <path d="M13.4 4.6 17.4 8.5 13.4 12.4"/>
+      <path d="M21 15.5H7.4"/>
+      <path d="M10.6 11.6 6.6 15.5 10.6 19.4"/>
+    </svg></span></div>
+      </div>
+    </article>
+<article class="tile">
+      <div class="tile-top">
+        <span class="idx">02</span>
+        <div class="tile-meta"><h3>Aperture</h3><p>The refined iris — keeps the brand's photo DNA, now with a lit core.</p></div>
+      </div>
+      <div class="tile-body">
+        <div class="ic-wrap"><svg class="ic" viewBox="0 0 1024 1024" role="img" aria-label="Aperture">
+      <defs>
+        <linearGradient id="t2-s" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="var(--i1)"/><stop offset="1" stop-color="var(--i2)"/>
+        </linearGradient>
+        <radialGradient id="t2-glow" cx="0.5" cy="0.34" r="0.78">
+          <stop offset="0" stop-color="var(--glow)" stop-opacity="0.30"/>
+          <stop offset="0.55" stop-color="var(--glow)" stop-opacity="0.05"/>
+          <stop offset="1" stop-color="var(--glow)" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <rect width="1024" height="1024" rx="232" fill="#0b0b0d"/>
+      <rect width="1024" height="1024" rx="232" fill="url(#t2-glow)"/>
+      <rect x="6" y="6" width="1012" height="1012" rx="228" fill="none" stroke="#fff" stroke-opacity="0.07" stroke-width="12"/>
+      <g transform="translate(196 196) scale(26.333)" fill="none" stroke="url(#t2-s)"
+         stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="9.4"/>
+      <path d="M14.31 8 20.05 17.94"/>
+      <path d="M9.69 8 21.17 8"/>
+      <path d="M7.38 12 13.12 2.06"/>
+      <path d="M9.69 16 3.95 6.06"/>
+      <path d="M14.31 16 2.83 16"/>
+      <path d="M16.62 12 10.88 21.94"/>
+      <circle cx="12" cy="12" r="1.7" fill="var(--core)"/>
+      </g>
+    </svg></div>
+        <div class="marks"><span class="mk-box" style="color:var(--i1)"><svg class="mk" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="9.4"/>
+      <path d="M14.31 8 20.05 17.94"/>
+      <path d="M9.69 8 21.17 8"/>
+      <path d="M7.38 12 13.12 2.06"/>
+      <path d="M9.69 16 3.95 6.06"/>
+      <path d="M14.31 16 2.83 16"/>
+      <path d="M16.62 12 10.88 21.94"/>
+      <circle cx="12" cy="12" r="1.7" fill="currentColor"/>
+    </svg></span><span class="mk-box" style="color:var(--i2)"><svg class="mk" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="9.4"/>
+      <path d="M14.31 8 20.05 17.94"/>
+      <path d="M9.69 8 21.17 8"/>
+      <path d="M7.38 12 13.12 2.06"/>
+      <path d="M9.69 16 3.95 6.06"/>
+      <path d="M14.31 16 2.83 16"/>
+      <path d="M16.62 12 10.88 21.94"/>
+      <circle cx="12" cy="12" r="1.7" fill="currentColor"/>
+    </svg></span></div>
+      </div>
+    </article>
+<article class="tile">
+      <div class="tile-top">
+        <span class="idx">03</span>
+        <div class="tile-meta"><h3>Conduit</h3><p>Two device slabs with a straight transfer between them.</p></div>
+      </div>
+      <div class="tile-body">
+        <div class="ic-wrap"><svg class="ic" viewBox="0 0 1024 1024" role="img" aria-label="Conduit">
+      <defs>
+        <linearGradient id="t3-s" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="var(--i1)"/><stop offset="1" stop-color="var(--i2)"/>
+        </linearGradient>
+        <radialGradient id="t3-glow" cx="0.5" cy="0.34" r="0.78">
+          <stop offset="0" stop-color="var(--glow)" stop-opacity="0.30"/>
+          <stop offset="0.55" stop-color="var(--glow)" stop-opacity="0.05"/>
+          <stop offset="1" stop-color="var(--glow)" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <rect width="1024" height="1024" rx="232" fill="#0b0b0d"/>
+      <rect width="1024" height="1024" rx="232" fill="url(#t3-glow)"/>
+      <rect x="6" y="6" width="1012" height="1012" rx="228" fill="none" stroke="#fff" stroke-opacity="0.07" stroke-width="12"/>
+      <g transform="translate(196 196) scale(26.333)" fill="none" stroke="url(#t3-s)"
+         stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3.4" y="5" width="4.4" height="14" rx="1.7"/>
+      <rect x="16.2" y="5" width="4.4" height="14" rx="1.7"/>
+      <path d="M9.4 12h5.2"/>
+      <path d="M12.7 10.2 14.6 12 12.7 13.8"/>
+      </g>
+    </svg></div>
+        <div class="marks"><span class="mk-box" style="color:var(--i1)"><svg class="mk" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <rect x="3.4" y="5" width="4.4" height="14" rx="1.7"/>
+      <rect x="16.2" y="5" width="4.4" height="14" rx="1.7"/>
+      <path d="M9.4 12h5.2"/>
+      <path d="M12.7 10.2 14.6 12 12.7 13.8"/>
+    </svg></span><span class="mk-box" style="color:var(--i2)"><svg class="mk" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <rect x="3.4" y="5" width="4.4" height="14" rx="1.7"/>
+      <rect x="16.2" y="5" width="4.4" height="14" rx="1.7"/>
+      <path d="M9.4 12h5.2"/>
+      <path d="M12.7 10.2 14.6 12 12.7 13.8"/>
+    </svg></span></div>
+      </div>
+    </article>
+<article class="tile">
+      <div class="tile-top">
+        <span class="idx">04</span>
+        <div class="tile-meta"><h3>Frames</h3><p>Two photo frames sliding past each other — a library on the move.</p></div>
+      </div>
+      <div class="tile-body">
+        <div class="ic-wrap"><svg class="ic" viewBox="0 0 1024 1024" role="img" aria-label="Frames">
+      <defs>
+        <linearGradient id="t4-s" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="var(--i1)"/><stop offset="1" stop-color="var(--i2)"/>
+        </linearGradient>
+        <radialGradient id="t4-glow" cx="0.5" cy="0.34" r="0.78">
+          <stop offset="0" stop-color="var(--glow)" stop-opacity="0.30"/>
+          <stop offset="0.55" stop-color="var(--glow)" stop-opacity="0.05"/>
+          <stop offset="1" stop-color="var(--glow)" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <rect width="1024" height="1024" rx="232" fill="#0b0b0d"/>
+      <rect width="1024" height="1024" rx="232" fill="url(#t4-glow)"/>
+      <rect x="6" y="6" width="1012" height="1012" rx="228" fill="none" stroke="#fff" stroke-opacity="0.07" stroke-width="12"/>
+      <g transform="translate(196 196) scale(26.333)" fill="none" stroke="url(#t4-s)"
+         stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3.6" y="9.2" width="10.6" height="8.6" rx="2.1"/>
+      <rect x="9.8" y="6.2" width="10.6" height="8.6" rx="2.1" fill="var(--i2)" fill-opacity="0.16"/>
+      <path d="M4.6 20.4h3.2"/>
+      <path d="M9.8 20.4h2.2"/>
+      </g>
+    </svg></div>
+        <div class="marks"><span class="mk-box" style="color:var(--i1)"><svg class="mk" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <rect x="3.6" y="9.2" width="10.6" height="8.6" rx="2.1"/>
+      <rect x="9.8" y="6.2" width="10.6" height="8.6" rx="2.1" fill="currentColor" fill-opacity="0.16"/>
+      <path d="M4.6 20.4h3.2"/>
+      <path d="M9.8 20.4h2.2"/>
+    </svg></span><span class="mk-box" style="color:var(--i2)"><svg class="mk" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <rect x="3.6" y="9.2" width="10.6" height="8.6" rx="2.1"/>
+      <rect x="9.8" y="6.2" width="10.6" height="8.6" rx="2.1" fill="currentColor" fill-opacity="0.16"/>
+      <path d="M4.6 20.4h3.2"/>
+      <path d="M9.8 20.4h2.2"/>
+    </svg></span></div>
+      </div>
+    </article>
+<article class="tile">
+      <div class="tile-top">
+        <span class="idx">05</span>
+        <div class="tile-meta"><h3>Focus</h3><p>A lens with a locked focus point — sharp, minimal, photographic.</p></div>
+      </div>
+      <div class="tile-body">
+        <div class="ic-wrap"><svg class="ic" viewBox="0 0 1024 1024" role="img" aria-label="Focus">
+      <defs>
+        <linearGradient id="t5-s" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="var(--i1)"/><stop offset="1" stop-color="var(--i2)"/>
+        </linearGradient>
+        <radialGradient id="t5-glow" cx="0.5" cy="0.34" r="0.78">
+          <stop offset="0" stop-color="var(--glow)" stop-opacity="0.30"/>
+          <stop offset="0.55" stop-color="var(--glow)" stop-opacity="0.05"/>
+          <stop offset="1" stop-color="var(--glow)" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <rect width="1024" height="1024" rx="232" fill="#0b0b0d"/>
+      <rect width="1024" height="1024" rx="232" fill="url(#t5-glow)"/>
+      <rect x="6" y="6" width="1012" height="1012" rx="228" fill="none" stroke="#fff" stroke-opacity="0.07" stroke-width="12"/>
+      <g transform="translate(196 196) scale(26.333)" fill="none" stroke="url(#t5-s)"
+         stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="9.4"/>
+      <circle cx="12" cy="12" r="5.1"/>
+      <circle cx="12" cy="12" r="1.8" fill="var(--core)"/>
+      <path d="M12 2.6v2.2"/>
+      <path d="M12 19.2v2.2"/>
+      <path d="M2.6 12h2.2"/>
+      <path d="M19.2 12h2.2"/>
+      </g>
+    </svg></div>
+        <div class="marks"><span class="mk-box" style="color:var(--i1)"><svg class="mk" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="9.4"/>
+      <circle cx="12" cy="12" r="5.1"/>
+      <circle cx="12" cy="12" r="1.8" fill="currentColor"/>
+      <path d="M12 2.6v2.2"/>
+      <path d="M12 19.2v2.2"/>
+      <path d="M2.6 12h2.2"/>
+      <path d="M19.2 12h2.2"/>
+    </svg></span><span class="mk-box" style="color:var(--i2)"><svg class="mk" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="9.4"/>
+      <circle cx="12" cy="12" r="5.1"/>
+      <circle cx="12" cy="12" r="1.8" fill="currentColor"/>
+      <path d="M12 2.6v2.2"/>
+      <path d="M12 19.2v2.2"/>
+      <path d="M2.6 12h2.2"/>
+      <path d="M19.2 12h2.2"/>
+    </svg></span></div>
+      </div>
+    </article>
+<article class="tile">
+      <div class="tile-top">
+        <span class="idx">06</span>
+        <div class="tile-meta"><h3>Orbit</h3><p>A ring with a satellite catching it up — continuous sync.</p></div>
+      </div>
+      <div class="tile-body">
+        <div class="ic-wrap"><svg class="ic" viewBox="0 0 1024 1024" role="img" aria-label="Orbit">
+      <defs>
+        <linearGradient id="t6-s" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="var(--i1)"/><stop offset="1" stop-color="var(--i2)"/>
+        </linearGradient>
+        <radialGradient id="t6-glow" cx="0.5" cy="0.34" r="0.78">
+          <stop offset="0" stop-color="var(--glow)" stop-opacity="0.30"/>
+          <stop offset="0.55" stop-color="var(--glow)" stop-opacity="0.05"/>
+          <stop offset="1" stop-color="var(--glow)" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <rect width="1024" height="1024" rx="232" fill="#0b0b0d"/>
+      <rect width="1024" height="1024" rx="232" fill="url(#t6-glow)"/>
+      <rect x="6" y="6" width="1012" height="1012" rx="228" fill="none" stroke="#fff" stroke-opacity="0.07" stroke-width="12"/>
+      <g transform="translate(196 196) scale(26.333)" fill="none" stroke="url(#t6-s)"
+         stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 3.1a8.9 8.9 0 1 0 8.9 8.9"/>
+      <circle cx="20" cy="5.1" r="2.1" fill="var(--core)" stroke="none"/>
+      <path d="M17.4 8.4 20 5.1"/>
+      </g>
+    </svg></div>
+        <div class="marks"><span class="mk-box" style="color:var(--i1)"><svg class="mk" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M12 3.1a8.9 8.9 0 1 0 8.9 8.9"/>
+      <circle cx="20" cy="5.1" r="2.1" fill="currentColor" stroke="none"/>
+      <path d="M17.4 8.4 20 5.1"/>
+    </svg></span><span class="mk-box" style="color:var(--i2)"><svg class="mk" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M12 3.1a8.9 8.9 0 1 0 8.9 8.9"/>
+      <circle cx="20" cy="5.1" r="2.1" fill="currentColor" stroke="none"/>
+      <path d="M17.4 8.4 20 5.1"/>
+    </svg></span></div>
+      </div>
+    </article>
+<article class="tile">
+      <div class="tile-top">
+        <span class="idx">07</span>
+        <div class="tile-meta"><h3>Shutter</h3><p>Six-blade shutter as a pinwheel — motion and capture in one mark.</p></div>
+      </div>
+      <div class="tile-body">
+        <div class="ic-wrap"><svg class="ic" viewBox="0 0 1024 1024" role="img" aria-label="Shutter">
+      <defs>
+        <linearGradient id="t7-s" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="var(--i1)"/><stop offset="1" stop-color="var(--i2)"/>
+        </linearGradient>
+        <radialGradient id="t7-glow" cx="0.5" cy="0.34" r="0.78">
+          <stop offset="0" stop-color="var(--glow)" stop-opacity="0.30"/>
+          <stop offset="0.55" stop-color="var(--glow)" stop-opacity="0.05"/>
+          <stop offset="1" stop-color="var(--glow)" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <rect width="1024" height="1024" rx="232" fill="#0b0b0d"/>
+      <rect width="1024" height="1024" rx="232" fill="url(#t7-glow)"/>
+      <rect x="6" y="6" width="1012" height="1012" rx="228" fill="none" stroke="#fff" stroke-opacity="0.07" stroke-width="12"/>
+      <g transform="translate(196 196) scale(26.333)" fill="none" stroke="url(#t7-s)"
+         stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="9.4"/>
+      <path d="M12 2.6 16 9.6"/>
+      <path d="M20.1 7.7 12.6 9.9"/>
+      <path d="M20.1 16.3 14.9 10.6"/>
+      <path d="M12 21.4 8 14.4"/>
+      <path d="M3.9 16.3 11.4 14.1"/>
+      <path d="M3.9 7.7 9.1 13.4"/>
+      <circle cx="12" cy="12" r="1.5" fill="var(--core)"/>
+      </g>
+    </svg></div>
+        <div class="marks"><span class="mk-box" style="color:var(--i1)"><svg class="mk" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="9.4"/>
+      <path d="M12 2.6 16 9.6"/>
+      <path d="M20.1 7.7 12.6 9.9"/>
+      <path d="M20.1 16.3 14.9 10.6"/>
+      <path d="M12 21.4 8 14.4"/>
+      <path d="M3.9 16.3 11.4 14.1"/>
+      <path d="M3.9 7.7 9.1 13.4"/>
+      <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+    </svg></span><span class="mk-box" style="color:var(--i2)"><svg class="mk" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="9.4"/>
+      <path d="M12 2.6 16 9.6"/>
+      <path d="M20.1 7.7 12.6 9.9"/>
+      <path d="M20.1 16.3 14.9 10.6"/>
+      <path d="M12 21.4 8 14.4"/>
+      <path d="M3.9 16.3 11.4 14.1"/>
+      <path d="M3.9 7.7 9.1 13.4"/>
+      <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+    </svg></span></div>
+      </div>
+    </article>
+<article class="tile">
+      <div class="tile-top">
+        <span class="idx">08</span>
+        <div class="tile-meta"><h3>Beam</h3><p>Two ends with particles crossing the gap — a live, wireless transfer.</p></div>
+      </div>
+      <div class="tile-body">
+        <div class="ic-wrap"><svg class="ic" viewBox="0 0 1024 1024" role="img" aria-label="Beam">
+      <defs>
+        <linearGradient id="t8-s" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="var(--i1)"/><stop offset="1" stop-color="var(--i2)"/>
+        </linearGradient>
+        <radialGradient id="t8-glow" cx="0.5" cy="0.34" r="0.78">
+          <stop offset="0" stop-color="var(--glow)" stop-opacity="0.30"/>
+          <stop offset="0.55" stop-color="var(--glow)" stop-opacity="0.05"/>
+          <stop offset="1" stop-color="var(--glow)" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <rect width="1024" height="1024" rx="232" fill="#0b0b0d"/>
+      <rect width="1024" height="1024" rx="232" fill="url(#t8-glow)"/>
+      <rect x="6" y="6" width="1012" height="1012" rx="228" fill="none" stroke="#fff" stroke-opacity="0.07" stroke-width="12"/>
+      <g transform="translate(196 196) scale(26.333)" fill="none" stroke="url(#t8-s)"
+         stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4.6 4.6v14.8"/>
+      <path d="M19.4 4.6v14.8"/>
+      <path d="M8 12h8.4" stroke-dasharray="0.1 3.1"/>
+      <circle cx="9.1" cy="12" r="1.5" fill="var(--core)" stroke="none"/>
+      <circle cx="12" cy="12" r="1.5" fill="var(--i1)" stroke="none"/>
+      <circle cx="14.9" cy="12" r="1.5" fill="var(--i2)" stroke="none"/>
+      </g>
+    </svg></div>
+        <div class="marks"><span class="mk-box" style="color:var(--i1)"><svg class="mk" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M4.6 4.6v14.8"/>
+      <path d="M19.4 4.6v14.8"/>
+      <path d="M8 12h8.4" stroke-dasharray="0.1 3.1"/>
+      <circle cx="9.1" cy="12" r="1.5" fill="currentColor" stroke="none"/>
+      <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/>
+      <circle cx="14.9" cy="12" r="1.5" fill="currentColor" stroke="none"/>
+    </svg></span><span class="mk-box" style="color:var(--i2)"><svg class="mk" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M4.6 4.6v14.8"/>
+      <path d="M19.4 4.6v14.8"/>
+      <path d="M8 12h8.4" stroke-dasharray="0.1 3.1"/>
+      <circle cx="9.1" cy="12" r="1.5" fill="currentColor" stroke="none"/>
+      <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/>
+      <circle cx="14.9" cy="12" r="1.5" fill="currentColor" stroke="none"/>
+    </svg></span></div>
+      </div>
+    </article>
+<article class="tile">
+      <div class="tile-top">
+        <span class="idx">09</span>
+        <div class="tile-meta"><h3>Prism</h3><p>A beam entering and leaving a prism — the Mac routing every photo.</p></div>
+      </div>
+      <div class="tile-body">
+        <div class="ic-wrap"><svg class="ic" viewBox="0 0 1024 1024" role="img" aria-label="Prism">
+      <defs>
+        <linearGradient id="t9-s" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="var(--i1)"/><stop offset="1" stop-color="var(--i2)"/>
+        </linearGradient>
+        <radialGradient id="t9-glow" cx="0.5" cy="0.34" r="0.78">
+          <stop offset="0" stop-color="var(--glow)" stop-opacity="0.30"/>
+          <stop offset="0.55" stop-color="var(--glow)" stop-opacity="0.05"/>
+          <stop offset="1" stop-color="var(--glow)" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <rect width="1024" height="1024" rx="232" fill="#0b0b0d"/>
+      <rect width="1024" height="1024" rx="232" fill="url(#t9-glow)"/>
+      <rect x="6" y="6" width="1012" height="1012" rx="228" fill="none" stroke="#fff" stroke-opacity="0.07" stroke-width="12"/>
+      <g transform="translate(196 196) scale(26.333)" fill="none" stroke="url(#t9-s)"
+         stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 4.4 20.2 18.6 3.8 18.6Z"/>
+      <path d="M2.4 12.6h6.4"/>
+      <path d="M15.2 12.6h6.4"/>
+      <path d="M9.6 11.5l2.2 1.1-2.2 1.1z" fill="var(--core)" stroke="none"/>
+      </g>
+    </svg></div>
+        <div class="marks"><span class="mk-box" style="color:var(--i1)"><svg class="mk" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M12 4.4 20.2 18.6 3.8 18.6Z"/>
+      <path d="M2.4 12.6h6.4"/>
+      <path d="M15.2 12.6h6.4"/>
+      <path d="M9.6 11.5l2.2 1.1-2.2 1.1z" fill="currentColor" stroke="none"/>
+    </svg></span><span class="mk-box" style="color:var(--i2)"><svg class="mk" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M12 4.4 20.2 18.6 3.8 18.6Z"/>
+      <path d="M2.4 12.6h6.4"/>
+      <path d="M15.2 12.6h6.4"/>
+      <path d="M9.6 11.5l2.2 1.1-2.2 1.1z" fill="currentColor" stroke="none"/>
+    </svg></span></div>
+      </div>
+    </article>
+  </div>
+
+  <h2>Why these colours</h2>
+  <div class="rationale">
+    <div class="rcard" style="--d1:#FFC24B;--d2:#F4573E"><div class="rhead">
+      <span class="rdot"></span><b>Ember</b><code>#FFC24B → #F4573E</code></div>
+      <p>Amber into coral-red. The warm end of the spectrum — reads as memory, film and light rather than 'AI'. Raycast proved a single coral-red carries a whole near-black app; this is that move with a sunrise gradient instead of a flat fill.</p></div>
+    <div class="rcard" style="--d1:#93E9AC;--d2:#12B981"><div class="rhead">
+      <span class="rdot"></span><b>Verdant</b><code>#93E9AC → #12B981</code></div>
+      <p>Mint into emerald. Green is the honest colour of 'verified, nothing lost, backup done', so it pairs with the product's integrity promise. Cool and grown-up, with none of the indigo sheen that reads as generic AI.</p></div>
+    <div class="rcard" style="--d1:#8FC2FF;--d2:#2E6BE6"><div class="rhead">
+      <span class="rdot"></span><b>Marine</b><code>#8FC2FF → #2E6BE6</code></div>
+      <p>Sky into royal blue. The safe, pro choice — but a true royal blue, not the cyan-teal of the old mark and not an electric indigo. Calm, tool-like, sits easily in a Dock of Apple icons.</p></div>
+    <div class="rcard" style="--d1:#E8F87A;--d2:#7BD34E"><div class="rhead">
+      <span class="rdot"></span><b>Citrine</b><code>#E8F87A → #7BD34E</code></div>
+      <p>Chartreuse into leaf green. The most distinctive direction — the accent family Arc, Supabase and Vercel use to look crafted rather than corporate. High energy on near-black; unmistakably not an AI-gradient app.</p></div>
+  </div>
+
+  <p class="note">Apple's 2025 Liquid Glass guidance asks for <b>bold weights
+  over hairline strokes</b> and <b>coloured backgrounds</b>, so every icon keeps
+  the brand squircle at <code>#0b0b0d</code> and uses a ~63px gradient stroke
+  with a soft accent glow and a lit core. Marks are drawn on the same 24-unit
+  grid as the current icon, so any of them drops straight into
+  <code>src-tauri/icons/</code>.</p>
+
+  <footer>Files: <code>design/v3-icons/&lt;palette&gt;/&lt;concept&gt;/{mark.svg, icon.svg, icon-1024.png}</code></footer>
+</div>
+<script>
+  const P = { "ember":{i1:"#FFC24B",i2:"#F4573E",glow:"#FF8A3D",core:"#FFD98A",name:"Ember"},
+"verdant":{i1:"#93E9AC",i2:"#12B981",glow:"#23C08A",core:"#C4F6D2",name:"Verdant"},
+"marine":{i1:"#8FC2FF",i2:"#2E6BE6",glow:"#5B9BFF",core:"#CFE2FF",name:"Marine"},
+"citrine":{i1:"#E8F87A",i2:"#7BD34E",glow:"#A6E85A",core:"#F2FBB8",name:"Citrine"} };
+  const root = document.documentElement;
+  const nameEl = document.getElementById('activeName');
+  function apply(slug){
+    const p = P[slug]; if(!p) return;
+    root.style.setProperty('--i1', p.i1);
+    root.style.setProperty('--i2', p.i2);
+    root.style.setProperty('--glow', p.glow);
+    root.style.setProperty('--core', p.core);
+    nameEl.textContent = p.name;
+    document.querySelectorAll('.pcard').forEach(el =>
+      el.classList.toggle('active', el.dataset.palette === slug));
+  }
+  document.getElementById('pals').addEventListener('click', e => {
+    const card = e.target.closest('.pcard'); if(card) apply(card.dataset.palette);
+  });
+</script>
+</body>
+</html>

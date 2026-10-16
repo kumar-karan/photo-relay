@@ -1,0 +1,23 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "pollinations/openai-fast",
+  "provider": {
+    "pollinations": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Pollinations",
+      "options": {
+        "baseURL": "https://text.pollinations.ai/openai",
+        "apiKey": "not-needed"
+      },
+      "models": {
+        "openai-fast": {
+          "name": "Pollinations GPT-OSS 20B",
+          "limit": {
+            "context": 64000,
+            "output": 4096
+          }
+        }
+      }
+    }
+  }
+}

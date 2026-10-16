@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="verdant-focus-s" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#93E9AC"/><stop offset="1" stop-color="#12B981"/></linearGradient><radialGradient id="verdant-focus-glow" cx="0.5" cy="0.34" r="0.78"><stop offset="0" stop-color="#23C08A" stop-opacity="0.30"/><stop offset="0.55" stop-color="#23C08A" stop-opacity="0.05"/><stop offset="1" stop-color="#23C08A" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="232" fill="#0b0b0d"/>
+  <rect width="1024" height="1024" rx="232" fill="url(#verdant-focus-glow)"/>
+  <rect x="6" y="6" width="1012" height="1012" rx="228" fill="none" stroke="#ffffff" stroke-opacity="0.07" stroke-width="12"/>
+  <g transform="translate(196 196) scale(26.333)" fill="none"
+     stroke="url(#verdant-focus-s)" stroke-width="2.4"
+     stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="9.4"/>
+    <circle cx="12" cy="12" r="5.1"/>
+    <circle cx="12" cy="12" r="1.8" fill="#C4F6D2"/>
+    <path d="M12 2.6v2.2"/>
+    <path d="M12 19.2v2.2"/>
+    <path d="M2.6 12h2.2"/>
+    <path d="M19.2 12h2.2"/>
+  </g>
+</svg>

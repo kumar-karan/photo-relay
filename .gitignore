@@ -38,3 +38,29 @@ apps/desktop/src-tauri/gen/schemas/
 
 # macOS
 .DS_Store
+
+# ---------------------------------------------------------------------------
+# Large re-downloadable binaries
+#
+# apps/t3-server-android/ holds real source (shell, Java, build scripts) that
+# is worth backing up, but it also carried a full Android SDK and several
+# APKs. Together with the Rust build output that is ~5 GB, and GitHub hard
+# rejects any single file over 100 MB. None of it is authored here: the SDK
+# and APKs come from their upstreams and are reproducible from build-app.sh.
+# ---------------------------------------------------------------------------
+apps/t3-server-android/android-sdk/
+apps/t3-server-android/out/
+apps/t3-server-android/*.apk
+apps/t3-server-android/*.idsig
+apps/t3-server-android/*.tar.gz
+apps/t3-server-android/*.tar.xz
+apps/t3-server-android/*.zip
+apps/t3-server-android/node-*
+# Stock Android debug keystore. build-app.sh regenerates it on line 24 if
+# missing, so there is no reason to version a private key file.
+apps/t3-server-android/*.keystore
+apps/t3-server-android/*.jks
+apps/desktop/branding/*.tar.gz
+apps/desktop/branding/*.tgz
+design/**/*.png
+ember-sheet-test.png

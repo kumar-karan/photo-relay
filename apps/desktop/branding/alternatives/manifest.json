@@ -1,0 +1,226 @@
+[
+  {
+    "label": "A",
+    "slug": "aperture",
+    "name": "Aperture",
+    "direction": "Aperture / lens",
+    "mode": "stroke",
+    "color": "grad",
+    "sw": 2.0,
+    "note": "The current brand mark, kept as the baseline. Six aperture blades in a circle read as both a lens and a shutter.",
+    "best16": "Strong: one circle, high contrast.",
+    "files": {
+      "mark": "aperture/mark.svg",
+      "icon": "aperture/icon.svg",
+      "png": "aperture/icon-1024.png"
+    }
+  },
+  {
+    "label": "B",
+    "slug": "dual-phone-relay",
+    "name": "Dual Phone Relay",
+    "direction": "Two phones + transfer",
+    "mode": "stroke",
+    "color": "grad",
+    "sw": 2.0,
+    "note": "iPhone and Samsung side by side with opposed arrows between them. It states the job of the app literally.",
+    "best16": "Good: two dark blocks and two arrows.",
+    "files": {
+      "mark": "dual-phone-relay/mark.svg",
+      "icon": "dual-phone-relay/icon.svg",
+      "png": "dual-phone-relay/icon-1024.png"
+    }
+  },
+  {
+    "label": "C",
+    "slug": "photo-frame-arrow",
+    "name": "Photo Frame Arrow",
+    "direction": "Photo frame + arrow",
+    "mode": "stroke",
+    "color": "cyan",
+    "sw": 2.0,
+    "note": "A framed photo with a sun and mountain, and an arrow leaving the frame. Photo first, motion second.",
+    "best16": "Fair: the arrow closes up a little at 16.",
+    "files": {
+      "mark": "photo-frame-arrow/mark.svg",
+      "icon": "photo-frame-arrow/icon.svg",
+      "png": "photo-frame-arrow/icon-1024.png"
+    }
+  },
+  {
+    "label": "D",
+    "slug": "relay-loop",
+    "name": "Relay Loop",
+    "direction": "Relay / loop",
+    "mode": "stroke",
+    "color": "grad",
+    "sw": 2.0,
+    "note": "Two chasing arrows form a closed loop, the recurring relay cycle. Pure motion, no literal photos.",
+    "best16": "Strong: bold ring with clear arrowheads.",
+    "files": {
+      "mark": "relay-loop/mark.svg",
+      "icon": "relay-loop/icon.svg",
+      "png": "relay-loop/icon-1024.png"
+    }
+  },
+  {
+    "label": "E",
+    "slug": "mountain-sun-relay",
+    "name": "Mountain Sun Relay",
+    "direction": "Landscape + arrow",
+    "mode": "stroke",
+    "color": "grad",
+    "sw": 2.0,
+    "note": "A mountain and sun scene with an arrow rising off the summit. Photo subject plus the transfer direction.",
+    "best16": "Fair: busiest silhouette of the set.",
+    "files": {
+      "mark": "mountain-sun-relay/mark.svg",
+      "icon": "mountain-sun-relay/icon.svg",
+      "png": "mountain-sun-relay/icon-1024.png"
+    }
+  },
+  {
+    "label": "F",
+    "slug": "pr-monogram",
+    "name": "PR Monogram",
+    "direction": "Monogram",
+    "mode": "duo",
+    "color": "duo",
+    "sw": 2.2,
+    "note": "Geometric P and R built from stems and bowls, no typed glyphs. P takes indigo, R takes cyan in the icon.",
+    "best16": "Good: two solid letterforms, reads at small sizes.",
+    "files": {
+      "mark": "pr-monogram/mark.svg",
+      "icon": "pr-monogram/icon.svg",
+      "png": "pr-monogram/icon-1024.png"
+    }
+  },
+  {
+    "label": "G",
+    "slug": "node-relay",
+    "name": "Node Relay",
+    "direction": "Geometric relay chain",
+    "mode": "stroke",
+    "color": "grad",
+    "sw": 2.0,
+    "note": "Three nodes in a row joined by chevrons: iPhone to Mac to Samsung as one directed chain.",
+    "best16": "Strong: three dots and two chevrons.",
+    "files": {
+      "mark": "node-relay/mark.svg",
+      "icon": "node-relay/icon.svg",
+      "png": "node-relay/icon-1024.png"
+    }
+  },
+  {
+    "label": "H",
+    "slug": "minimal-aperture",
+    "name": "Minimal Aperture",
+    "direction": "Minimal line",
+    "mode": "stroke",
+    "color": "indigo",
+    "sw": 1.35,
+    "note": "The aperture taken to a hairline weight. Quiet, editorial, sits well at small UI sizes next to text.",
+    "best16": "Fair: hairline weight disappears below 20px.",
+    "files": {
+      "mark": "minimal-aperture/mark.svg",
+      "icon": "minimal-aperture/icon.svg",
+      "png": "minimal-aperture/icon-1024.png"
+    }
+  },
+  {
+    "label": "I",
+    "slug": "bold-camera",
+    "name": "Bold Camera",
+    "direction": "Filled bold",
+    "mode": "fill",
+    "color": "grad",
+    "sw": 0.0,
+    "note": "A solid camera silhouette with the lens knocked out and a floating center dot. The heaviest mark here.",
+    "best16": "Strong: solid mass survives any size.",
+    "files": {
+      "mark": "bold-camera/mark.svg",
+      "icon": "bold-camera/icon.svg",
+      "png": "bold-camera/icon-1024.png"
+    }
+  },
+  {
+    "label": "J",
+    "slug": "gradient-orbit",
+    "name": "Gradient Orbit",
+    "direction": "Gradient / orbit",
+    "mode": "stroke",
+    "color": "grad",
+    "sw": 2.0,
+    "note": "Two wide orbits sweep around a central lens dot with two satellite nodes. Motion and depth.",
+    "best16": "Good: distinct diagonal rhythm.",
+    "files": {
+      "mark": "gradient-orbit/mark.svg",
+      "icon": "gradient-orbit/icon.svg",
+      "png": "gradient-orbit/icon-1024.png"
+    }
+  },
+  {
+    "label": "K",
+    "slug": "high-contrast-relay",
+    "name": "High Contrast Relay",
+    "direction": "High contrast mono",
+    "mode": "stroke",
+    "color": "white",
+    "sw": 3.0,
+    "note": "Two heavy exchange arrows in pure white on black, no glow. Maximum contrast, reads as transfer instantly.",
+    "best16": "Strong: thickest strokes in the set.",
+    "files": {
+      "mark": "high-contrast-relay/mark.svg",
+      "icon": "high-contrast-relay/icon.svg",
+      "png": "high-contrast-relay/icon-1024.png"
+    }
+  },
+  {
+    "label": "L",
+    "slug": "frame-scan",
+    "name": "Frame Scan",
+    "direction": "Viewfinder + arrow",
+    "mode": "stroke",
+    "color": "cyan",
+    "sw": 2.0,
+    "note": "Camera viewfinder corners with a right arrow inside. Suggests grabbing and moving photos.",
+    "best16": "Good: corners plus a centered arrow.",
+    "files": {
+      "mark": "frame-scan/mark.svg",
+      "icon": "frame-scan/icon.svg",
+      "png": "frame-scan/icon-1024.png"
+    }
+  },
+  {
+    "label": "M",
+    "slug": "stacked-photos",
+    "name": "Stacked Photos",
+    "direction": "Photo stack",
+    "mode": "stroke",
+    "color": "grad",
+    "sw": 2.0,
+    "note": "Two overlapping photo frames, the back one peeking out. Says library and bulk in one shape.",
+    "best16": "Good: overlapping squares stay distinct.",
+    "files": {
+      "mark": "stacked-photos/mark.svg",
+      "icon": "stacked-photos/icon.svg",
+      "png": "stacked-photos/icon-1024.png"
+    }
+  },
+  {
+    "label": "N",
+    "slug": "send-relay",
+    "name": "Send Relay",
+    "direction": "Relay / send",
+    "mode": "stroke",
+    "color": "grad",
+    "sw": 2.0,
+    "note": "A paper plane crossing a diagonal trail. Lightweight, fast, unmistakably about sending something onward.",
+    "best16": "Good: simple triangle with a tail.",
+    "files": {
+      "mark": "send-relay/mark.svg",
+      "icon": "send-relay/icon.svg",
+      "png": "send-relay/icon-1024.png"
+    }
+  }
+]

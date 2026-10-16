@@ -1,0 +1,610 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F8FAFC">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <!-- HEADER -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="T3 Server"
+                    android:textSize="22sp"
+                    android:textStyle="bold"
+                    android:textColor="#0F172A" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Host Environment &amp; Remote Bridge"
+                    android:textSize="12sp"
+                    android:textColor="#64748B"
+                    android:layout_marginTop="2dp" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvOverall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/pill_neutral"
+                android:text="CHECKING"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:textColor="#475569"
+                android:paddingLeft="10dp"
+                android:paddingRight="10dp"
+                android:paddingTop="5dp"
+                android:paddingBottom="5dp" />
+        </LinearLayout>
+
+        <!-- SECTION 1: CLIENT CONNECTION -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="CLIENT CONNECTION"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="#475569"
+            android:letterSpacing="0.08"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="8dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/card"
+            android:padding="16dp"
+            android:layout_marginBottom="14dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="iPhone &amp; Browser Pairing URL"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:textColor="#0F172A" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Open this URL on iPhone (Safari or T3 Code app) to connect."
+                android:textSize="11sp"
+                android:textColor="#64748B"
+                android:layout_marginTop="2dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/box_inset"
+                android:padding="10dp"
+                android:layout_marginTop="10dp"
+                android:layout_marginBottom="12dp">
+
+                <TextView
+                    android:id="@+id/tvPairUrl"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="http://127.0.0.1:3773/pair#token=…"
+                    android:textSize="11sp"
+                    android:typeface="monospace"
+                    android:textColor="#0F172A" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btnCopyLan"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:backgroundTint="#0F172A"
+                    android:textColor="#FFFFFF"
+                    android:textSize="11sp"
+                    android:text="Copy Wi-Fi URL" />
+
+                <View
+                    android:layout_width="8dp"
+                    android:layout_height="match_parent" />
+
+                <Button
+                    android:id="@+id/btnCopyTail"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:backgroundTint="#0F172A"
+                    android:textColor="#FFFFFF"
+                    android:textSize="11sp"
+                    android:text="Copy Tailscale" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp">
+
+                <Button
+                    android:id="@+id/btnT3Open"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:backgroundTint="#E2E8F0"
+                    android:textColor="#0F172A"
+                    android:textSize="11sp"
+                    android:text="Open Local" />
+
+                <View
+                    android:layout_width="8dp"
+                    android:layout_height="match_parent" />
+
+                <Button
+                    android:id="@+id/btnMintToken"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:backgroundTint="#E2E8F0"
+                    android:textColor="#0F172A"
+                    android:textSize="11sp"
+                    android:text="Mint 30-Day Token" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- SECTION 2: SERVICES -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="SERVICES &amp; DRIVERS"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="#475569"
+            android:letterSpacing="0.08"
+            android:layout_marginTop="6dp"
+            android:layout_marginBottom="8dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/card"
+            android:padding="16dp"
+            android:layout_marginBottom="14dp">
+
+            <!-- T3 Server Row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="T3 Code Server (:3773)"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:textColor="#0F172A" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Core runtime, RPC WebSocket, pairing"
+                        android:textSize="11sp"
+                        android:textColor="#64748B" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tvT3Status"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/pill_neutral"
+                    android:text="CHECKING"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:textColor="#475569"
+                    android:paddingLeft="8dp"
+                    android:paddingRight="8dp"
+                    android:paddingTop="3dp"
+                    android:paddingBottom="3dp" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#F1F5F9"
+                android:layout_marginTop="10dp"
+                android:layout_marginBottom="10dp" />
+
+            <!-- OpenCode Service Row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="OpenCode Service (:4096)"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:textColor="#0F172A" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Local engine, free models, MCP bridge"
+                        android:textSize="11sp"
+                        android:textColor="#64748B" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tvOpStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/pill_neutral"
+                    android:text="CHECKING"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:textColor="#475569"
+                    android:paddingLeft="8dp"
+                    android:paddingRight="8dp"
+                    android:paddingTop="3dp"
+                    android:paddingBottom="3dp" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#F1F5F9"
+                android:layout_marginTop="10dp"
+                android:layout_marginBottom="10dp" />
+
+            <!-- Antigravity Driver Row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Antigravity Driver"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:textColor="#0F172A" />
+
+                    <TextView
+                        android:id="@+id/tvAgDesc"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="OAuth authenticated · Workstation synced"
+                        android:textSize="11sp"
+                        android:textColor="#64748B" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tvAgStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/pill_up"
+                    android:text="AUTHENTICATED"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:textColor="#15803D"
+                    android:paddingLeft="8dp"
+                    android:paddingRight="8dp"
+                    android:paddingTop="3dp"
+                    android:paddingBottom="3dp" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#E2E8F0"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="12dp" />
+
+            <!-- Service Controls -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btnStart"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:backgroundTint="#0F172A"
+                    android:textColor="#FFFFFF"
+                    android:textSize="11sp"
+                    android:text="Start All" />
+
+                <View
+                    android:layout_width="8dp"
+                    android:layout_height="match_parent" />
+
+                <Button
+                    android:id="@+id/btnRestart"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:backgroundTint="#E2E8F0"
+                    android:textColor="#0F172A"
+                    android:textSize="11sp"
+                    android:text="Restart" />
+
+                <View
+                    android:layout_width="8dp"
+                    android:layout_height="match_parent" />
+
+                <Button
+                    android:id="@+id/btnStop"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:backgroundTint="#FEE2E2"
+                    android:textColor="#B91C1C"
+                    android:textSize="11sp"
+                    android:text="Stop" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- SECTION 3: AUTHENTICATION -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="PROVIDER AUTHENTICATION"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="#475569"
+            android:letterSpacing="0.08"
+            android:layout_marginTop="6dp"
+            android:layout_marginBottom="8dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/card"
+            android:padding="16dp"
+            android:layout_marginBottom="14dp">
+
+            <!-- OpenCode Auth Subgroup -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="OpenCode Authentication"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:textColor="#0F172A" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Free models are available by default. Enter an API key (Zen or provider) to attach external accounts."
+                android:textSize="11sp"
+                android:textColor="#64748B"
+                android:layout_marginTop="2dp" />
+
+            <EditText
+                android:id="@+id/etOpKey"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:hint="Paste OpenCode API Key"
+                android:textColorHint="#94A3B8"
+                android:textColor="#0F172A"
+                android:textSize="12sp"
+                android:inputType="textPassword"
+                android:background="@drawable/box_inset"
+                android:paddingLeft="12dp"
+                android:paddingRight="12dp"
+                android:singleLine="true"
+                android:layout_marginTop="8dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp">
+
+                <Button
+                    android:id="@+id/btnOpSave"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:backgroundTint="#0F172A"
+                    android:textColor="#FFFFFF"
+                    android:textSize="11sp"
+                    android:text="Save Key" />
+
+                <View
+                    android:layout_width="8dp"
+                    android:layout_height="match_parent" />
+
+                <Button
+                    android:id="@+id/btnOpClear"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:backgroundTint="#E2E8F0"
+                    android:textColor="#0F172A"
+                    android:textSize="11sp"
+                    android:text="Reset to Free" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#E2E8F0"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="16dp" />
+
+            <!-- Antigravity Auth Subgroup -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Antigravity Authentication"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:textColor="#0F172A" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Current auth: OAuth token active. Enter a Gemini API Key to use direct API billing instead."
+                android:textSize="11sp"
+                android:textColor="#64748B"
+                android:layout_marginTop="2dp" />
+
+            <EditText
+                android:id="@+id/etAgKey"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:hint="Paste Gemini API Key"
+                android:textColorHint="#94A3B8"
+                android:textColor="#0F172A"
+                android:textSize="12sp"
+                android:inputType="textPassword"
+                android:background="@drawable/box_inset"
+                android:paddingLeft="12dp"
+                android:paddingRight="12dp"
+                android:singleLine="true"
+                android:layout_marginTop="8dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp">
+
+                <Button
+                    android:id="@+id/btnAgSave"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:backgroundTint="#0F172A"
+                    android:textColor="#FFFFFF"
+                    android:textSize="11sp"
+                    android:text="Save API Key" />
+
+                <View
+                    android:layout_width="8dp"
+                    android:layout_height="match_parent" />
+
+                <Button
+                    android:id="@+id/btnAgOAuth"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:backgroundTint="#E2E8F0"
+                    android:textColor="#0F172A"
+                    android:textSize="11sp"
+                    android:text="Use OAuth Token" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- SECTION 4: NETWORK & DIAGNOSTICS -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="HOST &amp; NETWORK DIAGNOSTICS"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:textColor="#475569"
+            android:letterSpacing="0.08"
+            android:layout_marginTop="6dp"
+            android:layout_marginBottom="8dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/card"
+            android:padding="16dp"
+            android:layout_marginBottom="24dp">
+
+            <TextView
+                android:id="@+id/tvLan"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Wi-Fi Interface: …"
+                android:textSize="11sp"
+                android:typeface="monospace"
+                android:textColor="#334155" />
+
+            <TextView
+                android:id="@+id/tvTail"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Tailscale Interface: …"
+                android:textSize="11sp"
+                android:typeface="monospace"
+                android:textColor="#334155"
+                android:layout_marginTop="4dp" />
+
+            <TextView
+                android:id="@+id/tvSsh"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="SSH Endpoint: ssh -p 8022 root@…"
+                android:textSize="11sp"
+                android:typeface="monospace"
+                android:textColor="#334155"
+                android:layout_marginTop="4dp" />
+
+            <Button
+                android:id="@+id/btnRefresh"
+                style="?android:attr/borderlessButtonStyle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="#0284C7"
+                android:textSize="11sp"
+                android:text="Refresh Network &amp; Status"
+                android:layout_marginTop="8dp" />
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>

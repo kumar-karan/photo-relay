@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Photo Drop — architecture</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --page:#000; --ink:#fff; --dim:#9a9a9a; --faint:#6a6a6a;
+    --edge:rgba(255,255,255,.12); --panel:#0b0b0b; --panel2:#111;
+    --mine:#4ade80; --oss:#60a5fa; --warn:#fbbf24; --bad:#f87171;
+  }
+  * { box-sizing:border-box; }
+  html,body { margin:0; background:var(--page); color:var(--ink); }
+  body { font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif; -webkit-font-smoothing:antialiased; }
+  .wrap { max-width:1180px; margin:0 auto; padding:40px 24px 72px; }
+  h1 { font-size:26px; letter-spacing:-.02em; margin:0 0 8px; }
+  h2 { font-size:19px; letter-spacing:-.01em; margin:0 0 4px; }
+  h3 { font-size:15px; margin:0 0 8px; }
+  .lede { color:var(--dim); max-width:74ch; margin:0 0 8px; }
+  .lede strong { color:var(--ink); font-weight:600; }
+  .meta { color:var(--faint); font-size:13px; margin:0 0 28px; }
+
+  nav.toc { position:sticky; top:0; z-index:50; display:flex; gap:8px; flex-wrap:wrap;
+    padding:12px 0; margin:0 0 30px; background:rgba(0,0,0,.92); backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--edge); }
+  nav.toc a { color:var(--ink); text-decoration:none; border:1px solid var(--edge);
+    border-radius:7px; padding:6px 12px; font-size:13px; }
+  nav.toc a:hover { background:#151515; }
+
+  section { margin:0 0 64px; scroll-margin-top:70px; }
+  .shead { display:flex; align-items:baseline; gap:12px; margin:0 0 6px; flex-wrap:wrap; }
+  .tag { font:600 11px/1 ui-monospace,SFMono-Regular,Menlo,monospace; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--dim); }
+  .snote { color:var(--faint); font-size:13px; margin:0 0 18px; max-width:74ch; }
+  .card { background:var(--panel); border:1px solid var(--edge); border-radius:12px; padding:18px; }
+  .grid2 { display:grid; grid-template-columns:repeat(auto-fit,minmax(310px,1fr)); gap:14px; }
+  .grid3 { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:12px; }
+
+  table { width:100%; border-collapse:collapse; font-size:13.5px; }
+  th,td { text-align:left; padding:9px 10px; border-bottom:1px solid var(--edge); vertical-align:top; }
+  th { color:var(--dim); font-weight:600; font-size:11px; letter-spacing:.08em;
+    text-transform:uppercase; white-space:nowrap; }
+  td code, p code, li code { font:12.5px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;
+    background:#171717; padding:1px 5px; border-radius:4px; color:#e6e6e6; }
+  tr:last-child td { border-bottom:0; }
+  .scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+
+  .pill { display:inline-block; font:600 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;
+    letter-spacing:.08em; text-transform:uppercase; padding:4px 7px; border-radius:5px;
+    border:1px solid var(--edge); white-space:nowrap; }
+  .p-mine { color:var(--mine); border-color:rgba(74,222,128,.35); background:rgba(74,222,128,.07); }
+  .p-oss  { color:var(--oss);  border-color:rgba(96,165,250,.35); background:rgba(96,165,250,.07); }
+  .p-warn { color:var(--warn); border-color:rgba(251,191,36,.35); background:rgba(251,191,36,.07); }
+  .p-bad  { color:var(--bad);  border-color:rgba(248,113,113,.35); background:rgba(248,113,113,.07); }
+
+  ol.steps { margin:0; padding-left:22px; }
+  ol.steps li { margin:0 0 10px; }
+  ol.steps li b { font-weight:600; }
+  ul.tight { margin:0; padding-left:20px; color:var(--dim); font-size:13.5px; }
+  ul.tight li { margin:0 0 6px; }
+
+  .flow { background:var(--panel); border:1px solid var(--edge); border-radius:12px;
+    padding:14px; overflow-x:auto; }
+  .flow svg { display:block; width:100%; height:auto; min-width:720px; }
+  .lgd { display:flex; gap:16px; flex-wrap:wrap; margin-top:12px; font-size:12px; color:var(--faint); }
+  .lgd span b { color:var(--dim); font-weight:600; }
+
+  .kv { display:grid; grid-template-columns:auto 1fr; gap:6px 14px; font-size:13.5px; }
+  .kv dt { color:var(--faint); font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; }
+  .kv dd { margin:0; }
+
+  pre { margin:0; background:#0b0b0b; border:1px solid var(--edge); border-radius:10px;
+    padding:14px; overflow-x:auto; font:12.5px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;
+    color:#d4d4d4; }
+  pre b { color:var(--mine); font-weight:600; }
+  pre i { color:var(--faint); font-style:normal; }
+
+  .note { border-left:2px solid var(--edge); padding:2px 0 2px 14px; color:var(--dim);
+    font-size:13.5px; margin:14px 0; max-width:74ch; }
+  .note.warn { border-color:var(--warn); }
+  .note.bad  { border-color:var(--bad); }
+  .note.ok   { border-color:var(--mine); }
+  footer { color:var(--faint); font-size:12.5px; border-top:1px solid var(--edge); padding-top:18px; }
+
+  @media (max-width:720px) {
+    .wrap { padding:28px 16px 56px; }
+    h1 { font-size:22px; }
+    table { font-size:12.5px; }
+    th,td { padding:8px 7px; }
+  }
+  @media print { nav.toc { position:static; } body { font-size:11pt; } }
+  @media (prefers-reduced-motion:reduce) { * { animation:none!important; transition:none!important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Photo Drop — architecture</h1>
+<p class="lede">A photo drop server that runs <strong>inside Termux on the owner's Samsung phone</strong>. A friend opens a secret link in a phone browser, picks photos, watches them upload, and the files land in <code>DCIM</code> so Google Photos backs them up to the owner's account. Nothing is installed on the friend's phone.</p>
+<p class="meta">887 lines of server, 345 lines of shell, 24 tests. Everything below is drawn from the code as it stands, not from intent.</p>
+
+<nav class="toc">
+  <a href="#sys">System</a>
+  <a href="#borrow">What is borrowed</a>
+  <a href="#added">What I added</a>
+  <a href="#life">Request lifecycle</a>
+  <a href="#ms">MediaStore ladder</a>
+  <a href="#space">Space guard</a>
+  <a href="#sec">Security model</a>
+  <a href="#rejected">Rejected projects</a>
+  <a href="#verify">Verification</a>
+  <a href="#risk">Open risks</a>
+</nav>
+
+<section id="sys">
+  <div class="shead"><h2>System</h2><span class="tag">end to end</span></div>
+  <p class="snote">Serpentine flow. Everything inside the dashed boundary is the owner's phone; nothing outside it runs on hardware the owner controls.</p>
+  <div class="flow">
+  <svg viewBox="0 0 1100 580" role="img" aria-label="End to end data flow from the friend's browser through the tunnel to the phone's shared storage and on to Google Photos">
+    <defs>
+      <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+        <path d="M0,0 L10,5 L0,10 z" fill="#6a6a6a"/>
+      </marker>
+    </defs>
+
+    <!-- trust boundary -->
+    <rect x="272" y="26" width="782" height="322" rx="14" fill="rgba(74,222,128,.035)"
+          stroke="rgba(74,222,128,.35)" stroke-dasharray="6 5"/>
+    <text x="284" y="46" fill="#4ade80" font-size="10.5" font-family="ui-monospace,Menlo,monospace"
+          letter-spacing="1.4">OWNER SAMSUNG · TERMUX · TRUSTED</text>
+
+    <!-- row 1 -->
+    <g>
+      <rect x="30" y="66" width="220" height="74" rx="10" fill="#0b0b0b" stroke="rgba(255,255,255,.12)"/>
+      <text x="46" y="92" fill="#fff" font-size="13" font-weight="600">Friend's phone</text>
+      <text x="46" y="110" fill="#9a9a9a" font-size="11">Mobile browser, no app</text>
+      <text x="46" y="127" fill="#6a6a6a" font-size="10.5" font-family="ui-monospace,Menlo,monospace">untrusted</text>
+
+      <rect x="290" y="66" width="220" height="74" rx="10" fill="#0b0b0b" stroke="rgba(255,255,255,.12)"/>
+      <text x="306" y="92" fill="#fff" font-size="13" font-weight="600">Cloudflare edge</text>
+      <text x="306" y="110" fill="#9a9a9a" font-size="11">TLS terminates here</text>
+      <text x="306" y="127" fill="#6a6a6a" font-size="10.5" font-family="ui-monospace,Menlo,monospace">encrypted</text>
+
+      <rect x="550" y="66" width="220" height="74" rx="10" fill="#0b0b0b" stroke="rgba(96,165,250,.4)"/>
+      <text x="566" y="92" fill="#fff" font-size="13" font-weight="600">cloudflared</text>
+      <text x="566" y="110" fill="#9a9a9a" font-size="11">Termux package, bionic build</text>
+      <text x="566" y="127" fill="#6a6a6a" font-size="10.5" font-family="ui-monospace,Menlo,monospace">127.0.0.1:8080</text>
+
+      <rect x="810" y="66" width="230" height="74" rx="10" fill="#0b0b0b" stroke="rgba(74,222,128,.45)"/>
+      <text x="826" y="92" fill="#fff" font-size="13" font-weight="600">Flask + Werkzeug</text>
+      <text x="826" y="110" fill="#9a9a9a" font-size="11">server.py, threaded</text>
+      <text x="826" y="127" fill="#6a6a6a" font-size="10.5" font-family="ui-monospace,Menlo,monospace">built here</text>
+    </g>
+
+    <line x1="252" y1="103" x2="286" y2="103" stroke="#6a6a6a" stroke-width="1.5" marker-end="url(#a)"/>
+    <line x1="512" y1="103" x2="546" y2="103" stroke="#6a6a6a" stroke-width="1.5" marker-end="url(#a)"/>
+    <line x1="772" y1="103" x2="806" y2="103" stroke="#6a6a6a" stroke-width="1.5" marker-end="url(#a)"/>
+
+    <!-- row 2, right to left -->
+    <g>
+      <rect x="810" y="252" width="230" height="74" rx="10" fill="#0b0b0b" stroke="rgba(74,222,128,.45)"/>
+      <text x="826" y="278" fill="#fff" font-size="13" font-weight="600">Stream to .part</text>
+      <text x="826" y="296" fill="#9a9a9a" font-size="11">256 KiB reads, atomic replace</text>
+      <text x="826" y="313" fill="#6a6a6a" font-size="10.5" font-family="ui-monospace,Menlo,monospace">on full only</text>
+
+      <rect x="550" y="252" width="220" height="74" rx="10" fill="#0b0b0b" stroke="rgba(74,222,128,.45)"/>
+      <text x="566" y="278" fill="#fff" font-size="13" font-weight="600">DCIM/GuestUploads</text>
+      <text x="566" y="296" fill="#9a9a9a" font-size="11">shared storage, FUSE</text>
+      <text x="566" y="313" fill="#6a6a6a" font-size="10.5" font-family="ui-monospace,Menlo,monospace">final location</text>
+
+      <rect x="290" y="252" width="220" height="74" rx="10" fill="#0b0b0b" stroke="rgba(251,191,36,.45)"/>
+      <text x="306" y="278" fill="#fff" font-size="13" font-weight="600">MediaProvider</text>
+      <text x="306" y="296" fill="#9a9a9a" font-size="11">4-rung scan ladder</text>
+      <text x="306" y="313" fill="#6a6a6a" font-size="10.5" font-family="ui-monospace,Menlo,monospace">highest risk</text>
+    </g>
+
+    <line x1="925" y1="142" x2="925" y2="248" stroke="#6a6a6a" stroke-width="1.5" marker-end="url(#a)"/>
+    <line x1="806" y1="289" x2="776" y2="289" stroke="#6a6a6a" stroke-width="1.5" marker-end="url(#a)"/>
+    <line x1="546" y1="289" x2="516" y2="289" stroke="#6a6a6a" stroke-width="1.5" marker-end="url(#a)"/>
+
+    <!-- row 3 -->
+    <rect x="290" y="410" width="220" height="74" rx="10" fill="#0b0b0b" stroke="rgba(96,165,250,.4)"/>
+    <text x="306" y="436" fill="#fff" font-size="13" font-weight="600">Google Photos</text>
+    <text x="306" y="454" fill="#9a9a9a" font-size="11">auto backup of DCIM</text>
+    <text x="306" y="471" fill="#6a6a6a" font-size="10.5" font-family="ui-monospace,Menlo,monospace">modded, large quota</text>
+    <line x1="400" y1="328" x2="400" y2="406" stroke="#6a6a6a" stroke-width="1.5" marker-end="url(#a)"/>
+
+    <text x="30" y="520" fill="#6a6a6a" font-size="11">Progress is real: the browser reports bytes sent via</text>
+    <text x="30" y="537" fill="#6a6a6a" font-size="11">XMLHttpRequest upload.onprogress. No chunking, no SSE.</text>
+  </svg>
+  </div>
+  <div class="lgd">
+    <span><b>Green</b> written for this project</span>
+    <span><b>Blue</b> existing open source component</span>
+    <span><b>Amber</b> the part most likely to fail</span>
+  </div>
+</section>
+
+<section id="borrow">
+  <div class="shead"><h2>What is borrowed</h2><span class="tag">open source in the path</span></div>
+  <p class="snote">Only four real dependencies. Everything else in the request path is browser built-ins or the standard library.</p>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Component</th><th>License</th><th>Role</th><th>Why this one</th></tr></thead>
+    <tbody>
+      <tr><td><code>Flask</code></td><td>BSD-3-Clause</td><td>Routing, request/response, test client</td><td>Its test client makes the suite run with no socket and no network.</td></tr>
+      <tr><td><code>Werkzeug</code></td><td>BSD-3-Clause</td><td><code>secure_filename</code>, <code>LimitedStream</code>, <code>ClientDisconnected</code></td><td>Traversal defence and the streaming body come from here, not from hand-rolled code.</td></tr>
+      <tr><td><code>MarkupSafe</code></td><td>BSD-3-Clause</td><td><code>escape()</code> for the XSS fix</td><td>Shipped with Flask, so it costs nothing.</td></tr>
+      <tr><td><code>cloudflared</code></td><td>Apache-2.0</td><td>Tunnel and public TLS</td><td>Only way to be reachable from the internet with no port forwarding and no VPS.</td></tr>
+      <tr><td>Termux packages</td><td>var. GPL/LGPL mix</td><td>Python, Termux:API, cloudflared build</td><td>Needed to exist on Android at all.</td></tr>
+      <tr><td>Browser built-ins</td><td>n/a</td><td><code>xhr.send(file)</code>, <code>upload.onprogress</code></td><td>The friend installs nothing. Progress is a platform feature, not ours.</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="note ok"><b>The cloudflared detail that mattered.</b> The upstream <code>linux-arm64</code> static binary is linked against glibc. Termux is bionic. It cannot run, and the failure is a silent <code>Exec format error</code> rather than anything obvious. Termux's own repo builds it from Go source, so <code>pkg install cloudflared</code> is the only working path. That is what <code>install.sh</code> does now.</div>
+</section>
+
+<section id="added">
+  <div class="shead"><h2>What I added</h2><span class="tag">not available off the shelf</span></div>
+  <p class="snote">Seven pieces. Each exists because the generic options fail the MediaStore requirement or the space requirement, and I could not verify that until I ran them.</p>
+  <div class="grid2">
+    <div class="card">
+      <h3>Raw body upload protocol</h3>
+      <p style="margin:0;color:var(--dim);font-size:13.5px">One file per request, sent as the request body rather than multipart. Removes a parser dependency and, more usefully, <code>Content-Length</code> arrives before any bytes, so a hopeless upload is refused without writing it.</p>
+    </div>
+    <div class="card">
+      <h3>Two phase space guard</h3>
+      <p style="margin:0;color:var(--dim);font-size:13.5px">Checked from <code>Content-Length</code> up front, then again every 8 MiB during the write. A 4 GB video cannot quietly consume the reserve.</p>
+    </div>
+    <div class="card">
+      <h3>Atomic staging</h3>
+      <p style="margin:0;color:var(--dim);font-size:13.5px">Write to a hidden <code>.part</code>, then <code>os.replace</code> into place only on success. Rejections leave zero bytes. Stale <code>.part</code> files are swept at boot.</p>
+    </div>
+    <div class="card">
+      <h3>MediaStore ladder</h3>
+      <p style="margin:0;color:var(--dim);font-size:13.5px">Four techniques tried in order, first success wins, and the winner is reported to the owner dashboard. This is the part no generic file server has.</p>
+    </div>
+    <div class="card">
+      <h3>Server side session store</h3>
+      <p style="margin:0;color:var(--dim);font-size:13.5px">The cookie is looked up, not compared to the master token. It also gives batches a real owner, which is what makes the file cap meaningful.</p>
+    </div>
+    <div class="card">
+      <h3>Batch ownership</h3>
+      <p style="margin:0;color:var(--dim);font-size:13.5px">Each batch records the session that created it. Another session gets 403, and the per session cap cannot be reset by inventing a new <code>?batch=</code>.</p>
+    </div>
+    <div class="card">
+      <h3>Growth caps</h3>
+      <p style="margin:0;color:var(--dim);font-size:13.5px">Manifest and log are capped and rotated. Both live in Termux home, a different volume from <code>DEST</code>, so a separate free space check covers them.</p>
+    </div>
+    <div class="card">
+      <h3>Confirmation page</h3>
+      <p style="margin:0;color:var(--dim);font-size:13.5px">Thumbnail grid plus file list, so the friend has evidence rather than a promise. This is where the XSS lived.</p>
+    </div>
+  </div>
+</section>
+
+<section id="life">
+  <div class="shead"><h2>Request lifecycle</h2><span class="tag">one file</span></div>
+  <div class="card">
+  <ol class="steps">
+    <li><b>Friend opens <code>/d/&lt;token&gt;/</code>.</b> No cookie yet, so the token in the path is compared with <code>hmac.compare_digest</code>. A session id is minted, registered server side, and returned as an <code>HttpOnly</code> cookie.</li>
+    <li><b>Browser polls <code>/status</code> every 5s</b> for free space. The space bar on the page is driven by a number the server sends, not a guess in the client.</li>
+    <li><b>Friend picks files.</b> Queue is client side, nothing uploaded yet.</li>
+    <li><b>One <code>POST /upload?batch=&amp;name=</code> per file, raw body.</b> <code>upload.onprogress</code> drives the percentage. This is why the number is honest.</li>
+    <li><b>Server checks <code>Content-Length</code> against the cap and against free space minus reserve.</b> Too big is 413, no space is 507. Neither writes a byte.</li>
+    <li><b>Stream to <code>.&lt;name&gt;.part</code></b> in 256 KiB reads, rechecking free space every 8 MiB.</li>
+    <li><b><code>os.replace</code> into <code>DCIM/GuestUploads</code></b> on success. On any failure the <code>.part</code> is unlinked.</li>
+    <li><b>Scan ladder runs.</b> First technique that works is recorded as <code>scanned</code> in the manifest.</li>
+    <li><b>Manifest append.</b> Capped at 1 MB, recycled past that.</li>
+    <li><b>Friend lands on <code>/done/&lt;batch&gt;</code></b> with thumbnails, total size, and a warning if any scan failed.</li>
+  </ol>
+  </div>
+</section>
+
+<section id="ms">
+  <div class="shead"><h2>MediaStore ladder</h2><span class="tag">the risky part</span></div>
+  <p class="snote">Google Photos queries MediaStore, not the filesystem. A file sitting in <code>DCIM</code> is invisible to it until MediaProvider is told the file exists. This is why PairDrop, croc, and every generic file server fail at the last step.</p>
+  <div class="flow">
+  <svg viewBox="0 0 1100 430" role="img" aria-label="Escalation ladder of four media scan techniques">
+    <defs>
+      <marker id="b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+        <path d="M0,0 L10,5 L0,10 z" fill="#6a6a6a"/>
+      </marker>
+    </defs>
+
+    <rect x="24" y="22" width="300" height="62" rx="9" fill="#0b0b0b" stroke="rgba(74,222,128,.35)"/>
+    <text x="40" y="46" fill="#fff" font-size="12.5" font-weight="600">1. termux-media-scan</text>
+    <text x="40" y="65" fill="#9a9a9a" font-size="11">Termux:API calls MediaScannerConnection</text>
+    <text x="40" y="79" fill="#fbbf24" font-size="10.5" font-family="ui-monospace,Menlo,monospace">runs under a 12s timeout</text>
+
+    <rect x="24" y="112" width="300" height="62" rx="9" fill="#0b0b0b" stroke="rgba(255,255,255,.12)"/>
+    <text x="40" y="136" fill="#fff" font-size="12.5" font-weight="600">2. Samsung MTP_FILE_SCAN</text>
+    <text x="40" y="155" fill="#9a9a9a" font-size="11">com.android.providers.media receiver</text>
+    <text x="40" y="169" fill="#6a6a6a" font-size="10.5" font-family="ui-monospace,Menlo,monospace">only when ro.product.manufacturer=samsung</text>
+
+    <rect x="24" y="202" width="300" height="62" rx="9" fill="#0b0b0b" stroke="rgba(255,255,255,.12)"/>
+    <text x="40" y="226" fill="#fff" font-size="12.5" font-weight="600">3. MEDIA_SCANNER_SCAN_FILE</text>
+    <text x="40" y="245" fill="#9a9a9a" font-size="11">legacy broadcast via am</text>
+    <text x="40" y="259" fill="#6a6a6a" font-size="10.5" font-family="ui-monospace,Menlo,monospace">restricted since Android 10</text>
+
+    <rect x="24" y="292" width="300" height="62" rx="9" fill="#0b0b0b" stroke="rgba(255,255,255,.12)"/>
+    <text x="40" y="316" fill="#fff" font-size="12.5" font-weight="600">4. content call scan_file</text>
+    <text x="40" y="335" fill="#9a9a9a" font-size="11">hidden MediaStore method, both volumes</text>
+    <text x="40" y="349" fill="#6a6a6a" font-size="10.5" font-family="ui-monospace,Menlo,monospace">external/file then external_primary/file</text>
+
+    <line x1="174" y1="84" x2="174" y2="108" stroke="#6a6a6a" stroke-width="1.4" marker-end="url(#b)"/>
+    <line x1="174" y1="174" x2="174" y2="198" stroke="#6a6a6a" stroke-width="1.4" marker-end="url(#b)"/>
+    <line x1="174" y1="264" x2="174" y2="288" stroke="#6a6a6a" stroke-width="1.4" marker-end="url(#b)"/>
+
+    <rect x="404" y="22" width="286" height="332" rx="10" fill="rgba(74,222,128,.04)" stroke="rgba(74,222,128,.3)"/>
+    <text x="424" y="50" fill="#4ade80" font-size="11" font-family="ui-monospace,Menlo,monospace" letter-spacing="1.2">FIRST SUCCESS WINS</text>
+    <text x="424" y="80" fill="#fff" font-size="12.5" font-weight="600">Result is recorded per file</text>
+    <text x="424" y="100" fill="#9a9a9a" font-size="11">manifest entry gains</text>
+    <text x="424" y="116" fill="#9a9a9a" font-size="11" font-family="ui-monospace,Menlo,monospace">"scanned": "termux-api"</text>
+    <text x="424" y="152" fill="#fff" font-size="12.5" font-weight="600">Owner dashboard shows it</text>
+    <text x="424" y="172" fill="#9a9a9a" font-size="11">which rung works on THIS phone</text>
+    <text x="424" y="196" fill="#6a6a6a" font-size="10.5" font-family="ui-monospace,Menlo,monospace">media_scan.sh --selftest</text>
+
+    <rect x="404" y="216" width="286" height="60" rx="9" fill="rgba(248,113,113,.05)" stroke="rgba(248,113,113,.3)"/>
+    <text x="424" y="240" fill="#f87171" font-size="12" font-weight="600">All four fail</text>
+    <text x="424" y="259" fill="#9a9a9a" font-size="11">confirmation page warns the friend</text>
+
+    <rect x="404" y="294" width="286" height="60" rx="9" fill="#0b0b0b" stroke="rgba(255,255,255,.12)"/>
+    <text x="424" y="318" fill="#fff" font-size="12" font-weight="600">Manual rescue</text>
+    <text x="424" y="337" fill="#9a9a9a" font-size="11">open Samsung Gallery once, or reboot</text>
+
+    <rect x="726" y="22" width="350" height="332" rx="10" fill="#0b0b0b" stroke="rgba(255,255,255,.12)"/>
+    <text x="746" y="50" fill="#fff" font-size="12.5" font-weight="600">Why this is not optional</text>
+    <text x="746" y="76" fill="#9a9a9a" font-size="11">Google's "back up all device folders"</text>
+    <text x="746" y="92" fill="#9a9a9a" font-size="11">is a MediaStore query, not a disk scan.</text>
+    <text x="746" y="126" fill="#f87171" font-size="11">Syncthing's own maintainer:</text>
+    <text x="746" y="146" fill="#9a9a9a" font-size="10.5" font-family="ui-monospace,Menlo,monospace">"not bullet proof / has bugs /</text>
+    <text x="746" y="160" fill="#9a9a9a" font-size="10.5" font-family="ui-monospace,Menlo,monospace">rotted with android apis changing"</text>
+    <text x="746" y="196" fill="#9a9a9a" font-size="11">So the ladder reports which rung</text>
+    <text x="746" y="212" fill="#9a9a9a" font-size="11">works, and dead rungs get deleted</text>
+    <text x="746" y="226" fill="#9a9a9a" font-size="11">once the phone has answered.</text>
+    <text x="746" y="266" fill="#6a6a6a" font-size="10.5" font-family="ui-monospace,Menlo,monospace">forum.syncthing.net/t/20812</text>
+    <text x="746" y="292" fill="#fbbf24" font-size="10.5">UNTESTED ON REAL HARDWARE.</text>
+    <text x="746" y="308" fill="#fbbf24" font-size="10.5">The answer does not exist yet.</text>
+  </svg>
+  </div>
+</section>
+
+<section id="space">
+  <div class="shead"><h2>Space guard</h2><span class="tag">fail clean, never fill</span></div>
+  <p class="snote">A phone that fills up becomes a brick, not a slow uploader. Every path out of this machine ends in a refusal, never a partial write.</p>
+<pre><b>507</b>  reserve exceeds free space            <i>no bytes written</i>
+<b>507</b>  home partition low                  <i>manifests and logs live there, not in DEST</i>
+<b>413</b>  file over the per file cap          <i>no bytes written</i>
+<b>507</b>  free space dropped mid write        <i>.part unlinked, nothing survives</i>
+<b>409</b>  session file cap reached            <i>counted across all of the session's batches</i>
+
+<i>Reserve default 2 GiB. Tunable via PHOTO_DROP_RESERVE_BYTES.</i></pre>
+  <div class="note warn"><b>Why a reserve at all.</b> Without a floor, the last upload wins and the phone dies holding a directory it cannot flush. The friend sees a clean "storage is full" instead of a transfer that stalls at 99 percent forever.</div>
+</section>
+
+<section id="sec">
+  <div class="shead"><h2>Security model</h2><span class="tag">after adversarial review</span></div>
+  <p class="snote">One secret, no second factor. Everything below is about not losing that secret and not letting one uploader reach another's data.</p>
+  <div class="grid2">
+    <div class="card">
+      <h3>The credential</h3>
+      <dl class="kv">
+        <dt>token</dt><dd>24 char random in the URL path, the entire secret</dd>
+        <dt>compare</dt><dd><code>hmac.compare_digest</code>, constant time</dd>
+        <dt>session</dt><dd>minted on first visit, looked up server side</dd>
+        <dt>cookie</dt><dd>HttpOnly, SameSite=Lax, Secure when proxied</dd>
+        <dt>owner</dt><dd><code>/owner/&lt;token&gt;</code> path form, not a query string</dd>
+      </dl>
+    </div>
+    <div class="card">
+      <h3>Fixed after review</h3>
+      <ul class="tight">
+        <li><b>XSS</b> in the confirmation page. Original filename was raw; now escaped. Two independent reviews found the same line.</li>
+        <li><b>Cookie was decorative.</b> Compared against the master token, could never match.</li>
+        <li><b>File cap bypass</b> by changing <code>?batch=</code>. Now per session with ownership markers.</li>
+        <li><b><code>/healthz</code> leaked</b> device path, exact free bytes and session counts to anyone.</li>
+        <li><b>Secure flag silently dropped</b> because Flask sees HTTP behind the tunnel.</li>
+        <li><b>Unbounded manifest and log</b> on a volume nothing was checking.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="note bad"><b>Accepted, not fixed.</b> <code>threaded=True</code> allows unbounded concurrent uploads. Every upload route needs the token, so exploitation requires already holding the credential, and adding gunicorn to a Termux install risks a new first run failure. Tracked as a deliberate trade, not an oversight.</div>
+</section>
+
+<section id="rejected">
+  <div class="shead"><h2>Projects evaluated and not used</h2><span class="tag">the build on top question</span></div>
+  <p class="snote">You asked whether to clone something and build on it. The answer was no, and this is why.</p>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Project</th><th>License</th><th>Verdict</th><th>Reason</th></tr></thead>
+    <tbody>
+      <tr><td><code>copyparty</code></td><td>MIT</td><td><span class="pill p-warn">closest</span></td><td>The only strong candidate. Pure Python so it runs in Termux, and already has auth, quotas and resumable uploads. But it knows nothing about MediaProvider, so the hard part is still ours to write, and it brings WebDAV, FTP and SFTP to maintain.</td></tr>
+      <tr><td><code>Swap</code></td><td>MIT</td><td><span class="pill p-bad">no</span></td><td>An APK, not Termux runnable. LAN only, plain HTTP, no space check.</td></tr>
+      <tr><td><code>Transfer</code></td><td>MIT</td><td><span class="pill p-bad">no</span></td><td>Same structural problem. Good tap to approve auth, wrong platform.</td></tr>
+      <tr><td><code>croc</code></td><td>MIT</td><td><span class="pill p-bad">no</span></td><td>Excellent receiver and genuinely zero install for the friend, but CLI or app based, no MediaStore hook, and no space pre-check. A fair complement, not a base.</td></tr>
+      <tr><td><code>Syncthing-Fork</code></td><td>MPL-2.0</td><td><span class="pill p-bad">no</span></td><td>The only off the shelf option with proven MediaStore handling. Also a huge config surface, and its lineage lost a maintainer once already.</td></tr>
+      <tr><td><code>PairDrop</code></td><td>AGPL</td><td><span class="pill p-bad">no</span></td><td>WebRTC peer to peer, so bytes land in the receiving browser's Downloads. Never DCIM, so Google Photos never sees them. Wrong architecture, despite being the internet's most recommended answer.</td></tr>
+      <tr><td><code>Immich</code> / <code>Ente</code></td><td>AGPL / other</td><td><span class="pill p-bad">no</span></td><td>Need Docker. Also store into their own library directory, which is precisely the failure we are avoiding.</td></tr>
+      <tr><td><code>Sharik</code></td><td>MIT</td><td><span class="pill p-bad">no</span></td><td>Architecturally ideal, no recipient app needed. Unmaintained since about 2021.</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="note">Every one of them fails on the same axis. They write files to a directory. This has to write files to a directory <i>and</i> convince Android's media database they exist. That second half is 112 lines of shell here and zero lines anywhere else.</div>
+</section>
+
+<section id="verify">
+  <div class="shead"><h2>Verification</h2><span class="tag">tests that can fail</span></div>
+  <p class="snote">24 tests, and every fix was mutation tested: revert the fix, confirm the suite goes red.</p>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Mutation</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>per session cap reverted to per batch</td><td><span class="pill p-bad">1 failed</span></td></tr>
+      <tr><td>batch ownership check removed</td><td><span class="pill p-bad">1 failed</span></td></tr>
+      <tr><td>healthz leak reintroduced</td><td><span class="pill p-bad">1 failed</span></td></tr>
+      <tr><td>cookie Secure flag dropped behind proxy</td><td><span class="pill p-bad">1 failed</span></td></tr>
+      <tr><td>XSS escape removed</td><td><span class="pill p-bad">2 failed</span></td></tr>
+      <tr><td>session store disabled</td><td><span class="pill p-bad">5 failed</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="snote" style="margin-top:16px">The XSS test needed replacing. The first version asserted on the sanitised disk name, which was never the vulnerable field, so it passed while the bug was live. It now parses the HTML and asserts no payload created a live element.</p>
+</section>
+
+<section id="risk">
+  <div class="shead"><h2>Open risks</h2><span class="tag">unknown until the phone answers</span></div>
+  <div class="grid3">
+    <div class="card">
+      <h3 style="color:var(--warn)">MediaStore ingestion</h3>
+      <p style="margin:0;color:var(--dim);font-size:13.5px">Unverified. No Android device has been attached this session. The ladder reports which rung works so this resolves on first upload rather than staying a guess.</p>
+    </div>
+    <div class="card">
+      <h3 style="color:var(--warn)">Tunnel handshake</h3>
+      <p style="margin:0;color:var(--dim);font-size:13.5px">Unverified. <code>--protocol http2 --edge-ip-version 4</code> is set to dodge Android's resolver, per a known cloudflared issue. Never run against a real tunnel here.</p>
+    </div>
+    <div class="card">
+      <h3>First run failure</h3>
+      <p style="margin:0;color:var(--dim);font-size:13.5px">Three already found and fixed by review: an invented package name, the glibc binary, and PEP 668. Each would have stopped the install dead.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <code>apps/photo-drop/</code> &middot; server.py 887, media_scan.sh 112, install.sh 102, start.sh 119, stop.sh 12, tests 593. MIT.
+</footer>
+
+</div>
+</body>
+</html>

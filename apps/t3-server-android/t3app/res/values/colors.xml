@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="up_text">#15803D</color>
+    <color name="down_text">#B91C1C</color>
+    <color name="neutral_text">#475569</color>
+    <color name="primary_btn">#0F172A</color>
+    <color name="secondary_btn">#FFFFFF</color>
+    <color name="stroke_btn">#CBD5E1</color>
+    <color name="text_main">#0F172A</color>
+    <color name="text_muted">#64748B</color>
+    <color name="page_bg">#F8FAFC</color>
+</resources>

@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Photo Relay - Icon Alternatives</title>
+<style>
+:root{--bg:#000;--panel:#0b0b0d;--panel2:#111114;--fg:#f5f5f7;--muted:#8b8b93;--line:#232329;--indigo:#7d6cff;--cyan:#40c6dd}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.6 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+a{color:var(--cyan)}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+header.page{padding:48px 0 24px;border-bottom:1px solid var(--line)}
+h1{font-size:26px;margin:0 0 8px;letter-spacing:-.01em}
+.page p{margin:6px 0;color:var(--muted);max-width:80ch}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.chip{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:4px 11px}
+.dot{width:12px;height:12px;border-radius:50%}
+.summary{margin:28px 0;border:1px solid var(--line);border-radius:12px;overflow-x:auto}
+table.sum{border-collapse:collapse;width:100%;min-width:620px;font-size:13px}
+table.sum th,table.sum td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+table.sum th{color:var(--muted);font-weight:600;background:var(--panel2)}
+table.sum tr:last-child td{border-bottom:0}
+.badge{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:8px;background:linear-gradient(160deg,#9d8cff,#40c6dd);color:#0b0b0d;font-weight:800;font-size:13px}
+.badge.sm{width:22px;height:22px;font-size:12px;border-radius:6px}
+.grid{display:grid;grid-template-columns:1fr;gap:22px;padding:8px 0 40px}
+@media(min-width:900px){.grid{grid-template-columns:1fr 1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+.card-head{display:flex;align-items:center;gap:12px}
+.titles{flex:1;min-width:0}
+.titles h3{margin:0;font-size:16px}
+.slug{color:var(--muted);font-size:12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.tag{font-size:11px;color:var(--cyan);border:1px solid var(--line);border-radius:999px;padding:3px 9px}
+.meta{display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:11px;margin:10px 0 4px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.block{margin-top:10px}
+.block h4{margin:0 0 8px;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.block h4 em{text-transform:none;letter-spacing:0;font-style:normal;color:#5a5a63;margin-left:6px}
+.strip{display:flex;align-items:flex-end;gap:12px;overflow-x:auto;padding:12px;background:var(--panel2);border:1px solid var(--line);border-radius:10px}
+.cell{margin:0;flex:0 0 auto;text-align:center}
+.stage{display:flex;align-items:center;justify-content:center;min-width:28px;min-height:28px}
+.mark{color:#c9c4ff}
+.icon{border-radius:0}
+figcaption{color:#5a5a63;font-size:10px;margin-top:6px;font-family:ui-monospace,Menlo,monospace}
+.note{font-size:12.5px;color:var(--muted);margin:14px 0 0}
+.note strong{color:#c9c4ff;font-weight:600}
+footer{padding:24px 0 60px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--line)}
+.hide{position:absolute;width:0;height:0;overflow:hidden}
+</style>
+</head>
+<body>
+<div class="hide" aria-hidden="true">
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0"><defs>
+<linearGradient id="pg" x1="200" y1="180" x2="824" y2="844" gradientUnits="userSpaceOnUse">
+<stop offset="0" stop-color="#9d8cff"/><stop offset=".52" stop-color="#7d6cff"/><stop offset="1" stop-color="#40c6dd"/>
+</linearGradient>
+<radialGradient id="pglow" cx=".5" cy=".34" r=".72">
+<stop offset="0" stop-color="#7d6cff" stop-opacity=".34"/><stop offset=".6" stop-color="#7d6cff" stop-opacity=".06"/><stop offset="1" stop-color="#7d6cff" stop-opacity="0"/>
+</radialGradient>
+<symbol id="m-aperture" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/>
+<path d="m14.31 8 5.74 9.94"/>
+<path d="M9.69 8h11.48"/>
+<path d="m7.38 12 5.74-9.94"/>
+<path d="M9.69 16 3.95 6.06"/>
+<path d="M14.31 16H2.83"/>
+<path d="m16.62 12-5.74 9.94"/></g></symbol><symbol id="i-aperture" viewBox="0 0 1024 1024"><rect width="1024" height="1024" rx="232" fill="#0b0b0d"/><rect width="1024" height="1024" rx="232" fill="url(#pglow)"/><rect x="6" y="6" width="1012" height="1012" rx="228" fill="none" stroke="#ffffff" stroke-opacity=".06" stroke-width="12"/><g transform="translate(176 176) scale(28)" fill="none" stroke="url(#pg)" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/>
+<path d="m14.31 8 5.74 9.94"/>
+<path d="M9.69 8h11.48"/>
+<path d="m7.38 12 5.74-9.94"/>
+<path d="M9.69 16 3.95 6.06"/>
+<path d="M14.31 16H2.83"/>
+<path d="m16.62 12-5.74 9.94"/></g></symbol><symbol id="m-dual-phone-relay" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round"><rect x="1.6" y="6" width="5.6" height="12.4" rx="1.5"/>
+<path d="M4.4 15.6h.01"/>
+<rect x="16.8" y="5.6" width="5.6" height="12.4" rx="1.5"/>
+<path d="M19.6 15.2h.01"/>
+<path d="M8.7 9.6h6.1"/>
+<path d="M12.7 7.5l2.1 2.1-2.1 2.1"/>
+<path d="M15.3 14.4H9.2"/>
+<path d="M11.3 16.5l-2.1-2.1 2.1-2.1"/></g></symbol><symbol id="i-dual-phone-relay" viewBox="0 0 1024 1024"><rect width="1024" height="1024" rx="232" fill="#0b0b0d"/><rect width="1024" height="1024" rx="232" fill="url(#pglow)"/><rect x="6" y="6" width="1012" height="1012" rx="228" fill="none" stroke="#ffffff" stroke-opacity=".06" stroke-width="12"/><g transform="translate(176 176) scale(28)" fill="none" stroke="url(#pg)" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round"><rect x="1.6" y="6" width="5.6" height="12.4" rx="1.5"/>
+<path d="M4.4 15.6h.01"/>
+<rect x="16.8" y="5.6" width="5.6" height="12.4" rx="1.5"/>
+<path d="M19.6 15.2h.01"/>
+<path d="M8.7 9.6h6.1"/>
+<path d="M12.7 7.5l2.1 2.1-2.1 2.1"/>
+<path d="M15.3 14.4H9.2"/>
+<path d="M11.3 16.5l-2.1-2.1 2.1-2.1"/></g></symbol><symbol id="m-photo-frame-arrow" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round"><rect x="2.4" y="4.8" width="12.6" height="12.6" rx="2.2"/>
+<circle cx="6.6" cy="8.9" r="1.4"/>
+<path d="m3.6 16.4 2.7-2.7c.6-.55 1.4-.55 2 0l2.7 2.7"/>
+<path d="M16.9 11.1h4.5"/>
+<path d="M18.6 9.2l2.8 1.9-2.8 1.9"/></g></symbol><symbol id="i-photo-frame-arrow" viewBox="0 0 1024 1024"><rect width="1024" height="1024" rx="232" fill="#0b0b0d"/><rect width="1024" height="1024" rx="232" fill="url(#pglow)"/><rect x="6" y="6" width="1012" height="1012" rx="228" fill="none" stroke="#ffffff" stroke-opacity=".06" stroke-width="12"/><g transform="translate(176 176) scale(28)" fill="none" stroke="#40c6dd" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round"><rect x="2.4" y="4.8" width="12.6" height="12.6" rx="2.2"/>
+<circle cx="6.6" cy="8.9" r="1.4"/>
+<path d="m3.6 16.4 2.7-2.7c.6-.55 1.4-.55 2 0l2.7 2.7"/>
+<path d="M16.9 11.1h4.5"/>
+<path d="M18.6 9.2l2.8 1.9-2.8 1.9"/></g></symbol><symbol id="m-relay-loop" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+<path d="M21 3v5h-5"/>
+<path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+<path d="M8 16H3v5"/></g></symbol><symbol id="i-relay-loop" viewBox="0 0 1024 1024"><rect width="1024" height="1024" rx="232" fill="#0b0b0d"/><rect width="1024" height="1024" rx="232" fill="url(#pglow)"/><rect x="6" y="6" width="1012" height="1012" rx="228" fill="none" stroke="#ffffff" stroke-opacity=".06" stroke-width="12"/><g transform="translate(176 176) scale(28)" fill="none" stroke="url(#pg)" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+<path d="M21 3v5h-5"/>
+<path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+<path d="M8 16H3v5"/></g></symbol><symbol id="m-mountain-sun-relay" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round"><circle cx="18.6" cy="5.6" r="2.2"/>
+<path d="M2.4 19.6 8.4 9.4l3.4 5.1 2.3-2.6 6.3 7.7z"/>
+<path d="M8.4 8.2V3.4"/>
+<path d="M6.6 5.2 8.4 3.4l1.8 1.8"/></g></symbol><symbol id="i-mountain-sun-relay" viewBox="0 0 1024 1024"><rect width="1024" height="1024" rx="232" fill="#0b0b0d"/><rect width="1024" height="1024" rx="232" fill="url(#pglow)"/><rect x="6" y="6" width="1012" height="1012" rx="228" fill="none" stroke="#ffffff" stroke-opacity=".06" stroke-width="12"/><g transform="translate(176 176) scale(28)" fill="none" stroke="url(#pg)" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round"><circle cx="18.6" cy="5.6" r="2.2"/>
+<path d="M2.4 19.6 8.4 9.4l3.4 5.1 2.3-2.6 6.3 7.7z"/>
+<path d="M8.4 8.2V3.4"/>
+<path d="M6.6 5.2 8.4 3.4l1.8 1.8"/></g></symbol><symbol id="m-pr-monogram" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(-0.9 0)"><path d="M5 20.5V4h4.5a3.4 3.4 0 0 1 0 6.8H5"/><path d="M14.3 20.5V4h4.3a3.1 3.1 0 0 1 0 6.2h-4.3"/><path d="M15.8 10.2l5 10.3"/></g></g></symbol><symbol id="i-pr-monogram" viewBox="0 0 1024 1024"><rect width="1024" height="1024" rx="232" fill="#0b0b0d"/><rect width="1024" height="1024" rx="232" fill="url(#pglow)"/><rect x="6" y="6" width="1012" height="1012" rx="228" fill="none" stroke="#ffffff" stroke-opacity=".06" stroke-width="12"/><g transform="translate(176 176) scale(28) translate(-0.9 0)" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" stroke="#7d6cff"><path d="M5 20.5V4h4.5a3.4 3.4 0 0 1 0 6.8H5"/></g><g transform="translate(176 176) scale(28) translate(-0.9 0)" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" stroke="#40c6dd"><path d="M14.3 20.5V4h4.3a3.1 3.1 0 0 1 0 6.2h-4.3"/><path d="M15.8 10.2l5 10.3"/></g></symbol><symbol id="m-node-relay" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round"><circle cx="3.8" cy="12" r="2"/>
+<circle cx="12" cy="12" r="2"/>
+<circle cx="20.2" cy="12" r="2"/>
+<path d="M7.1 10 9 12l-1.9 2"/>
+<path d="M15 10l1.9 2-1.9 2"/></g></symbol><symbol id="i-node-relay" viewBox="0 0 1024 1024"><rect width="1024" height="1024" rx="232" fill="#0b0b0d"/><rect width="1024" height="1024" rx="232" fill="url(#pglow)"/><rect x="6" y="6" width="1012" height="1012" rx="228" fill="none" stroke="#ffffff" stroke-opacity=".06" stroke-width="12"/><g transform="translate(176 176) scale(28)" fill="none" stroke="url(#pg)" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round"><circle cx="3.8" cy="12" r="2"/>
+<circle cx="12" cy="12" r="2"/>
+<circle cx="20.2" cy="12" r="2"/>
+<path d="M7.1 10 9 12l-1.9 2"/>
+<path d="M15 10l1.9 2-1.9 2"/></g></symbol><symbol id="m-minimal-aperture" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/>
+<path d="m14.31 8 5.74 9.94"/>
+<path d="M9.69 8h11.48"/>
+<path d="m7.38 12 5.74-9.94"/>
+<path d="M9.69 16 3.95 6.06"/>
+<path d="M14.31 16H2.83"/>
+<path d="m16.62 12-5.74 9.94"/></g></symbol><symbol id="i-minimal-aperture" viewBox="0 0 1024 1024"><rect width="1024" height="1024" rx="232" fill="#0b0b0d"/><rect width="1024" height="1024" rx="232" fill="url(#pglow)"/><rect x="6" y="6" width="1012" height="1012" rx="228" fill="none" stroke="#ffffff" stroke-opacity=".06" stroke-width="12"/><g transform="translate(176 176) scale(28)" fill="none" stroke="#9d8cff" stroke-width="1.35" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/>
+<path d="m14.31 8 5.74 9.94"/>
+<path d="M9.69 8h11.48"/>
+<path d="m7.38 12 5.74-9.94"/>
+<path d="M9.69 16 3.95 6.06"/>
+<path d="M14.31 16H2.83"/>
+<path d="m16.62 12-5.74 9.94"/></g></symbol><symbol id="m-bold-camera" viewBox="0 0 24 24"><g fill="currentColor" fill-rule="evenodd"><path fill-rule="evenodd" d="M4 7.4h3.3l1.5-2.3h6.4l1.5 2.3H20a2.3 2.3 0 0 1 2.3 2.3v8.4a2.3 2.3 0 0 1-2.3 2.3H4a2.3 2.3 0 0 1-2.3-2.3V9.7A2.3 2.3 0 0 1 4 7.4Zm8 3.05a3.25 3.25 0 1 0 0 6.5 3.25 3.25 0 1 0 0-6.5Zm0 2.05a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 1 0 0-2.4Z"/></g></symbol><symbol id="i-bold-camera" viewBox="0 0 1024 1024"><rect width="1024" height="1024" rx="232" fill="#0b0b0d"/><rect width="1024" height="1024" rx="232" fill="url(#pglow)"/><rect x="6" y="6" width="1012" height="1012" rx="228" fill="none" stroke="#ffffff" stroke-opacity=".06" stroke-width="12"/><g transform="translate(176 176) scale(28)" fill="url(#pg)" fill-rule="evenodd"><path fill-rule="evenodd" d="M4 7.4h3.3l1.5-2.3h6.4l1.5 2.3H20a2.3 2.3 0 0 1 2.3 2.3v8.4a2.3 2.3 0 0 1-2.3 2.3H4a2.3 2.3 0 0 1-2.3-2.3V9.7A2.3 2.3 0 0 1 4 7.4Zm8 3.05a3.25 3.25 0 1 0 0 6.5 3.25 3.25 0 1 0 0-6.5Zm0 2.05a1.2 1.2 0 1 0 0 2.4 1.2 1.2 0 1 0 0-2.4Z"/></g></symbol><symbol id="m-gradient-orbit" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round"><path d="M20.34 6.48A10 10 0 0 1 10.27 21.85"/>
+<path d="M3.66 17.52A10 10 0 0 1 13.74 2.15"/>
+<circle cx="12" cy="12" r="3"/>
+<circle cx="19" cy="5" r="2"/>
+<circle cx="5" cy="19" r="2"/></g></symbol><symbol id="i-gradient-orbit" viewBox="0 0 1024 1024"><rect width="1024" height="1024" rx="232" fill="#0b0b0d"/><rect width="1024" height="1024" rx="232" fill="url(#pglow)"/><rect x="6" y="6" width="1012" height="1012" rx="228" fill="none" stroke="#ffffff" stroke-opacity=".06" stroke-width="12"/><g transform="translate(176 176) scale(28)" fill="none" stroke="url(#pg)" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round"><path d="M20.34 6.48A10 10 0 0 1 10.27 21.85"/>
+<path d="M3.66 17.52A10 10 0 0 1 13.74 2.15"/>
+<circle cx="12" cy="12" r="3"/>
+<circle cx="19" cy="5" r="2"/>
+<circle cx="5" cy="19" r="2"/></g></symbol><symbol id="m-high-contrast-relay" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="3.0" stroke-linecap="round" stroke-linejoin="round"><path d="M3.6 9.6h13.6"/>
+<path d="M14.4 6.6l3 3-3 3"/>
+<path d="M20.4 14.4H6.8"/>
+<path d="M9.6 11.4l-3 3 3 3"/></g></symbol><symbol id="i-high-contrast-relay" viewBox="0 0 1024 1024"><rect width="1024" height="1024" rx="232" fill="#0b0b0d"/><rect x="6" y="6" width="1012" height="1012" rx="228" fill="none" stroke="#ffffff" stroke-opacity=".06" stroke-width="12"/><g transform="translate(176 176) scale(28)" fill="none" stroke="#ffffff" stroke-width="3.0" stroke-linecap="round" stroke-linejoin="round"><path d="M3.6 9.6h13.6"/>
+<path d="M14.4 6.6l3 3-3 3"/>
+<path d="M20.4 14.4H6.8"/>
+<path d="M9.6 11.4l-3 3 3 3"/></g></symbol><symbol id="m-frame-scan" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.2V6.4A2.9 2.9 0 0 1 6.4 3.5h1.8"/>
+<path d="M15.8 3.5h1.8a2.9 2.9 0 0 1 2.9 2.9v1.8"/>
+<path d="M20.5 15.8v1.8a2.9 2.9 0 0 1-2.9 2.9h-1.8"/>
+<path d="M8.2 20.5H6.4a2.9 2.9 0 0 1-2.9-2.9v-1.8"/>
+<path d="M8.6 12h6.8"/>
+<path d="M13.3 9.9l2.1 2.1-2.1 2.1"/></g></symbol><symbol id="i-frame-scan" viewBox="0 0 1024 1024"><rect width="1024" height="1024" rx="232" fill="#0b0b0d"/><rect width="1024" height="1024" rx="232" fill="url(#pglow)"/><rect x="6" y="6" width="1012" height="1012" rx="228" fill="none" stroke="#ffffff" stroke-opacity=".06" stroke-width="12"/><g transform="translate(176 176) scale(28)" fill="none" stroke="#40c6dd" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.2V6.4A2.9 2.9 0 0 1 6.4 3.5h1.8"/>
+<path d="M15.8 3.5h1.8a2.9 2.9 0 0 1 2.9 2.9v1.8"/>
+<path d="M20.5 15.8v1.8a2.9 2.9 0 0 1-2.9 2.9h-1.8"/>
+<path d="M8.2 20.5H6.4a2.9 2.9 0 0 1-2.9-2.9v-1.8"/>
+<path d="M8.6 12h6.8"/>
+<path d="M13.3 9.9l2.1 2.1-2.1 2.1"/></g></symbol><symbol id="m-stacked-photos" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round"><rect x="8.3" y="2.6" width="13.1" height="13.1" rx="2.3"/>
+<circle cx="13.1" cy="6.7" r="1.05"/>
+<path d="M21.4 10.4l-1.4-1.4a2.3 2.3 0 0 0-3.25 0L12.5 13.3"/>
+<path d="M4.6 8.4a2.4 2.4 0 0 0-1.9 2.3v8.7a2.4 2.4 0 0 0 2.4 2.4h8.7a2.4 2.4 0 0 0 2.3-1.9"/></g></symbol><symbol id="i-stacked-photos" viewBox="0 0 1024 1024"><rect width="1024" height="1024" rx="232" fill="#0b0b0d"/><rect width="1024" height="1024" rx="232" fill="url(#pglow)"/><rect x="6" y="6" width="1012" height="1012" rx="228" fill="none" stroke="#ffffff" stroke-opacity=".06" stroke-width="12"/><g transform="translate(176 176) scale(28)" fill="none" stroke="url(#pg)" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round"><rect x="8.3" y="2.6" width="13.1" height="13.1" rx="2.3"/>
+<circle cx="13.1" cy="6.7" r="1.05"/>
+<path d="M21.4 10.4l-1.4-1.4a2.3 2.3 0 0 0-3.25 0L12.5 13.3"/>
+<path d="M4.6 8.4a2.4 2.4 0 0 0-1.9 2.3v8.7a2.4 2.4 0 0 0 2.4 2.4h8.7a2.4 2.4 0 0 0 2.3-1.9"/></g></symbol><symbol id="m-send-relay" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/>
+<path d="m21.854 2.147-10.94 10.939"/></g></symbol><symbol id="i-send-relay" viewBox="0 0 1024 1024"><rect width="1024" height="1024" rx="232" fill="#0b0b0d"/><rect width="1024" height="1024" rx="232" fill="url(#pglow)"/><rect x="6" y="6" width="1012" height="1012" rx="228" fill="none" stroke="#ffffff" stroke-opacity=".06" stroke-width="12"/><g transform="translate(176 176) scale(28)" fill="none" stroke="url(#pg)" stroke-width="2.0" stroke-linecap="round" stroke-linejoin="round"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/>
+<path d="m21.854 2.147-10.94 10.939"/></g></symbol>
+</defs></svg>
+</div>
+<div class="wrap">
+<header class="page">
+  <h1>Photo Relay - Icon Alternatives</h1>
+  <p>14 concepts for the macOS app mark and dock icon. Each ships a 24px <code>mark.svg</code> (stroke based, currentColor) for in-app use and a 1024px <code>icon.svg</code> plus rendered <code>icon-1024.png</code> (RGBA, transparent squircle corners) for the Tauri icon flow.</p>
+  <p>Each mark is shown at 16, 24, 48, 128, 256 and 512 where it runs, so small-size legibility is visible directly. Geometry is adapted from lucide, tabler and phosphor where a suitable icon existed, then redrawn on one 24 unit grid.</p>
+  <div class="chips">
+    <span class="chip"><span class="dot" style="background:#0b0b0d;border:1px solid #333"></span>squircle bg #0b0b0d</span>
+    <span class="chip"><span class="dot" style="background:#7d6cff"></span>indigo #7d6cff</span>
+    <span class="chip"><span class="dot" style="background:#40c6dd"></span>cyan #40c6dd</span>
+    <span class="chip">mark = currentColor</span>
+    <span class="chip">icon-1024.png = RGBA</span>
+  </div>
+</header>
+<div class="summary">
+<table class="sum">
+<thead><tr><th>#</th><th>Concept</th><th>Direction</th><th>Style</th><th>Legible at 16px</th></tr></thead>
+<tbody>
+<tr><td><span class="badge sm">A</span></td><td>Aperture</td><td>Aperture / lens</td><td>line</td><td>Strong</td></tr><tr><td><span class="badge sm">B</span></td><td>Dual Phone Relay</td><td>Two phones + transfer</td><td>line</td><td>Good</td></tr><tr><td><span class="badge sm">C</span></td><td>Photo Frame Arrow</td><td>Photo frame + arrow</td><td>line</td><td>Fair</td></tr><tr><td><span class="badge sm">D</span></td><td>Relay Loop</td><td>Relay / loop</td><td>line</td><td>Strong</td></tr><tr><td><span class="badge sm">E</span></td><td>Mountain Sun Relay</td><td>Landscape + arrow</td><td>line</td><td>Fair</td></tr><tr><td><span class="badge sm">F</span></td><td>PR Monogram</td><td>Monogram</td><td>monogram</td><td>Good</td></tr><tr><td><span class="badge sm">G</span></td><td>Node Relay</td><td>Geometric relay chain</td><td>line</td><td>Strong</td></tr><tr><td><span class="badge sm">H</span></td><td>Minimal Aperture</td><td>Minimal line</td><td>line</td><td>Fair</td></tr><tr><td><span class="badge sm">I</span></td><td>Bold Camera</td><td>Filled bold</td><td>filled</td><td>Strong</td></tr><tr><td><span class="badge sm">J</span></td><td>Gradient Orbit</td><td>Gradient / orbit</td><td>line</td><td>Good</td></tr><tr><td><span class="badge sm">K</span></td><td>High Contrast Relay</td><td>High contrast mono</td><td>line</td><td>Strong</td></tr><tr><td><span class="badge sm">L</span></td><td>Frame Scan</td><td>Viewfinder + arrow</td><td>line</td><td>Good</td></tr><tr><td><span class="badge sm">M</span></td><td>Stacked Photos</td><td>Photo stack</td><td>line</td><td>Good</td></tr><tr><td><span class="badge sm">N</span></td><td>Send Relay</td><td>Relay / send</td><td>line</td><td>Good</td></tr>
+</tbody>
+</table>
+</div>
+<p class="note" style="margin-top:-8px">Files live in <code>apps/desktop/branding/alternatives/&lt;slug&gt;/</code>. Rendered PNGs are 1024x1024 RGBA at <code>icon-1024.png</code>.</p>
+<div class="grid">
+
+<article class="card" id="c-aperture">
+  <header class="card-head">
+    <span class="badge">A</span>
+    <div class="titles"><h3>Aperture</h3><span class="slug">aperture</span></div>
+    <span class="tag">Aperture / lens</span>
+  </header>
+  <div class="meta"><span>mark.svg · 24px · currentColor · 2.0u stroke</span><span>icon.svg · 1024 · grad</span></div>
+  <section class="block">
+    <h4>Mark <em>in-app, currentColor</em></h4>
+    <div class="strip"><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:16px;height:16px"><use href="#m-aperture"/></svg></div><figcaption>16</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:24px;height:24px"><use href="#m-aperture"/></svg></div><figcaption>24</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:48px;height:48px"><use href="#m-aperture"/></svg></div><figcaption>48</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:128px;height:128px"><use href="#m-aperture"/></svg></div><figcaption>128</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:256px;height:256px"><use href="#m-aperture"/></svg></div><figcaption>256</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:512px;height:512px"><use href="#m-aperture"/></svg></div><figcaption>512</figcaption></figure></div>
+  </section>
+  <section class="block">
+    <h4>App icon <em>1024 squircle</em></h4>
+    <div class="strip"><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:16px;height:16px"><use href="#i-aperture"/></svg></div><figcaption>16</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:24px;height:24px"><use href="#i-aperture"/></svg></div><figcaption>24</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:48px;height:48px"><use href="#i-aperture"/></svg></div><figcaption>48</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:128px;height:128px"><use href="#i-aperture"/></svg></div><figcaption>128</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:256px;height:256px"><use href="#i-aperture"/></svg></div><figcaption>256</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:512px;height:512px"><use href="#i-aperture"/></svg></div><figcaption>512</figcaption></figure></div>
+  </section>
+  <p class="note">The current brand mark, kept as the baseline. Six aperture blades in a circle read as both a lens and a shutter. <strong>At 16px:</strong> Strong: one circle, high contrast.</p>
+</article>
+<article class="card" id="c-dual-phone-relay">
+  <header class="card-head">
+    <span class="badge">B</span>
+    <div class="titles"><h3>Dual Phone Relay</h3><span class="slug">dual-phone-relay</span></div>
+    <span class="tag">Two phones + transfer</span>
+  </header>
+  <div class="meta"><span>mark.svg · 24px · currentColor · 2.0u stroke</span><span>icon.svg · 1024 · grad</span></div>
+  <section class="block">
+    <h4>Mark <em>in-app, currentColor</em></h4>
+    <div class="strip"><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:16px;height:16px"><use href="#m-dual-phone-relay"/></svg></div><figcaption>16</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:24px;height:24px"><use href="#m-dual-phone-relay"/></svg></div><figcaption>24</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:48px;height:48px"><use href="#m-dual-phone-relay"/></svg></div><figcaption>48</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:128px;height:128px"><use href="#m-dual-phone-relay"/></svg></div><figcaption>128</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:256px;height:256px"><use href="#m-dual-phone-relay"/></svg></div><figcaption>256</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:512px;height:512px"><use href="#m-dual-phone-relay"/></svg></div><figcaption>512</figcaption></figure></div>
+  </section>
+  <section class="block">
+    <h4>App icon <em>1024 squircle</em></h4>
+    <div class="strip"><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:16px;height:16px"><use href="#i-dual-phone-relay"/></svg></div><figcaption>16</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:24px;height:24px"><use href="#i-dual-phone-relay"/></svg></div><figcaption>24</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:48px;height:48px"><use href="#i-dual-phone-relay"/></svg></div><figcaption>48</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:128px;height:128px"><use href="#i-dual-phone-relay"/></svg></div><figcaption>128</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:256px;height:256px"><use href="#i-dual-phone-relay"/></svg></div><figcaption>256</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:512px;height:512px"><use href="#i-dual-phone-relay"/></svg></div><figcaption>512</figcaption></figure></div>
+  </section>
+  <p class="note">iPhone and Samsung side by side with opposed arrows between them. It states the job of the app literally. <strong>At 16px:</strong> Good: two dark blocks and two arrows.</p>
+</article>
+<article class="card" id="c-photo-frame-arrow">
+  <header class="card-head">
+    <span class="badge">C</span>
+    <div class="titles"><h3>Photo Frame Arrow</h3><span class="slug">photo-frame-arrow</span></div>
+    <span class="tag">Photo frame + arrow</span>
+  </header>
+  <div class="meta"><span>mark.svg · 24px · currentColor · 2.0u stroke</span><span>icon.svg · 1024 · cyan</span></div>
+  <section class="block">
+    <h4>Mark <em>in-app, currentColor</em></h4>
+    <div class="strip"><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:16px;height:16px"><use href="#m-photo-frame-arrow"/></svg></div><figcaption>16</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:24px;height:24px"><use href="#m-photo-frame-arrow"/></svg></div><figcaption>24</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:48px;height:48px"><use href="#m-photo-frame-arrow"/></svg></div><figcaption>48</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:128px;height:128px"><use href="#m-photo-frame-arrow"/></svg></div><figcaption>128</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:256px;height:256px"><use href="#m-photo-frame-arrow"/></svg></div><figcaption>256</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:512px;height:512px"><use href="#m-photo-frame-arrow"/></svg></div><figcaption>512</figcaption></figure></div>
+  </section>
+  <section class="block">
+    <h4>App icon <em>1024 squircle</em></h4>
+    <div class="strip"><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:16px;height:16px"><use href="#i-photo-frame-arrow"/></svg></div><figcaption>16</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:24px;height:24px"><use href="#i-photo-frame-arrow"/></svg></div><figcaption>24</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:48px;height:48px"><use href="#i-photo-frame-arrow"/></svg></div><figcaption>48</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:128px;height:128px"><use href="#i-photo-frame-arrow"/></svg></div><figcaption>128</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:256px;height:256px"><use href="#i-photo-frame-arrow"/></svg></div><figcaption>256</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:512px;height:512px"><use href="#i-photo-frame-arrow"/></svg></div><figcaption>512</figcaption></figure></div>
+  </section>
+  <p class="note">A framed photo with a sun and mountain, and an arrow leaving the frame. Photo first, motion second. <strong>At 16px:</strong> Fair: the arrow closes up a little at 16.</p>
+</article>
+<article class="card" id="c-relay-loop">
+  <header class="card-head">
+    <span class="badge">D</span>
+    <div class="titles"><h3>Relay Loop</h3><span class="slug">relay-loop</span></div>
+    <span class="tag">Relay / loop</span>
+  </header>
+  <div class="meta"><span>mark.svg · 24px · currentColor · 2.0u stroke</span><span>icon.svg · 1024 · grad</span></div>
+  <section class="block">
+    <h4>Mark <em>in-app, currentColor</em></h4>
+    <div class="strip"><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:16px;height:16px"><use href="#m-relay-loop"/></svg></div><figcaption>16</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:24px;height:24px"><use href="#m-relay-loop"/></svg></div><figcaption>24</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:48px;height:48px"><use href="#m-relay-loop"/></svg></div><figcaption>48</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:128px;height:128px"><use href="#m-relay-loop"/></svg></div><figcaption>128</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:256px;height:256px"><use href="#m-relay-loop"/></svg></div><figcaption>256</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:512px;height:512px"><use href="#m-relay-loop"/></svg></div><figcaption>512</figcaption></figure></div>
+  </section>
+  <section class="block">
+    <h4>App icon <em>1024 squircle</em></h4>
+    <div class="strip"><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:16px;height:16px"><use href="#i-relay-loop"/></svg></div><figcaption>16</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:24px;height:24px"><use href="#i-relay-loop"/></svg></div><figcaption>24</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:48px;height:48px"><use href="#i-relay-loop"/></svg></div><figcaption>48</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:128px;height:128px"><use href="#i-relay-loop"/></svg></div><figcaption>128</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:256px;height:256px"><use href="#i-relay-loop"/></svg></div><figcaption>256</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:512px;height:512px"><use href="#i-relay-loop"/></svg></div><figcaption>512</figcaption></figure></div>
+  </section>
+  <p class="note">Two chasing arrows form a closed loop, the recurring relay cycle. Pure motion, no literal photos. <strong>At 16px:</strong> Strong: bold ring with clear arrowheads.</p>
+</article>
+<article class="card" id="c-mountain-sun-relay">
+  <header class="card-head">
+    <span class="badge">E</span>
+    <div class="titles"><h3>Mountain Sun Relay</h3><span class="slug">mountain-sun-relay</span></div>
+    <span class="tag">Landscape + arrow</span>
+  </header>
+  <div class="meta"><span>mark.svg · 24px · currentColor · 2.0u stroke</span><span>icon.svg · 1024 · grad</span></div>
+  <section class="block">
+    <h4>Mark <em>in-app, currentColor</em></h4>
+    <div class="strip"><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:16px;height:16px"><use href="#m-mountain-sun-relay"/></svg></div><figcaption>16</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:24px;height:24px"><use href="#m-mountain-sun-relay"/></svg></div><figcaption>24</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:48px;height:48px"><use href="#m-mountain-sun-relay"/></svg></div><figcaption>48</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:128px;height:128px"><use href="#m-mountain-sun-relay"/></svg></div><figcaption>128</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:256px;height:256px"><use href="#m-mountain-sun-relay"/></svg></div><figcaption>256</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:512px;height:512px"><use href="#m-mountain-sun-relay"/></svg></div><figcaption>512</figcaption></figure></div>
+  </section>
+  <section class="block">
+    <h4>App icon <em>1024 squircle</em></h4>
+    <div class="strip"><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:16px;height:16px"><use href="#i-mountain-sun-relay"/></svg></div><figcaption>16</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:24px;height:24px"><use href="#i-mountain-sun-relay"/></svg></div><figcaption>24</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:48px;height:48px"><use href="#i-mountain-sun-relay"/></svg></div><figcaption>48</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:128px;height:128px"><use href="#i-mountain-sun-relay"/></svg></div><figcaption>128</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:256px;height:256px"><use href="#i-mountain-sun-relay"/></svg></div><figcaption>256</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:512px;height:512px"><use href="#i-mountain-sun-relay"/></svg></div><figcaption>512</figcaption></figure></div>
+  </section>
+  <p class="note">A mountain and sun scene with an arrow rising off the summit. Photo subject plus the transfer direction. <strong>At 16px:</strong> Fair: busiest silhouette of the set.</p>
+</article>
+<article class="card" id="c-pr-monogram">
+  <header class="card-head">
+    <span class="badge">F</span>
+    <div class="titles"><h3>PR Monogram</h3><span class="slug">pr-monogram</span></div>
+    <span class="tag">Monogram</span>
+  </header>
+  <div class="meta"><span>mark.svg · 24px · currentColor · two-tone</span><span>icon.svg · 1024 · duo</span></div>
+  <section class="block">
+    <h4>Mark <em>in-app, currentColor</em></h4>
+    <div class="strip"><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:16px;height:16px"><use href="#m-pr-monogram"/></svg></div><figcaption>16</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:24px;height:24px"><use href="#m-pr-monogram"/></svg></div><figcaption>24</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:48px;height:48px"><use href="#m-pr-monogram"/></svg></div><figcaption>48</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:128px;height:128px"><use href="#m-pr-monogram"/></svg></div><figcaption>128</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:256px;height:256px"><use href="#m-pr-monogram"/></svg></div><figcaption>256</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:512px;height:512px"><use href="#m-pr-monogram"/></svg></div><figcaption>512</figcaption></figure></div>
+  </section>
+  <section class="block">
+    <h4>App icon <em>1024 squircle</em></h4>
+    <div class="strip"><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:16px;height:16px"><use href="#i-pr-monogram"/></svg></div><figcaption>16</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:24px;height:24px"><use href="#i-pr-monogram"/></svg></div><figcaption>24</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:48px;height:48px"><use href="#i-pr-monogram"/></svg></div><figcaption>48</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:128px;height:128px"><use href="#i-pr-monogram"/></svg></div><figcaption>128</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:256px;height:256px"><use href="#i-pr-monogram"/></svg></div><figcaption>256</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:512px;height:512px"><use href="#i-pr-monogram"/></svg></div><figcaption>512</figcaption></figure></div>
+  </section>
+  <p class="note">Geometric P and R built from stems and bowls, no typed glyphs. P takes indigo, R takes cyan in the icon. <strong>At 16px:</strong> Good: two solid letterforms, reads at small sizes.</p>
+</article>
+<article class="card" id="c-node-relay">
+  <header class="card-head">
+    <span class="badge">G</span>
+    <div class="titles"><h3>Node Relay</h3><span class="slug">node-relay</span></div>
+    <span class="tag">Geometric relay chain</span>
+  </header>
+  <div class="meta"><span>mark.svg · 24px · currentColor · 2.0u stroke</span><span>icon.svg · 1024 · grad</span></div>
+  <section class="block">
+    <h4>Mark <em>in-app, currentColor</em></h4>
+    <div class="strip"><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:16px;height:16px"><use href="#m-node-relay"/></svg></div><figcaption>16</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:24px;height:24px"><use href="#m-node-relay"/></svg></div><figcaption>24</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:48px;height:48px"><use href="#m-node-relay"/></svg></div><figcaption>48</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:128px;height:128px"><use href="#m-node-relay"/></svg></div><figcaption>128</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:256px;height:256px"><use href="#m-node-relay"/></svg></div><figcaption>256</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:512px;height:512px"><use href="#m-node-relay"/></svg></div><figcaption>512</figcaption></figure></div>
+  </section>
+  <section class="block">
+    <h4>App icon <em>1024 squircle</em></h4>
+    <div class="strip"><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:16px;height:16px"><use href="#i-node-relay"/></svg></div><figcaption>16</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:24px;height:24px"><use href="#i-node-relay"/></svg></div><figcaption>24</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:48px;height:48px"><use href="#i-node-relay"/></svg></div><figcaption>48</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:128px;height:128px"><use href="#i-node-relay"/></svg></div><figcaption>128</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:256px;height:256px"><use href="#i-node-relay"/></svg></div><figcaption>256</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:512px;height:512px"><use href="#i-node-relay"/></svg></div><figcaption>512</figcaption></figure></div>
+  </section>
+  <p class="note">Three nodes in a row joined by chevrons: iPhone to Mac to Samsung as one directed chain. <strong>At 16px:</strong> Strong: three dots and two chevrons.</p>
+</article>
+<article class="card" id="c-minimal-aperture">
+  <header class="card-head">
+    <span class="badge">H</span>
+    <div class="titles"><h3>Minimal Aperture</h3><span class="slug">minimal-aperture</span></div>
+    <span class="tag">Minimal line</span>
+  </header>
+  <div class="meta"><span>mark.svg · 24px · currentColor · 1.35u stroke</span><span>icon.svg · 1024 · indigo</span></div>
+  <section class="block">
+    <h4>Mark <em>in-app, currentColor</em></h4>
+    <div class="strip"><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:16px;height:16px"><use href="#m-minimal-aperture"/></svg></div><figcaption>16</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:24px;height:24px"><use href="#m-minimal-aperture"/></svg></div><figcaption>24</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:48px;height:48px"><use href="#m-minimal-aperture"/></svg></div><figcaption>48</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:128px;height:128px"><use href="#m-minimal-aperture"/></svg></div><figcaption>128</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:256px;height:256px"><use href="#m-minimal-aperture"/></svg></div><figcaption>256</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:512px;height:512px"><use href="#m-minimal-aperture"/></svg></div><figcaption>512</figcaption></figure></div>
+  </section>
+  <section class="block">
+    <h4>App icon <em>1024 squircle</em></h4>
+    <div class="strip"><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:16px;height:16px"><use href="#i-minimal-aperture"/></svg></div><figcaption>16</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:24px;height:24px"><use href="#i-minimal-aperture"/></svg></div><figcaption>24</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:48px;height:48px"><use href="#i-minimal-aperture"/></svg></div><figcaption>48</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:128px;height:128px"><use href="#i-minimal-aperture"/></svg></div><figcaption>128</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:256px;height:256px"><use href="#i-minimal-aperture"/></svg></div><figcaption>256</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:512px;height:512px"><use href="#i-minimal-aperture"/></svg></div><figcaption>512</figcaption></figure></div>
+  </section>
+  <p class="note">The aperture taken to a hairline weight. Quiet, editorial, sits well at small UI sizes next to text. <strong>At 16px:</strong> Fair: hairline weight disappears below 20px.</p>
+</article>
+<article class="card" id="c-bold-camera">
+  <header class="card-head">
+    <span class="badge">I</span>
+    <div class="titles"><h3>Bold Camera</h3><span class="slug">bold-camera</span></div>
+    <span class="tag">Filled bold</span>
+  </header>
+  <div class="meta"><span>mark.svg · 24px · currentColor · solid fill</span><span>icon.svg · 1024 · grad</span></div>
+  <section class="block">
+    <h4>Mark <em>in-app, currentColor</em></h4>
+    <div class="strip"><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:16px;height:16px"><use href="#m-bold-camera"/></svg></div><figcaption>16</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:24px;height:24px"><use href="#m-bold-camera"/></svg></div><figcaption>24</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:48px;height:48px"><use href="#m-bold-camera"/></svg></div><figcaption>48</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:128px;height:128px"><use href="#m-bold-camera"/></svg></div><figcaption>128</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:256px;height:256px"><use href="#m-bold-camera"/></svg></div><figcaption>256</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:512px;height:512px"><use href="#m-bold-camera"/></svg></div><figcaption>512</figcaption></figure></div>
+  </section>
+  <section class="block">
+    <h4>App icon <em>1024 squircle</em></h4>
+    <div class="strip"><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:16px;height:16px"><use href="#i-bold-camera"/></svg></div><figcaption>16</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:24px;height:24px"><use href="#i-bold-camera"/></svg></div><figcaption>24</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:48px;height:48px"><use href="#i-bold-camera"/></svg></div><figcaption>48</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:128px;height:128px"><use href="#i-bold-camera"/></svg></div><figcaption>128</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:256px;height:256px"><use href="#i-bold-camera"/></svg></div><figcaption>256</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:512px;height:512px"><use href="#i-bold-camera"/></svg></div><figcaption>512</figcaption></figure></div>
+  </section>
+  <p class="note">A solid camera silhouette with the lens knocked out and a floating center dot. The heaviest mark here. <strong>At 16px:</strong> Strong: solid mass survives any size.</p>
+</article>
+<article class="card" id="c-gradient-orbit">
+  <header class="card-head">
+    <span class="badge">J</span>
+    <div class="titles"><h3>Gradient Orbit</h3><span class="slug">gradient-orbit</span></div>
+    <span class="tag">Gradient / orbit</span>
+  </header>
+  <div class="meta"><span>mark.svg · 24px · currentColor · 2.0u stroke</span><span>icon.svg · 1024 · grad</span></div>
+  <section class="block">
+    <h4>Mark <em>in-app, currentColor</em></h4>
+    <div class="strip"><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:16px;height:16px"><use href="#m-gradient-orbit"/></svg></div><figcaption>16</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:24px;height:24px"><use href="#m-gradient-orbit"/></svg></div><figcaption>24</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:48px;height:48px"><use href="#m-gradient-orbit"/></svg></div><figcaption>48</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:128px;height:128px"><use href="#m-gradient-orbit"/></svg></div><figcaption>128</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:256px;height:256px"><use href="#m-gradient-orbit"/></svg></div><figcaption>256</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:512px;height:512px"><use href="#m-gradient-orbit"/></svg></div><figcaption>512</figcaption></figure></div>
+  </section>
+  <section class="block">
+    <h4>App icon <em>1024 squircle</em></h4>
+    <div class="strip"><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:16px;height:16px"><use href="#i-gradient-orbit"/></svg></div><figcaption>16</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:24px;height:24px"><use href="#i-gradient-orbit"/></svg></div><figcaption>24</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:48px;height:48px"><use href="#i-gradient-orbit"/></svg></div><figcaption>48</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:128px;height:128px"><use href="#i-gradient-orbit"/></svg></div><figcaption>128</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:256px;height:256px"><use href="#i-gradient-orbit"/></svg></div><figcaption>256</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:512px;height:512px"><use href="#i-gradient-orbit"/></svg></div><figcaption>512</figcaption></figure></div>
+  </section>
+  <p class="note">Two wide orbits sweep around a central lens dot with two satellite nodes. Motion and depth. <strong>At 16px:</strong> Good: distinct diagonal rhythm.</p>
+</article>
+<article class="card" id="c-high-contrast-relay">
+  <header class="card-head">
+    <span class="badge">K</span>
+    <div class="titles"><h3>High Contrast Relay</h3><span class="slug">high-contrast-relay</span></div>
+    <span class="tag">High contrast mono</span>
+  </header>
+  <div class="meta"><span>mark.svg · 24px · currentColor · 3.0u stroke</span><span>icon.svg · 1024 · white</span></div>
+  <section class="block">
+    <h4>Mark <em>in-app, currentColor</em></h4>
+    <div class="strip"><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:16px;height:16px"><use href="#m-high-contrast-relay"/></svg></div><figcaption>16</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:24px;height:24px"><use href="#m-high-contrast-relay"/></svg></div><figcaption>24</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:48px;height:48px"><use href="#m-high-contrast-relay"/></svg></div><figcaption>48</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:128px;height:128px"><use href="#m-high-contrast-relay"/></svg></div><figcaption>128</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:256px;height:256px"><use href="#m-high-contrast-relay"/></svg></div><figcaption>256</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:512px;height:512px"><use href="#m-high-contrast-relay"/></svg></div><figcaption>512</figcaption></figure></div>
+  </section>
+  <section class="block">
+    <h4>App icon <em>1024 squircle</em></h4>
+    <div class="strip"><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:16px;height:16px"><use href="#i-high-contrast-relay"/></svg></div><figcaption>16</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:24px;height:24px"><use href="#i-high-contrast-relay"/></svg></div><figcaption>24</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:48px;height:48px"><use href="#i-high-contrast-relay"/></svg></div><figcaption>48</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:128px;height:128px"><use href="#i-high-contrast-relay"/></svg></div><figcaption>128</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:256px;height:256px"><use href="#i-high-contrast-relay"/></svg></div><figcaption>256</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:512px;height:512px"><use href="#i-high-contrast-relay"/></svg></div><figcaption>512</figcaption></figure></div>
+  </section>
+  <p class="note">Two heavy exchange arrows in pure white on black, no glow. Maximum contrast, reads as transfer instantly. <strong>At 16px:</strong> Strong: thickest strokes in the set.</p>
+</article>
+<article class="card" id="c-frame-scan">
+  <header class="card-head">
+    <span class="badge">L</span>
+    <div class="titles"><h3>Frame Scan</h3><span class="slug">frame-scan</span></div>
+    <span class="tag">Viewfinder + arrow</span>
+  </header>
+  <div class="meta"><span>mark.svg · 24px · currentColor · 2.0u stroke</span><span>icon.svg · 1024 · cyan</span></div>
+  <section class="block">
+    <h4>Mark <em>in-app, currentColor</em></h4>
+    <div class="strip"><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:16px;height:16px"><use href="#m-frame-scan"/></svg></div><figcaption>16</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:24px;height:24px"><use href="#m-frame-scan"/></svg></div><figcaption>24</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:48px;height:48px"><use href="#m-frame-scan"/></svg></div><figcaption>48</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:128px;height:128px"><use href="#m-frame-scan"/></svg></div><figcaption>128</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:256px;height:256px"><use href="#m-frame-scan"/></svg></div><figcaption>256</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:512px;height:512px"><use href="#m-frame-scan"/></svg></div><figcaption>512</figcaption></figure></div>
+  </section>
+  <section class="block">
+    <h4>App icon <em>1024 squircle</em></h4>
+    <div class="strip"><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:16px;height:16px"><use href="#i-frame-scan"/></svg></div><figcaption>16</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:24px;height:24px"><use href="#i-frame-scan"/></svg></div><figcaption>24</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:48px;height:48px"><use href="#i-frame-scan"/></svg></div><figcaption>48</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:128px;height:128px"><use href="#i-frame-scan"/></svg></div><figcaption>128</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:256px;height:256px"><use href="#i-frame-scan"/></svg></div><figcaption>256</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:512px;height:512px"><use href="#i-frame-scan"/></svg></div><figcaption>512</figcaption></figure></div>
+  </section>
+  <p class="note">Camera viewfinder corners with a right arrow inside. Suggests grabbing and moving photos. <strong>At 16px:</strong> Good: corners plus a centered arrow.</p>
+</article>
+<article class="card" id="c-stacked-photos">
+  <header class="card-head">
+    <span class="badge">M</span>
+    <div class="titles"><h3>Stacked Photos</h3><span class="slug">stacked-photos</span></div>
+    <span class="tag">Photo stack</span>
+  </header>
+  <div class="meta"><span>mark.svg · 24px · currentColor · 2.0u stroke</span><span>icon.svg · 1024 · grad</span></div>
+  <section class="block">
+    <h4>Mark <em>in-app, currentColor</em></h4>
+    <div class="strip"><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:16px;height:16px"><use href="#m-stacked-photos"/></svg></div><figcaption>16</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:24px;height:24px"><use href="#m-stacked-photos"/></svg></div><figcaption>24</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:48px;height:48px"><use href="#m-stacked-photos"/></svg></div><figcaption>48</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:128px;height:128px"><use href="#m-stacked-photos"/></svg></div><figcaption>128</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:256px;height:256px"><use href="#m-stacked-photos"/></svg></div><figcaption>256</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:512px;height:512px"><use href="#m-stacked-photos"/></svg></div><figcaption>512</figcaption></figure></div>
+  </section>
+  <section class="block">
+    <h4>App icon <em>1024 squircle</em></h4>
+    <div class="strip"><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:16px;height:16px"><use href="#i-stacked-photos"/></svg></div><figcaption>16</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:24px;height:24px"><use href="#i-stacked-photos"/></svg></div><figcaption>24</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:48px;height:48px"><use href="#i-stacked-photos"/></svg></div><figcaption>48</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:128px;height:128px"><use href="#i-stacked-photos"/></svg></div><figcaption>128</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:256px;height:256px"><use href="#i-stacked-photos"/></svg></div><figcaption>256</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:512px;height:512px"><use href="#i-stacked-photos"/></svg></div><figcaption>512</figcaption></figure></div>
+  </section>
+  <p class="note">Two overlapping photo frames, the back one peeking out. Says library and bulk in one shape. <strong>At 16px:</strong> Good: overlapping squares stay distinct.</p>
+</article>
+<article class="card" id="c-send-relay">
+  <header class="card-head">
+    <span class="badge">N</span>
+    <div class="titles"><h3>Send Relay</h3><span class="slug">send-relay</span></div>
+    <span class="tag">Relay / send</span>
+  </header>
+  <div class="meta"><span>mark.svg · 24px · currentColor · 2.0u stroke</span><span>icon.svg · 1024 · grad</span></div>
+  <section class="block">
+    <h4>Mark <em>in-app, currentColor</em></h4>
+    <div class="strip"><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:16px;height:16px"><use href="#m-send-relay"/></svg></div><figcaption>16</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:24px;height:24px"><use href="#m-send-relay"/></svg></div><figcaption>24</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:48px;height:48px"><use href="#m-send-relay"/></svg></div><figcaption>48</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:128px;height:128px"><use href="#m-send-relay"/></svg></div><figcaption>128</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:256px;height:256px"><use href="#m-send-relay"/></svg></div><figcaption>256</figcaption></figure><figure class="cell"><div class="stage"><svg class="mark" viewBox="0 0 24 24" style="width:512px;height:512px"><use href="#m-send-relay"/></svg></div><figcaption>512</figcaption></figure></div>
+  </section>
+  <section class="block">
+    <h4>App icon <em>1024 squircle</em></h4>
+    <div class="strip"><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:16px;height:16px"><use href="#i-send-relay"/></svg></div><figcaption>16</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:24px;height:24px"><use href="#i-send-relay"/></svg></div><figcaption>24</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:48px;height:48px"><use href="#i-send-relay"/></svg></div><figcaption>48</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:128px;height:128px"><use href="#i-send-relay"/></svg></div><figcaption>128</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:256px;height:256px"><use href="#i-send-relay"/></svg></div><figcaption>256</figcaption></figure><figure class="cell"><div class="stage"><svg class="icon" viewBox="0 0 1024 1024" style="width:512px;height:512px"><use href="#i-send-relay"/></svg></div><figcaption>512</figcaption></figure></div>
+  </section>
+  <p class="note">A paper plane crossing a diagonal trail. Lightweight, fast, unmistakably about sending something onward. <strong>At 16px:</strong> Good: simple triangle with a tail.</p>
+</article>
+</div>
+<footer>
+Generated by <code>apps/desktop/branding/build-alternatives.py</code>. Icon geometry adapted from lucide (ISC), tabler (MIT) and phosphor (MIT) on a shared 24 unit grid.
+</footer>
+</div>
+</body>
+</html>
