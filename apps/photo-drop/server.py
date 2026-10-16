@@ -585,6 +585,7 @@ def done(token: str, batch: str):
     resp = make_response(PAGE_DONE.format(
         count=len(files),
         noun="file" if len(files) == 1 else "files",
+        verb="is" if len(files) == 1 else "are",
         total=human(batch_total(batch)),
         rows=rows,
         thumbs=THUMBS.format(
@@ -871,7 +872,7 @@ PAGE_DONE = """<!doctype html><meta charset=utf-8>
  h2{{font-size:13px;color:#8a8a92;text-transform:uppercase;letter-spacing:.06em;margin:26px 0 10px}}
 </style>
 <div class=tick>&#10003;</div>
-<h1>Your {count} {noun} are safe</h1>
+<h1>Your {count} {noun} {verb} safe</h1>
 <p class=sub>{total} landed on the phone and is now being backed up to Google Photos.
 You can close this page.</p>
 {thumbs}
