@@ -61,7 +61,15 @@ HOME = Path(os.environ.get("PHOTO_DROP_HOME", Path.home() / ".photo-drop"))
 TOKEN = os.environ.get("PHOTO_DROP_TOKEN", "").strip()
 OWNER_TOKEN = os.environ.get("PHOTO_DROP_OWNER_TOKEN", "").strip()
 
-DEST = Path(os.environ.get("PHOTO_DROP_DIR", "/storage/emulated/0/DCIM/GuestUploads"))
+DEST = Path(os.environ.get("PHOTO_DROP_DIR", "/storage/emulated/0/DCIM/PhotoDrop"))
+
+# One folder, deliberately.
+#
+# A dated layout such as DCIM/PhotoDrop/2026-10-16 reads better on the
+# filesystem, but Google Photos lists nested folders separately. A parent that
+# is switched on while its date subfolder is switched off backs up nothing at
+# all, and it fails silently. One folder is one toggle with no way to half
+# configure it, so there is no dated option to switch on by mistake.
 
 HOST = os.environ.get("PHOTO_DROP_HOST", "127.0.0.1")
 PORT = int(os.environ.get("PHOTO_DROP_PORT", "8080"))
@@ -137,11 +145,14 @@ def enough_space(needed: int) -> bool:
     return disk_free() - needed >= RESERVE_BYTES
 
 
-def unique_name(raw: str) -> str:
-    """Sanitise an uploaded filename and make it collision-proof.
+def unique_name(raw: str, folder: Path) -> str:
+    """Sanitise the uploaded filename and keep it recognisable.
 
-    secure_filename handles traversal; we keep the extension so the gallery
-    and Google Photos both treat the file as media rather than junk.
+    The name the friend saw on their own camera roll is what they will look
+    for, and it is what shows up in Google Photos, so it is preserved. The
+    random prefix this used to add made every file unreadable in a gallery for
+    no gain: the folder is not browsable without the token anyway. Collisions
+    get a numeric suffix instead.
     """
     base = secure_filename(raw or "photo")
     if not base or base in {".", ".."}:
@@ -153,7 +164,14 @@ def unique_name(raw: str) -> str:
     if len(base) > 120:
         stem, _, ext = base.rpartition(".")
         base = f"{stem[:100]}.{ext}" if ext else stem[:120]
-    return f"{secrets.token_hex(4)}-{base}"
+
+    candidate = base
+    n = 2
+    while (folder / candidate).exists():
+        stem, _, ext = base.rpartition(".")
+        candidate = f"{stem}-{n}.{ext}" if ext else f"{base}-{n}"
+        n += 1
+    return candidate
 
 
 def session_id() -> str:
@@ -533,10 +551,11 @@ def upload(token: str):
         return busy, 503
 
     try:
-        DEST.mkdir(parents=True, exist_ok=True)
-        name = unique_name(original)
-        target = DEST / name
-        tmp = DEST / f".{name}.part"
+        dest_dir = DEST
+        dest_dir.mkdir(parents=True, exist_ok=True)
+        name = unique_name(original, dest_dir)
+        target = dest_dir / name
+        tmp = dest_dir / f".{name}.part"
 
         written = 0
         try:

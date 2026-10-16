@@ -80,7 +80,7 @@ if [[ ! -f "$ENVFILE" ]]; then
 import secrets
 print(f"PHOTO_DROP_TOKEN={secrets.token_urlsafe(18)}")
 print(f"PHOTO_DROP_OWNER_TOKEN={secrets.token_urlsafe(18)}")
-print(f"PHOTO_DROP_DIR=/storage/emulated/0/DCIM/GuestUploads")
+print(f"PHOTO_DROP_DIR=/storage/emulated/0/DCIM/PhotoDrop")
 print(f"PHOTO_DROP_PORT=8080")
 print(f"PHOTO_DROP_HOST=127.0.0.1")
 print(f"PHOTO_DROP_RESERVE_BYTES={2 * 1024**3}")
@@ -90,8 +90,8 @@ else
   echo "  keeping existing $ENVFILE"
 fi
 
-mkdir -p /storage/emulated/0/DCIM/GuestUploads
-echo "  destination ready: /storage/emulated/0/DCIM/GuestUploads"
+mkdir -p /storage/emulated/0/DCIM/PhotoDrop
+echo "  destination ready: /storage/emulated/0/DCIM/PhotoDrop"
 
 banner "6/6  media scan capability probe"
 bash "$DIR/media_scan.sh" --selftest

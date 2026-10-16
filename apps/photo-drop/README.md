@@ -9,7 +9,7 @@ Nothing is installed on the friend's phone. Nothing is stored on anyone else's
 server.
 
 ```
-friend's browser  ──HTTPS──▶  Cloudflare Tunnel  ──▶  Termux  ──▶  DCIM/GuestUploads
+friend's browser  ──HTTPS──▶  Cloudflare Tunnel  ──▶  Termux  ──▶  DCIM/PhotoDrop
   (nothing installed)         (public link)         (this repo)       │
                                                               Google Photos
                                                               backs it up
@@ -92,7 +92,7 @@ Everything lives in `~/.photo-drop/env`:
 | --- | --- | --- |
 | `PHOTO_DROP_TOKEN` | generated | The drop link credential |
 | `PHOTO_DROP_OWNER_TOKEN` | generated | Owner dashboard credential |
-| `PHOTO_DROP_DIR` | `/storage/emulated/0/DCIM/GuestUploads` | Where files land |
+| `PHOTO_DROP_DIR` | `/storage/emulated/0/DCIM/PhotoDrop` | Where files land |
 | `PHOTO_DROP_PORT` | `8080` | Local port |
 | `PHOTO_DROP_HOST` | `127.0.0.1` | Bind address — keep it local, the tunnel fronts it |
 | `PHOTO_DROP_RESERVE_BYTES` | `2147483648` (2 GiB) | Uploads stop below this much free |

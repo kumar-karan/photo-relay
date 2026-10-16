@@ -22,7 +22,7 @@ fi
 # shellcheck disable=SC1090
 set -a; source "$ENVFILE"; set +a
 
-DEST="${PHOTO_DROP_DIR:-/storage/emulated/0/DCIM/GuestUploads}"
+DEST="${PHOTO_DROP_DIR:-/storage/emulated/0/DCIM/PhotoDrop}"
 PORT="${PHOTO_DROP_PORT:-8080}"
 VENV="$HOME/.photo-drop/venv"
 mkdir -p "$DEST"

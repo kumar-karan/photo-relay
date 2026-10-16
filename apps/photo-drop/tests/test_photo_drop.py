@@ -95,7 +95,23 @@ def test_successful_raw_upload_bytes_match_and_unique_names(client):
     p = server.DEST / saved
     assert p.exists()
     assert p.read_bytes() == data
-    assert len(saved) > len("IMG_1234.JPG")  # unique prefixed
+    # The name the uploader saw is preserved, because that is what they will
+    # look for and what shows up in Google Photos. Only the extension case is
+    # normalised, so the file still registers as an image.
+    assert saved == "IMG_1234.jpg", f"expected a readable name, got {saved!r}"
+
+    # A second upload of the same name must not overwrite the first.
+    r2 = client.post(
+        f"/d/{token}/upload",
+        data=b"different bytes",
+        query_string={"name": "IMG_1234.JPG"},
+        content_type="application/octet-stream",
+    )
+    assert r2.status_code == 200
+    second = r2.get_json()["files"][0]["name"]
+    assert second != saved, "a repeated name overwrote the first upload"
+    assert second.startswith("IMG_1234") and second.endswith(".jpg")
+    assert (server.DEST / saved).read_bytes() == data, "first upload was clobbered"
 
 
 def test_successful_upload_multiple_unique_names(client):

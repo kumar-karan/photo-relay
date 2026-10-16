@@ -16,7 +16,7 @@ def configure_env(tmp_path_factory):
     base = tmp_path_factory.mktemp("photo_drop_test")
     token = "a" * 24  # >=12 chars
     owner = "b" * 24
-    dest = base / "GuestUploads"
+    dest = base / "PhotoDrop"
     home = base / "home"
     os.environ["PHOTO_DROP_TOKEN"] = token
     os.environ["PHOTO_DROP_OWNER_TOKEN"] = owner
