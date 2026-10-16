@@ -112,6 +112,15 @@ def disk_free() -> int:
         return RESERVE_BYTES * 100
 
 
+def disk_total() -> int:
+    """Total bytes on the volume holding DEST, for a used/free ratio."""
+    probe = DEST if DEST.exists() else DEST.parent
+    try:
+        return shutil.disk_usage(probe).total
+    except OSError:
+        return 0
+
+
 def disk_free_home() -> int:
     """Free bytes on the volume holding manifests, logs and the session store.
 
@@ -424,10 +433,14 @@ def healthz():
     owner = request.args.get("k", "") or request.args.get("owner", "")
 
     if check_token(drop, TOKEN) or (OWNER_OK and check_token(owner, OWNER_TOKEN)):
+        free = disk_free()
+        total = disk_total()
         return jsonify(
             ok=True,
             dest=str(DEST),
-            free=disk_free(),
+            free=free,
+            dest_size=total,
+            used=max(0, total - free),
             reserve=RESERVE_BYTES,
             sessions=len(batch_ids_recent()),
         )
