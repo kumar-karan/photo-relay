@@ -90,6 +90,43 @@ MAX_FILES_PER_SESSION = int(os.environ.get("PHOTO_DROP_MAX_FILES", "500"))
 MAX_CONCURRENT_UPLOADS = int(os.environ.get("PHOTO_DROP_MAX_CONCURRENT", "3"))
 _UPLOAD_SLOTS = threading.BoundedSemaphore(max(1, MAX_CONCURRENT_UPLOADS))
 
+_ACTIVE_LOCK = threading.Lock()
+_ACTIVE_TRANSFERS = {}
+_RECENT_UPLOADS = []
+
+
+def get_active_upload_stats():
+    with _ACTIVE_LOCK:
+        now = time.time()
+        # Prune recent records older than 45s
+        _RECENT_UPLOADS[:] = [u for u in _RECENT_UPLOADS if (now - u["finished"]) < 45]
+
+        in_flight = list(_ACTIVE_TRANSFERS.values())
+        recent = list(_RECENT_UPLOADS)
+
+        active_sids = {u["sid"] for u in in_flight}
+        recent_sids = {u["sid"] for u in recent if (now - u["finished"]) < 30}
+        all_sids = active_sids | recent_sids
+
+        uploaders = len(all_sids)
+        is_uploading = len(in_flight) > 0
+        is_active = is_uploading or len(recent) > 0
+        if uploaders == 0 and is_active:
+            uploaders = 1
+
+        in_flight_names = [u["name"] for u in in_flight]
+        recent_names = [u["name"] for u in recent if u["name"] not in in_flight_names]
+
+        return {
+            "uploading": is_uploading,
+            "active": is_active,
+            "uploaders": uploaders,
+            "in_flight_count": len(in_flight),
+            "in_flight_files": in_flight_names,
+            "recent_count": len(recent),
+            "recent_files": recent_names,
+        }
+
 # How long a session cookie stays valid.
 SESSION_TTL = int(os.environ.get("PHOTO_DROP_SESSION_TTL", str(12 * 3600)))
 
@@ -501,6 +538,7 @@ def healthz():
     if is_local or check_token(drop, TOKEN) or (OWNER_OK and check_token(owner, OWNER_TOKEN)):
         free = disk_free()
         total = disk_total()
+        stats = get_active_upload_stats()
         return jsonify(
             ok=True,
             dest=str(DEST),
@@ -508,10 +546,11 @@ def healthz():
             dest_size=total,
             used=max(0, total - free),
             reserve=RESERVE_BYTES,
-            sessions=len(batch_ids_active()),
+            sessions=stats["uploaders"] if stats["active"] else len(batch_ids_active()),
             total_sessions=len(batch_ids_recent()),
             public_url=get_public_url(),
             lan_ip=get_lan_ip(),
+            upload_stats=stats,
         )
     return jsonify(ok=True)
 
@@ -639,6 +678,17 @@ def upload(token: str):
         busy.headers["Retry-After"] = "5"
         return busy, 503
 
+    transfer_id = uuid.uuid4().hex[:8]
+    with _ACTIVE_LOCK:
+        _ACTIVE_TRANSFERS[transfer_id] = {
+            "sid": sid,
+            "bid": bid,
+            "name": original,
+            "size": declared or 0,
+            "written": 0,
+            "started": time.time(),
+        }
+
     try:
         dest_dir = DEST
         dest_dir.mkdir(parents=True, exist_ok=True)
@@ -670,6 +720,16 @@ def upload(token: str):
         entry = record_upload(bid, name, original, written, scanned)
         log(f"saved {original} -> {name} ({written}B, scan={scanned})")
     finally:
+        with _ACTIVE_LOCK:
+            _ACTIVE_TRANSFERS.pop(transfer_id, None)
+            if "written" in locals() and written > 0 and "target" in locals() and target.exists():
+                _RECENT_UPLOADS.append({
+                    "sid": sid,
+                    "bid": bid,
+                    "name": original,
+                    "size": written,
+                    "finished": time.time(),
+                })
         # Released even when the write fails, so one bad upload cannot wedge
         # the server for the rest of the session.
         _UPLOAD_SLOTS.release()

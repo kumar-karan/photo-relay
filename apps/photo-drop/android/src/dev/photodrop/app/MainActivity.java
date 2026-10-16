@@ -180,16 +180,19 @@ public class MainActivity extends Activity {
         });
 
         btnStop.setOnClickListener(v -> {
-            if (lastHealth.sessions > 0) {
-                new AlertDialog.Builder(this)
-                        .setTitle("Stop Photo Drop?")
-                        .setMessage("An upload may be in progress. Stopping now will cancel active transfers.")
-                        .setPositiveButton("Stop server", (d, which) -> stopServer())
-                        .setNegativeButton("Keep running", null)
-                        .show();
-            } else {
-                stopServer();
-            }
+            btnStop.setEnabled(false);
+            exec.execute(() -> {
+                String raw = httpGet("http://127.0.0.1:" + PORT + "/healthz", dropToken);
+                Health liveHealth = (raw != null) ? Health.parse(raw) : lastHealth;
+                handler.post(() -> {
+                    btnStop.setEnabled(true);
+                    if (liveHealth.isUploading || liveHealth.isActive) {
+                        showActiveUploadWarning(liveHealth);
+                    } else {
+                        stopServer();
+                    }
+                });
+            });
         });
 
         btnOwner.setOnClickListener(v -> {
@@ -285,6 +288,47 @@ public class MainActivity extends Activity {
         sendCmd(new String[]{"start"}, "Starting Photo Drop");
         handler.postDelayed(this::refresh, 4000);
         handler.postDelayed(this::refresh, 8000);
+    }
+
+    void showActiveUploadWarning(Health h) {
+        int uploaders = Math.max(h.uploadersCount, 1);
+        String personWord = (uploaders == 1) ? "1 person is" : (uploaders + " people are");
+        List<String> allFiles = h.allTransferFiles();
+        int count = Math.max(allFiles.size(), h.inFlightCount);
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(personWord).append(" currently uploading ")
+                .append(count).append(count == 1 ? " file" : " files")
+                .append(" to this device:\n\n");
+
+        int shown = 0;
+        for (String f : h.inFlightFiles) {
+            sb.append("• ").append(f).append(" (uploading now)\n");
+            shown++;
+            if (shown >= 6) break;
+        }
+        if (shown < 6) {
+            for (String f : h.recentFiles) {
+                if (!h.inFlightFiles.contains(f)) {
+                    sb.append("• ").append(f).append(" (recently uploaded)\n");
+                    shown++;
+                    if (shown >= 6) break;
+                }
+            }
+        }
+        int remaining = count - shown;
+        if (remaining > 0) {
+            sb.append("• ... and ").append(remaining).append(" more ").append(remaining == 1 ? "file" : "files").append("\n");
+        }
+
+        sb.append("\nStopping now will cancel their in-flight upload and disconnect them.");
+
+        new AlertDialog.Builder(this)
+                .setTitle("⚠️ Active Upload in Progress")
+                .setMessage(sb.toString())
+                .setPositiveButton("Stop anyway", (d, which) -> stopServer())
+                .setNegativeButton("Keep running", null)
+                .show();
     }
 
     void stopServer() {
@@ -421,9 +465,19 @@ public class MainActivity extends Activity {
             tvFree.setTextColor(getColor(R.color.text_muted));
             storageBar.setState(0f, 0f);
         }
-        tvSessions.setText(h.sessions + (h.sessions == 1 ? " SESSION" : " SESSIONS"));
-        tvSessions.setBackgroundResource(h.sessions > 0 ? R.drawable.pill_success : R.drawable.pill_neutral);
-        tvSessions.setTextColor(h.sessions > 0 ? getColor(R.color.success) : getColor(R.color.text_muted));
+        if (h.isUploading) {
+            tvSessions.setText(h.inFlightCount + (h.inFlightCount == 1 ? " UPLOADING" : " UPLOADING"));
+            tvSessions.setBackgroundResource(R.drawable.pill_warning);
+            tvSessions.setTextColor(0xFF8C1D18);
+        } else if (h.isActive) {
+            tvSessions.setText("ACTIVE");
+            tvSessions.setBackgroundResource(R.drawable.pill_success);
+            tvSessions.setTextColor(getColor(R.color.success));
+        } else {
+            tvSessions.setText(h.sessions + (h.sessions == 1 ? " SESSION" : " SESSIONS"));
+            tvSessions.setBackgroundResource(h.sessions > 0 ? R.drawable.pill_success : R.drawable.pill_neutral);
+            tvSessions.setTextColor(h.sessions > 0 ? getColor(R.color.success) : getColor(R.color.text_muted));
+        }
 
         // State layout switching
         switch (s) {
