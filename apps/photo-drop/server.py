@@ -58,6 +58,7 @@ from werkzeug.utils import secure_filename
 # --------------------------------------------------------------------------
 
 HOME = Path(os.environ.get("PHOTO_DROP_HOME", Path.home() / ".photo-drop"))
+EXPORT = Path(os.environ.get("PHOTO_DROP_EXPORT", "/sdcard/Android/data/dev.photodrop.app/files"))
 
 TOKEN = os.environ.get("PHOTO_DROP_TOKEN", "").strip()
 OWNER_TOKEN = os.environ.get("PHOTO_DROP_OWNER_TOKEN", "").strip()
@@ -197,22 +198,31 @@ def get_lan_ip() -> str:
 
 def get_public_url() -> str:
     """Reads the current public tunnel URL if active."""
-    url_file = HOME / ".photo-drop" / "url"
-    if url_file.exists():
-        try:
-            val = url_file.read_text().strip()
-            if val.startswith("http"):
-                return val
-        except OSError:
-            pass
-    alt_file = Path("/sdcard/Android/data/dev.photodrop.app/files/public-url.txt")
-    if alt_file.exists():
-        try:
-            val = alt_file.read_text().strip()
-            if val.startswith("http"):
-                return val
-        except OSError:
-            pass
+    for candidate in [
+        HOME / "url",
+        Path.home() / ".photo-drop" / "url",
+        EXPORT / "public-url.txt",
+    ]:
+        if candidate.exists():
+            try:
+                val = candidate.read_text().strip()
+                if val.startswith("http"):
+                    return val
+            except OSError:
+                pass
+    for log_path in [
+        HOME / "logs" / "cloudflared.log",
+        Path.home() / ".photo-drop" / "logs" / "cloudflared.log",
+    ]:
+        if log_path.exists():
+            try:
+                with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
+                    log_text = f.read()
+                matches = re.findall(r"https://[a-z0-9-]+\.trycloudflare\.com", log_text)
+                if matches:
+                    return matches[-1]
+            except Exception:
+                pass
     return ""
 
 
@@ -588,7 +598,8 @@ def stop_endpoint():
             pass
         try:
             (EXPORT / "public-url.txt").unlink(missing_ok=True)
-            (STATE / "url").unlink(missing_ok=True)
+            (HOME / "url").unlink(missing_ok=True)
+            (Path.home() / ".photo-drop" / "url").unlink(missing_ok=True)
             (EXPORT / "heartbeat").unlink(missing_ok=True)
         except Exception:
             pass

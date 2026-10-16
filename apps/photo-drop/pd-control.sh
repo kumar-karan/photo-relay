@@ -143,15 +143,20 @@ EOF
       disown 2>/dev/null
 
       echo "negotiating a public address"
-      for _ in $(seq 1 60); do
-        URL="$(grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' "$LOGS/cloudflared.log" 2>/dev/null | tail -1)"
-        if [[ -n "$URL" ]]; then
-          printf '%s' "$URL" > "$STATE/url"
-          printf '%s' "$URL" > "$EXPORT/public-url.txt" 2>/dev/null || true
-          break
-        fi
-        sleep 1
-      done
+      (
+        for _ in $(seq 1 60); do
+          URL="$(grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' "$LOGS/cloudflared.log" 2>/dev/null | tail -1)"
+          if [[ -n "$URL" ]]; then
+            printf '%s' "$URL" > "$STATE/url"
+            chmod 644 "$STATE/url" 2>/dev/null || true
+            printf '%s' "$URL" > "$EXPORT/public-url.txt" 2>/dev/null || true
+            chmod 644 "$EXPORT/public-url.txt" 2>/dev/null || true
+            break
+          fi
+          sleep 1
+        done
+      ) &
+      disown 2>/dev/null
     fi
 
     start_watchdog
