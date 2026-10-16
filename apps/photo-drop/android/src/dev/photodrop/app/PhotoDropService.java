@@ -216,11 +216,10 @@ public class PhotoDropService extends Service {
 
     @Override
     public void onTaskRemoved(Intent rootIntent) {
-        // Fast path: stop the ticking immediately so the watchdog fires on its
-        // next cycle rather than after the full limit. The startService inside
-        // shutdown may be refused once we are being torn down, which is why the
-        // heartbeat, not this call, is the actual guarantee.
+        // Fast path: stop the ticking and trigger immediate shutdown via HTTP/Termux,
+        // while the watchdog serves as an automated fallback if Android kills us.
         beat.removeCallbacks(ticker);
+        shutdown();
         super.onTaskRemoved(rootIntent);
     }
 
