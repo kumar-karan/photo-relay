@@ -25,6 +25,44 @@ mkdir -p "$STATE" "$LOGS"
 
 cmd="${1:-}"
 
+start_watchdog() {
+  # Shuts the server and tunnel down when the app stops claiming them.
+  #
+  # The app's foreground service writes a heartbeat every 5s. If it goes stale
+  # the service is gone, which means the task was swiped away or Android killed
+  # us, and the user believes the server is off. An upload endpoint that keeps
+  # serving after the app looks closed is the failure worth engineering against.
+  #
+  # The old heartbeat is cleared first so the watchdog cannot age out against a
+  # timestamp left by a previous session. Until the app writes a new one the
+  # watchdog waits, which is correct: a server started by hand from a shell is
+  # not owned by the app and should not be killed by it.
+  rm -f "$EXPORT/heartbeat" 2>/dev/null
+  setsid bash -c '
+    HB="/sdcard/Android/data/dev.photodrop.app/files/heartbeat"
+    LIMIT=30
+    while true; do
+      sleep 10
+      # No heartbeat ever appeared: the app has not claimed ownership yet.
+      [ -f "$HB" ] || continue
+      NOW=$(date +%s)
+      THEN=$(stat -c %Y "$HB" 2>/dev/null || echo 0)
+      AGE=$(( NOW - THEN ))
+      if [ "$AGE" -gt "$LIMIT" ]; then
+        pkill -f "photo-drop/server.py" 2>/dev/null
+        pkill -f "cloudflared tunnel"    2>/dev/null
+        exit 0
+      fi
+    done
+  ' >"$LOGS/watchdog.log" 2>&1 < /dev/null &
+  disown 2>/dev/null
+}
+
+stop_watchdog() {
+  pkill -f 'heartbeat' 2>/dev/null
+  pkill -f 'photo-drop-watchdog' 2>/dev/null
+}
+
 case "$cmd" in
   bootstrap)
     DROP="${2:-}"
@@ -122,11 +160,14 @@ EOF
         sleep 1
       done
     fi
+
+    start_watchdog
     ;;
 
   stop)
     pkill -f 'photo-drop/server.py' 2>/dev/null
     pkill -f 'cloudflared tunnel'    2>/dev/null
+    stop_watchdog
     sleep 1
     termux-wake-unlock 2>/dev/null || true
     rm -f "$EXPORT/public-url.txt" "$STATE/url"

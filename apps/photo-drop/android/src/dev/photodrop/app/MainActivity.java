@@ -53,15 +53,6 @@ import java.util.concurrent.Executors;
  * two silently drifted apart, which left the app displaying a link that 404'd.
  */
 public class MainActivity extends Activity {
-    static final String TERMUX_PKG = "com.termux";
-    static final String RUN_CMD = "com.termux.RUN_COMMAND";
-    static final String RUN_PERM = "com.termux.permission.RUN_COMMAND";
-    static final String P_PATH = "com.termux.RUN_COMMAND_PATH";
-    static final String P_ARGS = "com.termux.RUN_COMMAND_ARGUMENTS";
-    static final String P_WORKDIR = "com.termux.RUN_COMMAND_WORKDIR";
-    static final String P_BG = "com.termux.RUN_COMMAND_BACKGROUND";
-    static final String HOME = "/data/data/com.termux/files/home";
-    static final String CONTROL = HOME + "/pd-control.sh";
     static final int PORT = 8080;
 
     static final String PREFS = "photodrop";
@@ -138,6 +129,7 @@ public class MainActivity extends Activity {
         });
 
         btnStop.setOnClickListener(v -> {
+            PhotoDropService.stop(this);
             sendCmd(new String[]{"stop"}, "Stopping Photo Drop");
             handler.postDelayed(this::refresh, 3500);
         });
@@ -210,6 +202,14 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         stop = 0;
+        // Without this the foreground service runs but its notification is
+        // invisible, which defeats the point: a running server you cannot see.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                && checkSelfPermission("android.permission.POST_NOTIFICATIONS")
+                != PackageManager.PERMISSION_GRANTED) {
+            try { requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"}, 1); }
+            catch (Exception ignored) {}
+        }
         bootstrap();
         refresh();
         poller = new Runnable() {
@@ -303,7 +303,17 @@ public class MainActivity extends Activity {
             starting = false;
             btnStart.setEnabled(true);
             btnStop.setAlpha(0.45f);
+            // No server, so no claim to show. This also clears the notification
+            // if something stopped the server behind the app's back.
+            PhotoDropService.stop(this);
             pill("STOPPED", R.drawable.pill_neutral, R.color.text_muted);
+        }
+
+        // Keep the notification in step with reality. If the server is up the
+        // service must be too, otherwise the shade lies about the state.
+        if (up) {
+            PhotoDropService.start(this, currentShareUrl(), domainOf(currentShareUrl()),
+                    free > 0 ? human(free) + " free" : "");
         }
 
         tvSubtitle.setText(up
@@ -544,33 +554,18 @@ public class MainActivity extends Activity {
     }
 
     void sendCmd(String[] args, String msg) {
-        if (checkSelfPermission(RUN_PERM) != PackageManager.PERMISSION_GRANTED) {
+        if (!Termux.permitted(this)) {
             toast("Grant \"Run commands in Termux\" for Photo Drop");
             openAppInfo();
             return;
         }
-        if (runCmd(args)) toast(msg);
+        if (Termux.run(this, args)) toast(msg);
         else toast("Could not reach Termux. Open it once and run: bash ~/pd-control.sh bootstrap");
     }
 
     void sendCmdQuietly(String[] args) {
-        if (checkSelfPermission(RUN_PERM) != PackageManager.PERMISSION_GRANTED) return;
-        runCmd(args);
-    }
-
-    boolean runCmd(String[] args) {
-        try {
-            Intent i = new Intent(RUN_CMD);
-            i.setClassName(TERMUX_PKG, TERMUX_PKG + ".app.RunCommandService");
-            i.putExtra(P_PATH, CONTROL);
-            i.putExtra(P_ARGS, args);
-            i.putExtra(P_WORKDIR, HOME);
-            i.putExtra(P_BG, true);
-            startService(i);
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
+        if (!Termux.permitted(this)) return;
+        Termux.run(this, args);
     }
 
     void openWeb(String url) {
