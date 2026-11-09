@@ -71,6 +71,47 @@ https://<something>.trycloudflare.com/d/<token>
 On your own Wi-Fi skip the tunnel: `bash start.sh` and use the local URL it
 prints. Shut down with `bash stop.sh`.
 
+## Live owner dashboard
+
+There are two ways to watch the drop, and both show the same live state:
+
+- **In the app (recommended).** With the server running, tap **Open live
+  dashboard** on the Photo Drop main screen. It opens the dashboard inside the
+  app over loopback (`127.0.0.1`), so it works even when the tunnel is down or
+  the phone is on a different network from your laptop.
+- **In any browser.** Open `<base-url>/owner/<owner-token>`, for example
+  `http://127.0.0.1:8080/owner/<owner-token>` on the phone itself. The owner
+  token is generated on first start and lives in `~/.photo-drop/env`; it is
+  **not** the token friends use in `/d/...`. Treat it as a private key — anyone
+  with it can watch sessions.
+
+The dashboard refreshes about once a second and shows:
+
+- phone storage free/used with the 2 GiB safety reserve marked;
+- every guest session, with a device label derived from the User-Agent, IP,
+  short session id, connection state and last-seen time;
+- per-file progress bars, bytes written, percentage and measured speed while a
+  file is still uploading — not just a count of finished files;
+- files received per session, recent uploads and totals;
+- the share link, uptime, limits and a one-tap **Clear temp cache** action.
+
+Live state is kept in memory and rebuilt from the on-disk batch manifests on
+startup; device labels and IPs are persisted in
+`~/.photo-drop/session-meta.json`, so a restart does not wipe the history or
+turn every guest back into "Browser". Only transfers that were in flight at
+that moment are lost.
+
+### Live endpoints
+
+| Endpoint | Auth | Purpose |
+| --- | --- | --- |
+| `GET /owner/<owner-token>` | owner token | The dashboard page |
+| `GET /owner/<owner-token>/api/state` | owner token | Full JSON snapshot polled by the page |
+| `GET /owner/<owner-token>/api/diagnostics` | owner token | Storage, process, tunnel and scan information |
+| `POST /owner/<owner-token>/api/clear-parts` | owner token | Delete stale `.part` files |
+| `GET /d/<drop-token>/status?batch=<id>` | drop token | Guest-facing free space, session file count and in-flight files |
+| `GET /healthz` | none / token | Bare `{"ok": true}`; with `X-PD-Token` it also returns version, uptime, sessions and storage |
+
 ## One-time Google Photos setup (you only do this once)
 
 1. Open Google Photos on the Samsung → your profile → **Google Photos settings**
@@ -85,11 +126,14 @@ prints. Shut down with `bash stop.sh`.
 1. Opens your link. Nothing to install, no login.
 2. Taps the drop zone, picks any number of photos/videos from their camera
    roll (HEIC, JPEG, MP4, MOV, Live Photos).
-3. Each file uploads with a real percentage — driven by the browser's native
-   `XMLHttpRequest` progress events, so the number is bytes actually sent.
-4. They see the phone's free space before and during the session. Uploads pause
+3. A live strip shows their session id and how many files the phone has
+   received, so they can confirm the phone is actually listening.
+4. Each file uploads with a real percentage — driven by the browser's native
+   `XMLHttpRequest` progress events, so the number is bytes actually sent. The
+   page warns before closing the tab while a transfer is running.
+5. They see the phone's free space before and during the session. Uploads pause
    if free space drops below the safety reserve (2 GiB by default).
-5. They land on a confirmation page with a thumbnail grid and file list.
+6. They land on a confirmation page with a thumbnail grid and file list.
 
 ## Security model — please read
 
@@ -140,6 +184,10 @@ Unrestricted**, or Android will doze the tunnel mid-upload.
 | `termux-media-scan` hangs | Termux and Termux:API are from different sources. Reinstall both from the same source. |
 | Photos don't appear in Google Photos | Enable the `PhotoDrop` backup folder (above), open Gallery once, reboot. Check the owner dashboard's scan report. |
 | Upload stalls at 0% | Phone dozed. Plug in, set Termux battery to Unrestricted, retry. |
+| Owner dashboard returns 404 | The dashboard URL must use the **owner** token from `~/.photo-drop/env`, not the drop link's token. If the app built its token before an env change, run `bash install.sh` / `deploy.sh` again so `pd-control.sh` restarts the server with the app's token. |
+| In-app dashboard says "Start Photo Drop from the main screen" | The server is not reachable on `127.0.0.1:8080`. Hit **Start**, wait for the link, then **Retry**. The in-app view never needs the tunnel. |
+| Dashboard is empty although files arrived | Sessions expire after 12 hours (`PHOTO_DROP_SESSION_TTL`). Older uploads still exist in `DCIM/PhotoDrop`; only the live console forgets them. |
+| `Stop` doesn't stop / new Start appears to serve stale code | Older scripts used `pkill -f`, which misses `setsid`'d Python on Termux. Current scripts scan `/proc` directly and `TERM`→grace→`SIGKILL` survivors before starting, so `:8080`'s owner is always the current build. |
 
 ## Planned improvements (roadmap)
 
@@ -179,5 +227,5 @@ python3 -m pip install flask pytest
 python3 -m pytest apps/photo-drop/tests/ -q
 ```
 
-Covers auth, upload, filename sanitisation, space guard, size guard, and the
-confirmation page.
+Covers auth, upload, filename sanitisation, space guard, size guard, the
+confirmation page, live session tracking and the owner state API (37 tests).

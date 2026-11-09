@@ -47,6 +47,28 @@ action with verification at every step.
 - **Media re-index** — triggers `MediaScanner` so new media appears in the
   Samsung gallery immediately.
 
+## Photo Drop (guest uploads)
+
+Photo Drop is the other half of this repo: a small Flask server that runs in
+Termux on the Samsung and gives friends a secret browser link. They upload from
+any phone with nothing installed, files land in `DCIM/PhotoDrop`, and Google
+Photos on the Samsung backs them up.
+
+- **Live owner console** — tap **Open live dashboard** in the Android launcher
+  app, or open `/owner/<owner-token>` in a browser. It shows every guest
+  session with device label, IP, short id, file count and bytes, plus per-file
+  progress bars and measured speed while a file is still uploading.
+- **Live guest feedback** — the uploader page shows their session id, the
+  phone's free space and how many files the phone has received, and warns
+  before the tab is closed mid-transfer.
+- **Restart-safe state** — live sessions are rebuilt from the on-disk batch
+  manifests, so a restart does not erase the history.
+- **No inbound ports** — a Cloudflare quick tunnel fronts the loopback-only
+  server; the link is the password.
+
+Full install, security model and troubleshooting:
+[`apps/photo-drop/README.md`](apps/photo-drop/README.md).
+
 ## Requirements
 
 - macOS 12 or later, Apple Silicon or Intel
@@ -71,6 +93,10 @@ photo-relay/
 │   ├── detect_devices.py        Device preflight
 │   ├── master_converter.py      Live Photo → Motion Photo
 │   └── config.example.json      Copy to config.json and edit
+├── apps/photo-drop/             Guest upload server + Android launcher
+│   ├── server.py                Flask server, owner console and live state
+│   ├── android/                 Launcher app, in-app dashboard, APK build
+│   └── tests/                   Auth, upload, space guard and owner API tests
 ├── runtime/                     Local, git-ignored session data
 │   ├── events.jsonl             Structured activity events
 │   └── transfers.jsonl          Verified per-file transfer journal
