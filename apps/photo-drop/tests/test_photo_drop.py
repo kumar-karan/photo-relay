@@ -294,10 +294,13 @@ def test_xss_regression_filenames_escaped(client):
         "</span></li></ul><script>alert(1)</script>.jpg",
     ]
 
-    # PAGE_DONE is static markup with no script, img or svg of its own, so any
-    # of these appearing means a payload broke out of its text context.
+    # PAGE_DONE is static markup: it renders an inline <svg> tick icon and a
+    # "Send More" <a>, but no <script> or <img> of its own. Any other tag
+    # appearing — or an <img>/<a> pointing elsewhere — means a payload broke
+    # out of its text context.
     allowed = {"html", "head", "meta", "title", "style", "body", "div", "h1",
-               "h2", "p", "ul", "li", "span", "b", "strong", "em", "i"}
+               "h2", "p", "ul", "li", "span", "b", "strong", "em", "i", "br",
+               "svg", "polyline"}
 
     for i, payload in enumerate(payloads):
         batch = f"b{i:x}" + "0" * 10
@@ -312,14 +315,19 @@ def test_xss_regression_filenames_escaped(client):
         html = client.get(f"/d/{token}/done/{batch}").get_data(as_text=True)
 
         # The real assertion: no element from a payload was created.
-        # PAGE_DONE legitimately renders <img> thumbnails, so img is allowed
-        # only if its src points at our own sanitised file route.
+        # PAGE_DONE legitimately renders <img> thumbnails and one "Send More"
+        # <a>, so those are allowed only if they point at our own routes.
         for tag, attrs in _parse_tags(html):
             t = tag.lower()
             if t == "img":
                 src = dict(attrs).get("src", "")
                 assert src.startswith(f"/d/{token}/file/"), (
                     f"payload {payload!r} injected an <img> with src={src!r}"
+                )
+            elif t == "a":
+                href = dict(attrs).get("href", "")
+                assert href.startswith(f"/d/{token}/"), (
+                    f"payload {payload!r} injected an <a> with href={href!r}"
                 )
             else:
                 assert t in allowed, f"payload {payload!r} created live tag <{t}>"

@@ -359,6 +359,11 @@ def session_valid(sid: str) -> bool:
         return True
 
 
+def valid_session(sid: str) -> bool:
+    """Back-compat alias kept for older callers/tests."""
+    return session_valid(sid)
+
+
 def register_session(sid: str):
     with SESSION_LOCK:
         s = _load_sessions()
@@ -534,18 +539,35 @@ def root():
     return PAGE_INDEX, 200, {"Content-Type": "text/html; charset=utf-8"}
 
 
+def _is_direct_loopback() -> bool:
+    """True only for a direct connection to the phone, not via the tunnel.
+
+    cloudflared connects to 127.0.0.1 locally, so public internet traffic
+    arrives with remote_addr == 127.0.0.1 too. remote_addr alone cannot
+    distinguish the two. The tunnel sets X-Forwarded-* headers; a direct
+    on-phone dial does not. Only trust loopback when no proxy headers exist.
+    """
+    if (request.headers.get("X-Forwarded-For")
+            or request.headers.get("X-Forwarded-Host")
+            or request.headers.get("X-Forwarded-Proto")):
+        return False
+    return request.remote_addr in {"127.0.0.1", "::1", "localhost"}
+
+
 @app.get("/healthz")
 def healthz():
     """Liveness probe.
 
-    start.sh polls this over loopback, but the same endpoint is reachable from
-    the tunnel. Authenticated or loopback callers get full diagnostics.
+    start.sh polls this over loopback with the drop token, and the same
+    endpoint is reachable from the tunnel. Full diagnostics require a token:
+    loopback alone is NOT trusted here, because tunnel traffic also arrives
+    from 127.0.0.1. Unauthenticated callers get bare {"ok": true} — enough
+    for a liveness check, nothing more.
     """
     drop = request.headers.get("X-PD-Token", "")
     owner = request.args.get("k", "") or request.args.get("owner", "")
-    is_local = request.remote_addr in {"127.0.0.1", "::1"}
 
-    if is_local or check_token(drop, TOKEN) or (OWNER_OK and check_token(owner, OWNER_TOKEN)):
+    if check_token(drop, TOKEN) or (OWNER_OK and check_token(owner, OWNER_TOKEN)):
         free = disk_free()
         total = disk_total()
         stats = get_active_upload_stats()
@@ -585,7 +607,10 @@ def batch_ids_recent() -> set[str]:
 def stop_endpoint():
     drop = request.headers.get("X-PD-Token", "") or request.args.get("token", "")
     owner = request.args.get("k", "") or request.args.get("owner", "")
-    is_local = request.remote_addr in {"127.0.0.1", "::1", "localhost"}
+    # Direct on-phone loopback only (no tunnel proxy headers) may stop
+    # unauthenticated — the foreground service's shutdown path relies on it.
+    # Anyone arriving through cloudflared carries X-Forwarded-* and needs a token.
+    is_local = _is_direct_loopback()
 
     if not (is_local or check_token(drop, TOKEN) or (OWNER_OK and check_token(owner, OWNER_TOKEN))):
         abort(403)
