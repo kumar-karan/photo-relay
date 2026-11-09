@@ -1,12 +1,13 @@
 # Photo Drop
 
-A photo drop server that runs on the owner's Samsung phone. A friend opens a
-secret link in any phone browser, picks photos and videos, watches them upload
-with real progress, and lands on a confirmation page. The files land in `DCIM`
-on the phone, so Google Photos backs them up to the owner's account on its own.
+A photo drop server that runs on your Samsung phone and turns it into a
+private, shareable upload inbox. A friend opens a secret link in any phone
+browser, picks photos and videos, watches them upload with real progress, and
+lands on a confirmation page. Files land in `DCIM/PhotoDrop` on your phone, so
+Google Photos backs them up to your account automatically.
 
 Nothing is installed on the friend's phone. Nothing is stored on anyone else's
-server.
+server. No app store, no account, no subscription.
 
 ```
 friend's browser  ──HTTPS──▶  Cloudflare Tunnel  ──▶  Termux  ──▶  DCIM/PhotoDrop
@@ -15,41 +16,48 @@ friend's browser  ──HTTPS──▶  Cloudflare Tunnel  ──▶  Termux  �
                                                               backs it up
 ```
 
-## Why this exists instead of an app
-
-The hard part is not the upload. It is that **Google Photos queries MediaStore,
-not the filesystem**. A file written into `DCIM` is invisible to Google Photos
-until MediaProvider is told it exists. Most off-the-shelf solutions write files
-and leave them invisible — [Syncthing's own maintainer admits](https://forum.syncthing.net/t/images-are-not-indexed-at-android-os-level/20812)
-its notification "has bugs/rotted with android apis changing".
-
-So this server does the upload *and* owns the media-library handshake, and
-`media_scan.sh` escalates through every known technique and reports which one
-actually worked on the device it ran on.
+> **Repo:** https://github.com/kumar-karan/photo-relay
+> Share this page with anyone who wants to replicate the setup. Everything below
+> is what a friend needs — no prior context required.
 
 ## Requirements
 
-- Termux + Termux:API on the Samsung
-- Shared storage granted (`termux-setup-storage`)
-- Google Photos backed up and configured to cover `DCIM`
-- A friend with a phone browser
+- An Android phone (Samsung or any device that can run Termux)
+- [Termux](https://f-droid.org/packages/com.termux/) **and** [Termux:API](https://f-droid.org/packages/com.termux.api/) installed **from the same source** (both F-Droid, or both Play Store) — a signature mismatch makes `termux-media-scan` hang
+- Shared storage permission (`termux-setup-storage`)
+- Google Photos signed in and set to back up `DCIM` (see [One-time Google Photos setup](#one-time-google-photos-setup))
+- A computer with `adb` for the APK path, **or** just a browser for the shell path
+- A friend with any phone browser
 
-## Install
+## Two ways to run it
+
+### Option A — Android app (recommended for daily use)
+
+The `android/` folder builds a small launcher app (`dev.photodrop.app`) that
+starts and stops the Termux server and tunnel for you, and always shows the
+live link. This is what the phone runs day-to-day.
+
+1. Build the APK on your Mac/Linux (Android SDK must be present under
+   `apps/t3-server-android/android-sdk/` — see `android/build.sh`):
+   ```bash
+   bash apps/photo-drop/android/build.sh   # must print BUILD_OK
+   ```
+2. Push it + the server scripts to the phone over USB:
+   ```bash
+   bash apps/photo-drop/deploy.sh
+   ```
+3. On the phone, open Termux and run the printed install command once, then
+   install `photodrop.apk` (adb install or tap to install).
+4. Open the **Photo Drop** app → **Start**. It shows the live link + QR code.
+   Send that link to your friend. **Stop** shuts everything down cleanly.
+
+### Option B — Termux shell only (quickest to try)
 
 Copy this directory into Termux (`~/photo-drop`), then:
 
 ```bash
 cd ~/photo-drop
 bash install.sh
-```
-
-`install.sh` installs Python packages, grants storage, fetches `cloudflared`,
-generates the two access tokens into `~/.photo-drop/env`, and prints which
-media-scan techniques this device supports.
-
-## Run
-
-```bash
 bash start.sh --tunnel
 ```
 
@@ -60,29 +68,47 @@ is the whole credential:
 https://<something>.trycloudflare.com/d/<token>
 ```
 
-Send that to your friend. On the owner's own Wi-Fi you can skip the tunnel and
-use `bash start.sh`, then read the local URL it prints.
+On your own Wi-Fi skip the tunnel: `bash start.sh` and use the local URL it
+prints. Shut down with `bash stop.sh`.
 
-While it runs, the phone must stay awake — `start.sh` takes a Termux wake lock
-automatically. For several hours plugged in that is enough. If the phone still
-sleeps, set **Settings → Apps → Termux → Battery → Unrestricted**.
+## One-time Google Photos setup (you only do this once)
 
-To shut down:
-
-```bash
-bash stop.sh
-```
+1. Open Google Photos on the Samsung → your profile → **Google Photos settings**
+   → **Backup** → ON, and set **Backup folders → DCIM → PhotoDrop** to ON.
+2. If uploads don't appear, open the Samsung Gallery app once and reboot.
+   Every version of this problem traces back to MediaStore; the owner
+   dashboard (`<base-url>/owner/<owner-token>`) reports which scan technique
+   actually worked on your device.
 
 ## What the friend sees
 
-1. Taps the drop zone, picks any number of photos and videos from their camera
-   roll. Nothing is installed.
-2. Each file uploads one at a time with a real percentage — driven by the
-   browser's native `XMLHttpRequest` progress events, so the number is bytes
-   actually sent, not a fake animation.
-3. They see the phone's free space before and during the session.
-4. They land on a confirmation page with a thumbnail grid and a file list, and
-   can close the tab.
+1. Opens your link. Nothing to install, no login.
+2. Taps the drop zone, picks any number of photos/videos from their camera
+   roll (HEIC, JPEG, MP4, MOV, Live Photos).
+3. Each file uploads with a real percentage — driven by the browser's native
+   `XMLHttpRequest` progress events, so the number is bytes actually sent.
+4. They see the phone's free space before and during the session. Uploads pause
+   if free space drops below the safety reserve (2 GiB by default).
+5. They land on a confirmation page with a thumbnail grid and file list.
+
+## Security model — please read
+
+- **The link is the password.** Anyone who has it can upload while you are
+  running. Share it directly (text, not a public post), and hit **Stop** when
+  you are done. Quick-tunnel links (`*.trycloudflare.com`) die on reboot or
+  Stop and are re-minted on the next Start — an old link you already sent will
+  not come back.
+- **Tokens never travel in query strings.** They live in the URL path and are
+  exchanged for an `HttpOnly` cookie. Query strings leak into logs and
+  `Referer` headers; paths are safer.
+- **`/healthz` reveals nothing** without a token. Free space and batch counts
+  are token-holders only.
+- **The server binds `127.0.0.1`** and `cloudflared` terminates TLS in front of
+  it. Never change `PHOTO_DROP_HOST` to `0.0.0.0` unless you understand it
+  exposes the server to your LAN.
+- **Space is checked twice** — from `Content-Length` before a byte is written,
+  and continuously during the write. A rejected upload writes nothing; the
+  body streams to a `.part` file deleted on failure.
 
 ## Configuration
 
@@ -92,73 +118,66 @@ Everything lives in `~/.photo-drop/env`:
 | --- | --- | --- |
 | `PHOTO_DROP_TOKEN` | generated | The drop link credential |
 | `PHOTO_DROP_OWNER_TOKEN` | generated | Owner dashboard credential |
-| `PHOTO_DROP_DIR` | `/storage/emulated/0/DCIM/PhotoDrop` | Where files land |
+| `PHOTO_DROP_DIR` | `/storage/emulated/0/DCIM/PhotoDrop` | Where files land (keep it flat — nested folders confuse Google Photos backup) |
 | `PHOTO_DROP_PORT` | `8080` | Local port |
 | `PHOTO_DROP_HOST` | `127.0.0.1` | Bind address — keep it local, the tunnel fronts it |
 | `PHOTO_DROP_RESERVE_BYTES` | `2147483648` (2 GiB) | Uploads stop below this much free |
 | `PHOTO_DROP_MAX_FILE_BYTES` | `2147483648` (2 GiB) | Per-file cap |
-| `PHOTO_DROP_MAX_FILES` | `500` | Per-session cap, counted across all of the session's batches |
+| `PHOTO_DROP_MAX_FILES` | `500` | Per-session cap |
 | `PHOTO_DROP_MAX_CONCURRENT` | `3` | Uploads in flight at once; extras get HTTP 503 |
 
-## Safety behaviour
+## Keeping the phone awake
 
-- **Space is checked twice** — once from `Content-Length` before a byte is
-  written, and again continuously during the write, so a large video cannot
-  quietly eat the reserve. A third check covers the Termux home partition,
-  which holds the manifests and logs and is a different volume from `DEST`.
-- **A rejected upload writes nothing.** The body streams to a `.part` file that
-  is deleted on failure; only a complete file is renamed into place. Stale
-  `.part` files are swept on boot.
-- **Concurrent uploads are bounded.** Flask's dev server spawns a thread per
-  request, so `PHOTO_DROP_MAX_CONCURRENT` uploads run at once and the rest get
-  HTTP 503 with `Retry-After` rather than being queued. Slots are released in a
-  `finally`, so a failed upload cannot leak one.
-- **Filenames are sanitised.** `../../etc/passwd` becomes `etc_passwd` inside
-  the destination directory. The *original* filename is displayed back to the
-  uploader on the confirmation page and is HTML-escaped there.
-- **Batches belong to a session.** Another session cannot append to or read a
-  batch it did not create, and the per-session file cap cannot be reset by
-  inventing a new `?batch=` id.
-- **The link is the credential.** Random 24-char token, compared in constant
-  time, exchanged for an `HttpOnly`, `SameSite=Lax` cookie on first visit. The
-  cookie is looked up server-side, not compared against the master token.
-- **The token never travels in a query string.** It lives in the URL path or the
-  `X-PD-Token` header only, because query strings land in access logs and
-  `Referer` headers. The landing page accepts no token at all.
-- **`/healthz` reveals nothing without a token.** Bare `{"ok": true}` for
-  anyone; the device path, free bytes and session counts are token-holders only.
-- **Append-only files are capped.** Manifest at 1 MB, log rotates at 2 MB.
-- **Exposed only through the tunnel.** The server binds `127.0.0.1` and
-  `cloudflared` terminates TLS in front of it.
+While it runs, the phone must stay awake — `start.sh` / the app takes a Termux
+wake lock. Keep it plugged in, and set **Settings → Apps → Termux → Battery →
+Unrestricted**, or Android will doze the tunnel mid-upload.
 
-## If Google Photos doesn't pick the photos up
+## Troubleshooting
 
-Check the owner dashboard — it shows which scan technique succeeded. If they
-all failed, open the Samsung Gallery app once, which triggers a rescan, and
-reboot if needed. Every version of this problem traces back to MediaStore, so
-the dashboard's technique report is the first thing to look at.
+| Symptom | Fix |
+| --- | --- |
+| Link returns HTTP 530 | Tunnel has no origin — server is stopped. Hit Start again; you will get a *new* link. |
+| `termux-media-scan` hangs | Termux and Termux:API are from different sources. Reinstall both from the same source. |
+| Photos don't appear in Google Photos | Enable the `PhotoDrop` backup folder (above), open Gallery once, reboot. Check the owner dashboard's scan report. |
+| Upload stalls at 0% | Phone dozed. Plug in, set Termux battery to Unrestricted, retry. |
 
-## Owner dashboard
+## Planned improvements (roadmap)
 
-```
-<base-url>/owner?k=<PHOTO_DROP_OWNER_TOKEN>
-```
+These are deliberately not built yet — they are the honest next steps if you
+want to contribute:
 
-Shows the drop link, destination, live free space, which media-scan techniques
-this device supports, and recent upload batches with file counts and sizes.
+1. **Stable tunnel URL** — a named Cloudflare tunnel (`yourname.trycloudflare.com`
+   via a free Cloudflare account + custom hostname) so the link survives reboots
+   instead of being re-minted. Today's quick tunnel is zero-setup but ephemeral.
+2. **Resumable chunked uploads** — today one file = one request, so a dropped
+   connection restarts that file. Chunked resumption would save multi-GB video
+   uploads on flaky networks.
+3. **Token rotation + expiry** — one-tap "rotate link" in the owner dashboard
+   and auto-expiry after N hours, for when you send the link to someone you
+   don't fully trust.
+4. **EXIF / Live Photo handling** — preserve capture time + location through
+   to MediaStore (HEIC and Motion Photos are preserved today; verify on your
+   Android version).
+5. **LAN-only mode** — skip the tunnel entirely on trusted Wi-Fi with a
+   `http://<phone-ip>:8080` link and a PIN, for parties.
 
 ## Why not croc / Swap / Syncthing?
 
 - **croc** — excellent and one command, but no free-space pre-check and no
-  MediaStore notification. It is also a fine *complement*: you could point a
-  friend at `croc` and have a watcher script move files into `DCIM`.
-- **Swap** — best LAN drag-and-drop UI, but LAN-only, plain HTTP, and no space
-  check.
+  MediaStore notification. A fine *complement*: point a friend at `croc` and
+  have a watcher move files into `DCIM`.
+- **Swap** — best LAN drag-and-drop UI, but LAN-only, plain HTTP, no space check.
 - **Syncthing-Fork** — the only off-the-shelf option with proven MediaStore
-  handling, but a much heavier setup and a project lineage that has already
-  lost its maintainer once.
+  handling, but a much heavier setup and a lineage that lost its maintainer once.
+- Related projects worth reading if you want to extend this:
+  [croc](https://github.com/schollz/croc) (P2P transfer), [LocalSend](https://github.com/localsend/localsend) (LAN sharing), [Magic Wormhole](https://github.com/warner/magic-wormhole) (code-phrase transfers).
 
 ## Tests
 
-`server.py` has been exercised end to end for auth, upload, filename
-sanitisation, the space guard, the size guard and the confirmation page.
+```bash
+python3 -m pip install flask pytest
+python3 -m pytest apps/photo-drop/tests/ -q
+```
+
+Covers auth, upload, filename sanitisation, space guard, size guard, and the
+confirmation page.

@@ -73,7 +73,7 @@ DEST = Path(os.environ.get("PHOTO_DROP_DIR", "/storage/emulated/0/DCIM/PhotoDrop
 # all, and it fails silently. One folder is one toggle with no way to half
 # configure it, so there is no dated option to switch on by mistake.
 
-HOST = os.environ.get("PHOTO_DROP_HOST", "0.0.0.0")
+HOST = os.environ.get("PHOTO_DROP_HOST", "127.0.0.1")
 PORT = int(os.environ.get("PHOTO_DROP_PORT", "8080"))
 
 # Free space we refuse to go below. Uploads stop cleanly rather than filling

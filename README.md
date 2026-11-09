@@ -1,15 +1,26 @@
-# Photo Relay
+# Photo Relay & Photo Drop
 
 Move original photos, videos and Live Photos from an iPhone to a Samsung phone
 through your Mac — locally, at full quality, with capture times preserved.
-
-Photo Relay is a native macOS app that wraps a battle-tested Python transfer
-engine. Photos go **iPhone → Mac → Samsung**, where Google Photos on the
-Samsung does the backup. Nothing is uploaded anywhere.
+Or share a link with a friend to drop photos straight onto your Samsung —
+in the browser, with no app installed on their phone.
 
 ```text
 iPhone 17 Pro  ──USB──▶  Mac (staging + conversion)  ──ADB──▶  Samsung  ──▶  Google Photos
+
+friend's browser ──HTTPS──▶ Cloudflare Tunnel ──▶ Termux on Samsung ──▶ DCIM/PhotoDrop ──▶ Google Photos
 ```
+
+> **Friends who want to replicate the setup:** start at
+> [`apps/photo-drop/README.md`](apps/photo-drop/README.md) — full install,
+> security model, troubleshooting, and improvement roadmap. Repo:
+> https://github.com/kumar-karan/photo-relay
+
+Photo Relay is a native macOS app that wraps a battle-tested Python transfer
+engine. Photos go **iPhone → Mac → Samsung**, where Google Photos on the
+Samsung does the backup. Nothing is uploaded anywhere. Photo Drop is the
+same Samsung + `DCIM` + Google Photos idea, but the upload happens from a
+friend's browser to a Termux-hosted server behind a Cloudflare tunnel.
 
 ## Why
 
